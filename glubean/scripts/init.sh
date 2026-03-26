@@ -1,91 +1,52 @@
 #!/bin/bash
 set -e
 
-# Glubean project bootstrap — from zero to runnable in one script.
-# Usage: bash init.sh [--scratch | --full] [--mcp] [--client <name>]
+# Install or upgrade the Glubean CLI, then bootstrap the project.
+# Usage: bash init.sh [--full] [--mcp]
 #
-# --scratch          Install SDK only, skip glubean init (default)
-# --full             Run glubean init (config/, .env, directory structure)
-# --mcp              Configure MCP tools for the specified client
-# --client <name>    Agent client name (claude-code, cursor, codex, windsurf, etc.)
+# Without flags: install/upgrade CLI only
+# --full        Also run `glubean init` (config/, .env, directories)
+# --mcp         Also run `glubean config mcp`
 
-MODE="scratch"
+FULL=false
 MCP=false
-CLIENT=""
 
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --full)    MODE="full"; shift ;;
-    --scratch) MODE="scratch"; shift ;;
-    --mcp)     MCP=true; shift ;;
-    --client)  CLIENT="$2"; shift 2 ;;
-    *)         shift ;;
+for arg in "$@"; do
+  case "$arg" in
+    --full) FULL=true ;;
+    --mcp)  MCP=true ;;
   esac
 done
 
-# --- Prereqs ---
+# --- Install or upgrade CLI ---
 
-echo "Checking prerequisites..." >&2
+CURRENT=$(glubean --version 2>/dev/null || echo "none")
+LATEST=$(npm view @glubean/cli version 2>/dev/null || echo "unknown")
 
-if ! command -v node &>/dev/null; then
-  echo '{"ok":false,"error":"Node.js not found. Install Node.js 18+ first."}'
-  exit 1
-fi
-
-NODE_MAJOR=$(node -e "console.log(process.versions.node.split('.')[0])")
-if [ "$NODE_MAJOR" -lt 18 ]; then
-  echo "{\"ok\":false,\"error\":\"Node.js $NODE_MAJOR found, but 18+ required.\"}"
-  exit 1
-fi
-
-if [ ! -f "package.json" ]; then
-  echo "No package.json found, creating one..." >&2
-  npm init -y --silent >/dev/null 2>&1
-fi
-
-# --- Install SDK + runner ---
-
-echo "Installing @glubean/sdk and @glubean/runner..." >&2
-
-if command -v pnpm &>/dev/null; then
-  pnpm add -D @glubean/sdk @glubean/runner 2>&1 >&2
-elif command -v npm &>/dev/null; then
-  npm install -D @glubean/sdk @glubean/runner 2>&1 >&2
+if [ "$CURRENT" = "none" ]; then
+  echo "Installing @glubean/cli@$LATEST..." >&2
+  npm install -g @glubean/cli 2>&1 >&2
+elif [ "$CURRENT" != "$LATEST" ]; then
+  echo "Upgrading @glubean/cli $CURRENT → $LATEST..." >&2
+  npm install -g @glubean/cli@latest 2>&1 >&2
 else
-  echo '{"ok":false,"error":"No package manager found (npm or pnpm)."}'
-  exit 1
+  echo "@glubean/cli is up to date ($CURRENT)" >&2
 fi
 
-# --- Full init (optional) ---
+# --- Project init ---
 
-if [ "$MODE" = "full" ]; then
+if [ "$FULL" = true ]; then
   echo "Running glubean init..." >&2
-  npx glubean init 2>&1 >&2
+  glubean init 2>&1 >&2
 fi
 
-# --- MCP install (optional) ---
+# --- MCP config ---
 
 if [ "$MCP" = true ]; then
-  if [ -z "$CLIENT" ]; then
-    echo '{"ok":false,"error":"--mcp requires --client <name> (claude-code, cursor, codex, windsurf, etc.)"}'
-    exit 1
-  fi
-  echo "Installing MCP server for $CLIENT..." >&2
-  npx -y install-mcp @glubean/mcp --client "$CLIENT" -y --oauth no 2>&1 >&2
+  echo "Configuring MCP..." >&2
+  glubean config mcp 2>&1 >&2
 fi
 
-# --- JSON result ---
+# --- Result ---
 
-RESULT="{\"ok\":true,\"mode\":\"$MODE\",\"mcp\":$MCP"
-
-if [ -n "$CLIENT" ]; then
-  RESULT="$RESULT,\"client\":\"$CLIENT\""
-fi
-
-if [ "$MODE" = "full" ]; then
-  RESULT="$RESULT,\"created\":[\"config/\",\".env\",\".env.secrets\",\"explore/\",\"tests/\"]"
-fi
-
-RESULT="$RESULT,\"next\":\"Write your first test in explore/\"}"
-
-echo "$RESULT"
+echo "{\"ok\":true,\"cli\":\"$(glubean --version 2>/dev/null)\",\"init\":$FULL,\"mcp\":$MCP}"

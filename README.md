@@ -18,18 +18,14 @@ Supports 40+ agents including Claude Code, Cursor, GitHub Copilot, Codex, Gemini
 glubean/
 ├── SKILL.md                    # Agent instructions
 ├── scripts/
-│   └── init.sh                 # Cold-start bootstrap (SDK + init + MCP)
+│   └── init.sh                 # Install/upgrade CLI + project bootstrap
 └── references/
     ├── index.md                # Pattern & capability index
     ├── sdk-reference.md        # Full SDK API reference
     ├── cli-reference.md        # CLI command reference
     └── patterns/               # Per-topic guides
-        ├── auth.md
-        ├── bootstrap.md
-        ├── configure.md
-        ├── crud.md
-        ├── data-driven.md
-        ├── builder-reuse.md
+        ├── auth.md, bootstrap.md, configure.md
+        ├── crud.md, data-driven.md, builder-reuse.md
         └── ...
 ```
 
@@ -37,7 +33,7 @@ glubean/
 
 Once installed, your AI coding agent can:
 
-- **Bootstrap** a new Glubean project from scratch (`scripts/init.sh`)
+- **Bootstrap** a new Glubean project (install SDK, init, configure MCP)
 - **Generate** test files from API specs, endpoint descriptions, or natural language
 - **Run** tests via MCP tools or CLI (`npx glubean run`)
 - **Fix** failing tests by reading structured failure output and iterating
