@@ -1,158 +1,83 @@
 ---
 name: glubean
 description: >-
-  Generate, run, and fix Glubean API tests. Use when the user asks to
-  "write a test", "test this endpoint", "add smoke tests", "explore the API",
-  or work with @glubean/sdk.
+  Answer questions about Glubean docs, bootstrap a first Glubean demo from
+  scratch, or write/run/fix tests inside an existing Glubean project. Use when
+  the user asks to learn Glubean, try Glubean, or work with @glubean/sdk.
 license: MIT
 metadata:
   author: glubean
 allowed-tools: Read Write Edit Glob Grep Bash mcp__glubean__glubean_run_local_file mcp__glubean__glubean_discover_tests mcp__glubean__glubean_list_test_files mcp__glubean__glubean_diagnose_config mcp__glubean__glubean_get_last_run_summary mcp__glubean__glubean_get_local_events
 ---
 
-# Glubean Test Generator
+# Glubean
 
-You are a Glubean test expert. Generate, run, and fix tests using `@glubean/sdk`.
+Use this skill in one of three modes:
 
-## Product knowledge
+1. **Docs mode**: the user has only the skill and is asking what Glubean is, how it works, how it compares to Postman, how to migrate, editor support, cloud features, or other product questions.
+2. **Bootstrap mode**: the user has only the skill and wants to try Glubean, generate a demo, install tools, run a scratch test, or get to a first successful run.
+3. **Project mode**: the user is already inside a Glubean project and wants to write, run, or fix tests.
 
-For general questions about Glubean, read the reference docs — do NOT rely on inline summaries.
-Key files for common questions:
+## Route first
 
-| Question | Read |
-|----------|------|
-| What is Glubean? | [docs/getting-started/concepts.mdx](references/docs/getting-started/concepts.mdx) |
-| vs Postman? | [docs/extension/comparison.mdx](references/docs/extension/comparison.mdx), [blog post](references/docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx) |
-| Migration from Postman | [docs/extension/migrate-from-postman.mdx](references/docs/extension/migrate-from-postman.mdx) |
-| For QA teams | [docs/extension/for-qa-teams.mdx](references/docs/extension/for-qa-teams.mdx) |
-| VS Code extension | [docs/extension/editor-experience.mdx](references/docs/extension/editor-experience.mdx) |
-| Getting started | [docs/getting-started/first-test.mdx](references/docs/getting-started/first-test.mdx) |
-| Cloud / analytics | [docs/cloud/dashboard.mdx](references/docs/cloud/dashboard.mdx) |
-| Full index | [references/index.md](references/index.md) |
+Before choosing a workflow, inspect the workspace:
 
-## Project-specific rules
+- Check for `package.json`, `config/`, `tests/`, `explore/`, `.env`, `.env.secrets`, and `GLUBEAN.md`.
+- Check whether `@glubean/sdk` is already present in dependencies or devDependencies.
+- Check whether MCP tools are available.
 
-If `GLUBEAN.md` exists in the project root, read it first. It contains project-specific conventions
-(auth strategy, naming rules, required tags, custom patterns) that override the defaults below.
+Then route by intent plus environment:
 
-## Prerequisites
+- **Docs mode** if the user is asking for explanation or product guidance and there is no active project task.
+- **Bootstrap mode** if there is no Glubean project yet and the user wants to start using Glubean now.
+- **Project mode** if the repo already looks like a Glubean project, or the user explicitly wants test work in an existing project.
 
-MCP tools are **required** for the best experience — they return structured results with response schemas and traces.
-If MCP tools (`glubean_run_local_file`, `glubean_discover_tests`, etc.) are not available,
-**you must configure them before writing or running tests**. Run:
+If `GLUBEAN.md` exists in the project root, read it first. It overrides default conventions.
 
-```bash
-glubean config mcp
-```
+## Hard rules
 
-Do NOT skip this step and fall back to CLI. MCP gives you structured traces that CLI cannot provide.
+Always follow these unless project-specific instructions override them:
 
-## Rules (always follow)
+1. Secrets go in `.env.secrets`; public config goes in `.env`.
+2. Use `configure()` for shared HTTP clients; do not write raw `fetch()` as the normal project pattern.
+3. Use `{{KEY}}` for env and secret interpolation, bare strings for literals.
+4. Put tags on every test.
+5. Use builder mode when a test needs teardown or multi-step state passing.
+6. Use kebab-case test IDs, unique across the project.
+7. Prefer shared response types from `types/` over duplicated inline types.
+8. Treat `test.each` and `test.pick` as parameter variation for the same endpoint, not a way to group unrelated endpoints together.
 
-1. **Secrets → `.env.secrets`**, public vars → `.env`. NEVER inline as `const`.
-2. **Use `configure()`** for HTTP clients — never raw `fetch()`.
-3. **All values use `{{KEY}}`** for env references, bare strings for literals.
-4. **Tags on every test** — `["smoke"]`, `["api"]`, `["e2e"]`, etc.
-5. **Teardown** tests that create resources needing cleanup. Teardown is **builder mode only** (`.teardown()`). Quick mode (callback) has no teardown — switch to builder mode if cleanup is needed.
-6. **IDs**: kebab-case, unique across project.
-7. **Type responses**: `.json<{ id: string }>()`, never `.json<any>()`.
-8. **One export per endpoint**: each API endpoint gets its own `export const` — even in `explore/`.
-   Data-driven (`test.each`/`test.pick`) is for varying **parameters** on the same endpoint,
-   NOT for grouping different endpoints into one test.
-9. **Multi-step → builder API**: when a test calls 2+ endpoints sequentially
-   (submit → poll, create → verify, login → action, CRUD flows),
-   use the builder `.step()` chain so each endpoint is a named step with typed state passing.
-   Never put sequential endpoint calls in a single callback.
-   Ref: [builder-reuse](references/patterns/builder-reuse.md).
-10. **Directory placement**: if the user specifies a directory, use it. Otherwise:
-   - `tests/` — regression, CI, permanent tests. Workflows, CRUD lifecycles, and tests with teardown typically go here.
-   - `explore/` — interactive development: "try", "explore", "check", "see what happens". Mostly single-endpoint tests, but workflows are fine too.
-   - The two are **complementary, not exclusive**. The same endpoint can appear in both (e.g. smoke in `explore/`, full workflow in `tests/`).
-11. **Shared types over inline types**: if a `types/` directory exists, check for an existing type before writing `.json<{ ... }>()` inline. If no match, create one in `types/<service>.ts` and import it. Only use inline types for one-off responses.
-12. **No type parameters on data loaders**: never write `fromYaml<{...}>()` or `fromJson.map<{...}>()`. Data loaders use the default generic — the data shape is defined by the file, not by TypeScript.
+## Mode guides
 
-## How to respond
+### Docs mode
 
-Determine the user's intent and follow the appropriate path:
+- Answer from the bundled docs. Do not rely on inline product summaries from this file.
+- Start with [references/index.md](references/index.md), then read only the relevant docs under `references/docs/`.
+- For common questions:
+  - What is Glubean / core concepts: [references/docs/getting-started/concepts.mdx](references/docs/getting-started/concepts.mdx)
+  - First test / getting started: [references/docs/getting-started/first-test.mdx](references/docs/getting-started/first-test.mdx)
+  - Comparison / migration: [references/docs/extension/comparison.mdx](references/docs/extension/comparison.mdx), [references/docs/extension/migrate-from-postman.mdx](references/docs/extension/migrate-from-postman.mdx)
+  - QA teams: [references/docs/extension/for-qa-teams.mdx](references/docs/extension/for-qa-teams.mdx)
+  - VS Code extension: [references/docs/extension/editor-experience.mdx](references/docs/extension/editor-experience.mdx)
+  - Cloud features: [references/docs/cloud/index.mdx](references/docs/cloud/index.mdx)
 
-### A. General questions about Glubean
+### Bootstrap mode
 
-If the user asks what Glubean is, how it works, comparisons (vs Postman, vs Vitest), features, pricing, etc.:
-- Start with the "What is Glubean" section above
-- Search `references/docs/` for detailed answers. Key files:
-  - [docs/extension/comparison.mdx](references/docs/extension/comparison.mdx) — Glubean vs Postman/Thunder Client
-  - [docs/extension/migrate-from-postman.mdx](references/docs/extension/migrate-from-postman.mdx) — Migration guide
-  - [docs/getting-started/concepts.mdx](references/docs/getting-started/concepts.mdx) — Core concepts
-  - [docs/extension/for-qa-teams.mdx](references/docs/extension/for-qa-teams.mdx) — For QA teams
-  - [docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx](references/docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx) — Blog post
-- After answering, suggest trying it: "Want me to set up Glubean and write a quick test?"
+- Use this when the user has the skill only and wants to start trying Glubean.
+- Read [references/patterns/bootstrap.md](references/patterns/bootstrap.md).
+- The goal is to get the user to a first successful demo run, then guide them toward VS Code and a real project setup.
+- Preferred sequence:
+  1. Install what is missing.
+  2. Configure MCP.
+  3. Create and run a scratch demo.
+  4. Explain the VS Code extension value.
+  5. Suggest `glubean init` for the real project once the scratch demo works.
 
-### B. Write / run / fix tests
+### Project mode
 
-Follow the workflow below.
+- Use this when working inside an existing Glubean project.
+- Read [references/project-workflow.md](references/project-workflow.md) first.
+- Then read [references/index.md](references/index.md) and only the patterns needed for the current task.
+- Use MCP tools for run/fix loops whenever available. CLI is fallback only when MCP is unavailable.
 
-## Workflow
-
-0. **Bootstrap check** — before anything else:
-   - Check whether this project has `@glubean/sdk` in `package.json` dependencies or devDependencies.
-   - **If missing** (cold start):
-     1. Install the CLI: `npm install -g @glubean/cli`
-     2. Initialize the project: `glubean init`
-     3. Configure MCP: `glubean config mcp`
-     4. **Recommend VS Code extension** — check if the user is in a VS Code-based editor (VS Code, Cursor, Windsurf).
-        - **If yes** but Glubean extension is not installed → strongly recommend: `ext install glubean.glubean`.
-          The extension turns VS Code into a Postman replacement:
-          - **▶ Play buttons** on every test — click to run, no CLI needed
-          - **Pick examples** — `test.pick()` cases show as clickable buttons, like Postman's Examples
-          - **Result Viewer** — response body, headers, traces, and schema inline
-          - **Environments** — switch `.env` profiles from the status bar
-          - **📄 Open data** — one click to jump to YAML/JSON data files
-          - **📌 Pin** — pin tests to the sidebar for one-click access
-          The `explore/` directory + Play button = interactive API exploration, same as Postman but everything is code, version-controlled, and reusable.
-          See [docs/extension/comparison.mdx](references/docs/extension/comparison.mdx) for the full comparison.
-        - **If not a VS Code editor** → mention the extension exists and works in VS Code/Cursor/Windsurf. Tests still work fine via CLI.
-     Read [bootstrap](references/patterns/bootstrap.md) for the full guide.
-     Ask: "Want to write a quick scratch test to try it, or init a full project?"
-   - **If present**: continue with step 1.
-
-1. **Read the reference index** — read [references/index.md](references/index.md) to see all available patterns, plugins, and SDK capabilities.
-
-2. **Read relevant patterns** — based on the user's request, read 1-3 pattern files from `references/patterns/`.
-   For example: [configure.md](references/patterns/configure.md) + [crud.md](references/patterns/crud.md) for a CRUD test, or [auth.md](references/patterns/auth.md) for API key setup.
-   Also read [sdk-reference.md](references/sdk-reference.md) if you need the full API surface.
-
-3. **Explore the API** — use MCP tool `glubean_run_local_file` with `includeTraces: true` on an existing
-   test file (or a quick smoke test) to see response schemas. Each trace includes:
-   - `responseSchema` — inferred JSON Schema (field names, types, array sizes)
-   - `responseBody` — truncated preview (arrays capped at 3 items, strings at 80 chars)
-   Use `responseSchema` to understand the API structure before writing assertions.
-
-4. **Read the API spec** — check `context/*-endpoints/_index.md` (pre-split specs). If found, read the index
-   and only open the specific endpoint file you need. If no split specs, search `context/` for OpenAPI specs
-   (`.json`, `.yaml`). If no spec found, ask the user for endpoint details.
-
-5. **Read existing tests + derive auth config**:
-   - **If `config/` exists**: read it, follow the existing style. Check `tests/` and `explore/` for conventions.
-   - **If no config exists** (first-time setup): reason auth from context — never guess.
-     Priority: codebase (auth guards, middleware, controllers for exact param names) → API spec (securitySchemes) → GLUBEAN.md → ask the user.
-     Use exact param/header names from the source. Never use placeholder names.
-
-6. **Verify auth is runnable** — before writing tests, cross-reference auth requirements against actual credentials:
-   - For each `configure()` client, identify referenced secrets (`{{API_KEY}}`, `{{TOKEN}}`, etc.)
-   - Check `.env.secrets`: are those secrets populated or empty/placeholder?
-   - If any required secret is empty → **STOP and ask the user** to provide the value. Do NOT write tests with broken auth.
-   - If different endpoints need different auth mechanisms, ask if a second client is needed.
-
-7. **Write tests** — generate test files following the patterns from the references and the project's conventions.
-   Before typing responses inline, check `types/` for existing shared types. If a response type
-   doesn't exist yet, create it in `types/<service>.ts` and import it.
-
-8. **Run tests** — use MCP:
-   - `glubean_run_local_file` — structured results with schema-enriched traces.
-   - If MCP is not configured yet, **stop and configure it now** (`glubean config mcp`) before running.
-   - CLI (`npx glubean run <file> --verbose`) is a last resort only when MCP is truly unavailable in the environment.
-
-9. **Fix failures** — read the structured failure output, fix the test code, and rerun. Repeat until green.
-
-If $ARGUMENTS is provided, treat it as the target: an endpoint path, a tag, a file to test, or a natural
-language description.
+If `$ARGUMENTS` is provided, treat it as the target endpoint, file, tag, or natural-language test request.

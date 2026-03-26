@@ -1,59 +1,56 @@
-# Bootstrap — From Zero to First Test
+# Bootstrap — From Skill Only to First Demo
 
-This guide is for users who just installed the Glubean skill but have nothing else set up yet.
+Use this guide when the user has the Glubean skill but no Glubean project yet.
 
-## Prerequisites
+The goal is:
+
+1. install the missing tooling
+2. configure MCP
+3. create and run a small scratch demo
+4. then guide the user to VS Code and a real project setup
+
+## 1. Prepare the workspace
+
+Prerequisites:
 
 - Node.js 18+
-- A `package.json` in the project (run `npm init -y` if needed)
+- a writable working directory
 
-## Step 1: VS Code (or Cursor/Windsurf) + Extension
-
-Glubean works from any terminal (`npx glubean run`), but VS Code-based editors unlock the full experience.
-
-**Strongly recommended.** Here's why:
-
-### Why VS Code?
-
-- **▶ Play buttons** — click to run any test, no CLI commands to remember
-- **Pick examples** — `test.pick()` cases show as clickable CodeLens buttons, like Postman's Examples
-- **📄 Open data** — one click to jump from test code to the YAML/JSON data file driving it
-- **💡 Refactor** — AI-assisted refactoring: extract data, convert to pick, promote to tests/
-- **Result Viewer** — structured output with traces, assertions, and response schemas inline
-- **📌 Pin** — pin frequently-used tests to the Glubean sidebar for one-click access
-- **Environments** — switch `.env` profiles from the status bar, hover to preview variables
-- **Debugging** — set breakpoints in test code, inspect variables, step through HTTP calls
-
-Without the extension, you can still write and run tests via CLI — you just lose the visual workflow.
-
-**Extension supported in:** VS Code, Cursor, Windsurf — any editor that supports VS Code extensions.
-**CLI works everywhere:** terminal, Claude Code, Codex, any environment with Node.js.
-
-**Install the extension:**
-```
-ext install glubean.glubean
-```
-
-After install, `.test.ts` files will show Play buttons above each test export.
-
-## Step 2: Choose your path
-
-Ask the user:
-
-> **Want to try it first, or set up a real project?**
->
-> 1. **Scratch** — write a single test file against a public API (DummyJSON). No config, no auth, 30 seconds to first Play button.
-> 2. **Init** — full project setup with config, .env, directory structure for your own API.
->
-> *Want to see a complete example first?* Clone the [cookbook](https://github.com/glubean/cookbook) — it has config, data-driven tests, explore flows, and builder patterns you can browse and run.
-
-## Path A: Scratch (try it)
-
-Install the SDK and create a scratch file:
+If there is no `package.json` yet, initialize one first:
 
 ```bash
+npm init -y
+```
+
+## 2. Install the tools needed for a first run
+
+Install the CLI and local runtime:
+
+```bash
+npm install -g @glubean/cli
 npm install -D @glubean/sdk @glubean/runner
 ```
+
+The global CLI is for setup commands such as `glubean init` and `glubean config mcp`.
+The local packages are enough to create and run a scratch test immediately.
+
+## 3. Configure MCP
+
+MCP gives the agent structured results, traces, and response schemas.
+
+```bash
+glubean config mcp
+```
+
+This should register tools such as:
+
+- `glubean_run_local_file`
+- `glubean_discover_tests`
+- `glubean_get_last_run_summary`
+
+If MCP cannot be configured in the current environment, CLI is the fallback for the scratch demo.
+
+## 4. Create a scratch demo
 
 Create `explore/scratch.test.ts`:
 
@@ -61,7 +58,7 @@ Create `explore/scratch.test.ts`:
 import { test } from "@glubean/sdk";
 
 export const health = test(
-  { id: "dj-health", tags: ["smoke"] },
+  { id: "dummyjson-health", tags: ["smoke"] },
   async (ctx) => {
     const res = await ctx.http.get("https://dummyjson.com/test");
     ctx.expect(res).toHaveStatus(200);
@@ -69,7 +66,7 @@ export const health = test(
 );
 
 export const getProduct = test(
-  { id: "dj-product", tags: ["smoke"] },
+  { id: "dummyjson-product", tags: ["smoke"] },
   async (ctx) => {
     const product = await ctx.http
       .get("https://dummyjson.com/products/1")
@@ -77,61 +74,68 @@ export const getProduct = test(
 
     ctx.expect(product.id).toBe(1);
     ctx.expect(product.title).toBeDefined();
-    ctx.log(`${product.title}`);
   },
 );
 ```
 
-The user should now see ▶ Play buttons above each `export const` in VS Code.
-Click Play to run. Results appear in the Glubean panel.
+## 5. Run the demo
 
-**After scratch works**, ask: "Want to set up a real project with `npx glubean init`, or keep exploring?"
+Preferred:
 
-## Path B: Init (real project)
+- run it with MCP so the agent can inspect structured traces
 
-```bash
-npx glubean init
-```
-
-This creates:
-- `config/` — HTTP client configuration with `configure()`
-- `.env` — public variables (base URLs, feature flags)
-- `.env.secrets` — private credentials (gitignored)
-- `explore/` — directory for interactive test development
-- `tests/` — directory for CI regression tests
-- `tsconfig.json` — if not present
-
-After init, the user needs to:
-1. Set their base URL in `.env`
-2. Add credentials to `.env.secrets` (if the API requires auth)
-3. Write their first test in `explore/`
-
-## Step 3: MCP tools (optional, recommended)
-
-MCP tools give the agent structured run results with response schemas and traces.
+Fallback:
 
 ```bash
-npx glubean config mcp
+npx glubean run explore/scratch.test.ts --verbose
 ```
 
-This registers `glubean_run_local_file`, `glubean_discover_tests`, etc.
-Without MCP, tests can still be run via `npx glubean run <file> --verbose`.
+Once the scratch demo passes, explain what just worked and ask whether the user wants to keep exploring or initialize a real project.
 
-## Step 4: Lens docs
+## 6. Guide the user to VS Code-based editors
+
+After the first run succeeds, strongly recommend the extension if the user has access to VS Code, Cursor, or Windsurf.
+
+Install:
 
 ```bash
-npx glubean docs pull
+ext install glubean.glubean
 ```
 
-Pulls pattern docs to `~/.glubean/docs/`. The agent reads these for SDK patterns, auth strategies, data-driven testing, etc.
+Why it matters:
 
-## What the user should see after setup
+- Play buttons above each exported test
+- clickable `test.pick()` examples
+- inline result viewer with traces and response schemas
+- environment switching from the status bar
+- quick navigation to YAML and JSON data files
+- better debugging and iterative exploration
 
-In VS Code, opening a `.test.ts` file shows:
-- **▶ Play** buttons above each test export
-- **▶ Pick example** buttons for `test.pick()` tests
-- **📄 Open data** links above data loader calls
-- **💡** lightbulb for AI-assisted refactoring
-- **📌 Pin** to add tests to the Glubean sidebar
+Tests still work fine from CLI without the extension, but the editor experience is much better with it.
 
-The Play button runs the test and shows results in the Glubean output panel.
+## 7. Move from scratch to a real project
+
+When the user is ready:
+
+```bash
+glubean init
+```
+
+This creates the standard project structure:
+
+- `config/`
+- `explore/`
+- `tests/`
+- `.env`
+- `.env.secrets`
+
+After init, guide the user to:
+
+1. set `BASE_URL` and other public vars in `.env`
+2. put credentials in `.env.secrets`
+3. write the first real test in `explore/`
+
+## Optional next steps
+
+- Pull docs for local agent use: `glubean docs pull`
+- Browse the cookbook for examples: <https://github.com/glubean/cookbook>

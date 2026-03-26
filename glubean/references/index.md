@@ -2,6 +2,16 @@
 
 Quick lookup for AI agents. Read this first, then open only the files you need.
 
+## Modes
+
+Use this index after you know which mode you are in:
+
+| Mode | When to use | Read first |
+|------|-------------|------------|
+| Docs | The user has only the skill and is asking product or documentation questions | `references/docs/...` files listed below |
+| Bootstrap | The user has only the skill and wants a first demo, install, or setup flow | [patterns/bootstrap.md](patterns/bootstrap.md) |
+| Project | The user is already in a Glubean project and wants test work | [project-workflow.md](project-workflow.md) |
+
 ## Reference
 
 | File | When to read |
@@ -111,12 +121,7 @@ Full product docs. Read when the patterns/reference above aren't enough.
 |------|-------|
 | [docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx](docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx) | Why TypeScript tests beat Postman |
 
-## Rules (always follow)
+## Notes
 
-1. **Secrets → `.env.secrets`**, public vars → `.env`. NEVER inline as `const`.
-2. **Use `configure()`** for HTTP clients — never raw `fetch()`. Use `{{KEY}}` for env references, bare strings for literals.
-3. **Tags on every test** — `["smoke"]`, `["api"]`, `["e2e"]`, etc.
-4. **Teardown** any test that creates resources.
-5. **IDs**: kebab-case, unique across project.
-6. **Type your responses**: `.json<{ id: string }>()`, never `.json<any>()`.
-7. **One export per endpoint**: data-driven (`test.each`/`test.pick`) is for varying **parameters** on the same endpoint, not for grouping different endpoints.
+- Hard rules live in [../SKILL.md](../SKILL.md).
+- This file is the navigation hub: read the mode-specific guide first, then only the references needed for the task.
