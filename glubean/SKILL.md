@@ -48,11 +48,15 @@ If `GLUBEAN.md` exists in the project root, read it first. It contains project-s
 
 ## Prerequisites
 
-If MCP tools (`glubean_run_local_file`, `glubean_discover_tests`, etc.) are not available, tell the user to run:
+MCP tools are **required** for the best experience — they return structured results with response schemas and traces.
+If MCP tools (`glubean_run_local_file`, `glubean_discover_tests`, etc.) are not available,
+**you must configure them before writing or running tests**. Run:
 
 ```bash
-npx glubean config mcp
+glubean config mcp
 ```
+
+Do NOT skip this step and fall back to CLI. MCP gives you structured traces that CLI cannot provide.
 
 ## Rules (always follow)
 
@@ -136,9 +140,10 @@ npx glubean config mcp
    Before typing responses inline, check `types/` for existing shared types. If a response type
    doesn't exist yet, create it in `types/<service>.ts` and import it.
 
-8. **Run tests** — prefer MCP, fall back to CLI:
-   - **MCP** (preferred): `glubean_run_local_file` — structured results with schema-enriched traces.
-   - **CLI** (fallback): `npx glubean run <file> --verbose`
+8. **Run tests** — use MCP:
+   - `glubean_run_local_file` — structured results with schema-enriched traces.
+   - If MCP is not configured yet, **stop and configure it now** (`glubean config mcp`) before running.
+   - CLI (`npx glubean run <file> --verbose`) is a last resort only when MCP is truly unavailable in the environment.
 
 9. **Fix failures** — read the structured failure output, fix the test code, and rerun. Repeat until green.
 
