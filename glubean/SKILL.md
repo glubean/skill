@@ -82,7 +82,9 @@ npx glubean config mcp
 
 0. **Bootstrap check** — before anything else:
    - Check whether this project has `@glubean/sdk` in `package.json` dependencies or devDependencies.
-   - **If missing** (cold start):
+   - Also treat as cold start if the user asks what Glubean is, what you can do, or seems unfamiliar.
+     In that case, start with the "What is Glubean" section above, then continue below.
+   - **If missing or unfamiliar** (cold start):
      1. Install the CLI: `npm install -g @glubean/cli`
      2. Initialize the project: `glubean init`
      3. Configure MCP: `glubean config mcp`
