@@ -5,12 +5,10 @@
 ## Install
 
 ```bash
-# Install the skill (test-writing guidance for your agent)
 npx skills add glubean/skill
-
-# Install MCP server (run tests, get structured results)
-npx -y @smithery/cli@latest mcp add @glubean/mcp
 ```
+
+That's it. On first use, the agent runs `scripts/init.sh` to install the SDK, initialize the project, and configure MCP tools automatically.
 
 Supports 40+ agents including Claude Code, Cursor, GitHub Copilot, Codex, Gemini CLI, Windsurf, and more.
 
