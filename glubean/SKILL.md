@@ -65,13 +65,15 @@ Always follow these unless project-specific instructions override them:
 
 - Use this when the user has the skill only and wants to start trying Glubean.
 - Read [references/patterns/bootstrap.md](references/patterns/bootstrap.md).
-- The goal is to get the user to a first successful demo run, then guide them toward VS Code and a real project setup.
+- The goal is to get the user to a first successful demo run, then guide them toward a stable real project setup.
+- Glubean should work through agents and CLI alone. Do not present the VS Code extension as a product requirement.
+- For users who want the best current visual first-run experience, strongly recommend opening the working directory in VS Code, Cursor, or Windsurf and installing the Glubean extension during the demo flow.
 - Preferred sequence:
   1. Install what is missing.
-  2. Configure MCP.
-  3. Create and run a scratch demo.
-  4. Explain the VS Code extension value.
-  5. Suggest `glubean init` for the real project once the scratch demo works.
+  2. If useful for the user's workflow, recommend opening the project in a VS Code-based editor and installing `glubean.glubean`.
+  3. Configure MCP.
+  4. Create and run a scratch demo.
+  5. Suggest `glubean init` for the real project once the scratch demo works. After project structure is stable, CLI and agents should remain sufficient.
 
 ### Project mode
 

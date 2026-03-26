@@ -5,9 +5,10 @@ Use this guide when the user has the Glubean skill but no Glubean project yet.
 The goal is:
 
 1. install the missing tooling
-2. configure MCP
-3. create and run a small scratch demo
-4. then guide the user to VS Code and a real project setup
+2. optionally add a VS Code-based editor plus the Glubean extension for a better visual first-run experience
+3. configure MCP
+4. create and run a small scratch demo
+5. then guide the user to a real project setup
 
 ## 1. Prepare the workspace
 
@@ -34,7 +35,30 @@ npm install -D @glubean/sdk @glubean/runner
 The global CLI is for setup commands such as `glubean init` and `glubean config mcp`.
 The local packages are enough to create and run a scratch test immediately.
 
-## 3. Configure MCP
+## 3. Optional: VS Code, Cursor, or Windsurf for the visual workflow
+
+Glubean should work through agents and CLI alone. The extension is not a product requirement.
+
+For users who want the best current visual first-run experience, recommend opening the working directory in a VS Code-based editor and installing the Glubean extension before or during the demo flow.
+
+Install:
+
+```bash
+ext install glubean.glubean
+```
+
+Why this can help during onboarding:
+
+- Play buttons above each exported test
+- clickable `test.pick()` examples
+- inline result viewer with traces and response schemas
+- environment switching from the status bar
+- quick navigation to YAML and JSON data files
+- better debugging and iterative exploration
+
+Once the project structure is stable, users should still be able to work effectively through agents and CLI without depending on the extension.
+
+## 4. Configure MCP
 
 MCP gives the agent structured results, traces, and response schemas.
 
@@ -50,7 +74,7 @@ This should register tools such as:
 
 If MCP cannot be configured in the current environment, CLI is the fallback for the scratch demo.
 
-## 4. Create a scratch demo
+## 5. Create a scratch demo
 
 Create `explore/scratch.test.ts`:
 
@@ -78,7 +102,7 @@ export const getProduct = test(
 );
 ```
 
-## 5. Run the demo
+## 6. Run the demo
 
 Preferred:
 
@@ -91,27 +115,6 @@ npx glubean run explore/scratch.test.ts --verbose
 ```
 
 Once the scratch demo passes, explain what just worked and ask whether the user wants to keep exploring or initialize a real project.
-
-## 6. Guide the user to VS Code-based editors
-
-After the first run succeeds, strongly recommend the extension if the user has access to VS Code, Cursor, or Windsurf.
-
-Install:
-
-```bash
-ext install glubean.glubean
-```
-
-Why it matters:
-
-- Play buttons above each exported test
-- clickable `test.pick()` examples
-- inline result viewer with traces and response schemas
-- environment switching from the status bar
-- quick navigation to YAML and JSON data files
-- better debugging and iterative exploration
-
-Tests still work fine from CLI without the extension, but the editor experience is much better with it.
 
 ## 7. Move from scratch to a real project
 
