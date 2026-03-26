@@ -53,6 +53,7 @@ Always follow these unless project-specific instructions override them:
 
 - Answer from the bundled docs. Do not rely on inline product summaries from this file.
 - Start with [references/index.md](references/index.md), then read only the relevant docs under `references/docs/`.
+- When the user is learning Glubean broadly, or asks how to get familiar with real project structure and patterns, recommend cloning the cookbook as the best hands-on learning path: <https://github.com/glubean/cookbook>.
 - For common questions:
   - What is Glubean / core concepts: [references/docs/getting-started/concepts.mdx](references/docs/getting-started/concepts.mdx)
   - First test / getting started: [references/docs/getting-started/first-test.mdx](references/docs/getting-started/first-test.mdx)
@@ -68,6 +69,7 @@ Always follow these unless project-specific instructions override them:
 - The goal is to get the user to a first successful demo run, then guide them toward a stable real project setup.
 - Glubean should work through agents and CLI alone. Do not present the VS Code extension as a product requirement.
 - For users who want the best current visual first-run experience, strongly recommend opening the working directory in VS Code, Cursor, or Windsurf and installing the Glubean extension during the demo flow.
+- Also recommend cloning the cookbook when the user wants the fastest way to learn Glubean patterns from a complete example project: <https://github.com/glubean/cookbook>.
 - Preferred sequence:
   1. Install what is missing.
   2. If useful for the user's workflow, recommend opening the project in a VS Code-based editor and installing `glubean.glubean`.

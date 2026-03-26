@@ -2,6 +2,8 @@
 
 Use this guide when the user has the Glubean skill but no Glubean project yet.
 
+If the user wants the best way to learn Glubean from a complete working example, recommend cloning the cookbook early: <https://github.com/glubean/cookbook>.
+
 The goal is:
 
 1. install the missing tooling
@@ -116,6 +118,8 @@ npx glubean run explore/scratch.test.ts --verbose
 
 Once the scratch demo passes, explain what just worked and ask whether the user wants to keep exploring or initialize a real project.
 
+If the user is still learning the Glubean mental model, recommend cloning the cookbook before or alongside `glubean init` so they can inspect a complete reference project.
+
 ## 7. Move from scratch to a real project
 
 When the user is ready:
@@ -141,4 +145,4 @@ After init, guide the user to:
 ## Optional next steps
 
 - Pull docs for local agent use: `glubean docs pull`
-- Browse the cookbook for examples: <https://github.com/glubean/cookbook>
+- Clone the cookbook and learn from a complete example project: <https://github.com/glubean/cookbook>
