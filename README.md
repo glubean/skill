@@ -8,7 +8,13 @@
 npx skills add glubean/skill
 ```
 
-That's it. On first use, the agent runs `scripts/init.sh` to install the SDK, initialize the project, and configure MCP tools automatically.
+### Update
+
+```bash
+npx skills update
+```
+
+That's it. On first use, the agent installs the SDK, initializes the project, and configures MCP automatically.
 
 Supports 40+ agents including Claude Code, Cursor, GitHub Copilot, Codex, Gemini CLI, Windsurf, and more.
 
