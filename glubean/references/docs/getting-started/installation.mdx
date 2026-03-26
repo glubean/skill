@@ -1,0 +1,47 @@
+# Install & Verify
+
+Use this page when you want a working Node-based Glubean setup in a few minutes.
+
+## What you need
+
+- Node.js 20+
+- VS Code, Cursor, or another compatible editor
+
+## 1. Install the extension
+
+Install the Glubean extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Glubean.glubean) or the [VSIX releases](https://github.com/glubean/vscode/releases).
+
+After Node is available, the extension becomes the main local entry point for writing and running verification tests.
+
+## 2. Initialize a project
+
+Project init still uses the CLI, but you do not need a global install. Use `npx`:
+
+```bash
+npx @glubean/cli init
+```
+
+This scaffolds a Node project with `package.json`, test scripts, `tests/`, `explore/`, and env files.
+
+## 3. Verify the CLI entry
+
+If you want to verify the CLI explicitly:
+
+```bash
+npx @glubean/cli --help
+```
+
+## Optional: install the CLI globally
+
+If your team prefers a global binary:
+
+```bash
+npm install -g @glubean/cli
+```
+
+That gives you the `glubean` command on PATH (plus `gb` as a shorthand).
+
+## Next
+
+- [Run Your First Test](/getting-started/first-test)
+- [Extension Quick Start](/extension/quick-start)

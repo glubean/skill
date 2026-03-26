@@ -1,0 +1,72 @@
+# Glubean
+
+> 💬 **Don't want to read docs?** [Ask Glubean AI](https://chatgpt.com/g/g-699e31ce19bc8191b748165f46449039-glubean) — it knows everything on this site. Ask about setup, features, comparisons, or anything you can't find here.
+
+Write verification tests in TypeScript. Run them in your editor, in CI, and against production with the same code.
+
+Glubean is for teams that want API tests, workflow tests, traces, and run history without splitting work across five different tools.
+
+```typescript
+import { test } from "@glubean/sdk";
+
+export const health = test("health", async (ctx) => {
+  const baseUrl = ctx.vars.require("BASE_URL");
+  const res = await ctx.http.get(`${baseUrl}/health`);
+
+  ctx.expect(res.status).toBe(200);
+});
+```
+
+## Start here
+
+1. [VS Code Extension](/extension/quick-start)
+2. [Run your first test](/getting-started/first-test)
+3. [Connect CI](/getting-started/ci)
+4. [Upload runs to Cloud](/getting-started/upload-to-cloud)
+
+## From the blog
+
+- [Why I Replaced Postman with a TypeScript Workflow in VS Code](/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode)
+
+## Choose a path
+
+### I want to write tests
+
+- Start at [Write Tests](/sdk)
+- Then read [Test Shape](/sdk/test-api)
+- Keep [Assertions](/sdk/assertions) nearby
+
+### I want to run and debug locally
+
+- Start at [VS Code Extension](/extension)
+- Then use [Running Tests](/extension/running-tests)
+- Use the CLI through `npx @glubean/cli` when you need init or automation
+
+### I want team visibility over time
+
+- Start at [Use In Cloud](/cloud)
+- Set up [Upload Your First Run](/getting-started/upload-to-cloud)
+- Then read [Dashboard](/cloud/dashboard) and [Analytics](/cloud/analytics)
+
+### I want to migrate existing API assets
+
+- Use [Generate Tests with AI](/extension/generate-with-ai)
+- Or [Migrate from Postman / OpenAPI](/extension/migrate-from-postman)
+
+## How Glubean works
+
+```text
+write verification locally  ->  keep in git  ->  run in CI  ->  upload when useful
+```
+
+- The SDK is where you author tests.
+- The VS Code extension is the primary entry point.
+- The CLI is still needed for project init and automation, but you can invoke it with `npx @glubean/cli`.
+- Cloud stores uploaded runs, traces, metrics, and alerts. It does not execute your code.
+
+## Why teams adopt it
+
+- One codebase across local development, CI, and production verification
+- First-class traces and result files instead of raw terminal noise
+- `explore/` as your API collection (replaces Postman), `tests/` as your CI regression suite
+- Git-safe, reviewable, conflict-free — no proprietary cloud needed

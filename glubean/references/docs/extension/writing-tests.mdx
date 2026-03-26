@@ -1,0 +1,150 @@
+---
+title: Writing Tests
+description: Snippets, CodeLens buttons, data-driven patterns, and project structure.
+---
+
+# Writing Tests
+
+The extension provides in-editor tools that make writing tests faster: code snippets, CodeLens buttons, and full support for data-driven patterns.
+
+---
+
+## Snippets
+
+Type a prefix in any `.ts` or `.js` file and press Tab to expand.
+
+| Prefix | What it generates |
+|---|---|
+| `gb-scratch` / `gbs` | Complete scratch test (import + HTTP + assertions) |
+| `gb-t` / `gbt` | Simple test |
+| `gb-ti` / `gbti` | Simple test with import |
+| `gb-tm` / `gbtm` | Test with meta (tags, name) |
+| `gb-flow` / `gbf` | Builder multi-step flow |
+| `gb-each` / `gbe` | `test.each` inline data-driven |
+| `gb-each-csv` / `gbec` | `test.each` + `fromCsv` |
+| `gb-each-yaml` / `gbey` | `test.each` + `fromYaml` builder |
+| `gb-pick` / `gbp` | `test.pick` named examples |
+| `gb-pick-json` / `gbpj` | `test.pick` + JSON file |
+| `gb-pick-dir` / `gbpd` | `test.pick` + `fromDir.merge` |
+| `gb-config` / `gbc` | `configure()` shared config |
+| `gb-plugin` / `gbpl` | `definePlugin` + configure plugins |
+| `gb-i` / `gbi` | `import { test } from "@glubean/sdk"` |
+| `gb-id` / `gbid` | Import test + data loaders |
+| `gb-ic` / `gbic` | Import configure |
+| `gb-ip` / `gbip` | Import configure + definePlugin |
+| `gb-expect` / `gbx` | `ctx.expect(...).orFail()` assertion guard |
+| `gb-assert` / `gba` | `ctx.assert()` structured assertion |
+
+---
+
+## CodeLens: test.pick buttons
+
+When you use `test.pick()`, CodeLens buttons appear above the definition letting you run specific examples.
+
+- **5 or fewer examples** — each key appears as a separate button: `Run "normal"`, `Run "edge"`, etc.
+- **More than 5** — a single `Pick example... (N)` button opens a QuickPick list with multi-select. The list includes "Run All" at the top.
+- **Always available** — `Run (random)` runs without specifying a key, letting the SDK pick one.
+
+Keys are resolved from inline object literals, JSON file imports, or `fromDir.merge("./data/")` calls. If resolution fails, you still get the `Run (random)` button.
+
+---
+
+## CodeLens: Open data
+
+Data loader calls (`fromCsv()`, `fromYaml()`, `fromDir()`, JSON imports) show an **Open data** button above the call.
+
+- **Single file** — opens the data file in a bottom split, keeping focus on your test code.
+- **Directory** — shows `Open data (N files)` with the file count; clicking opens the first file.
+- **Invalid path** — shows a warning instead.
+
+The button auto-refreshes when files in `**/data/**` change.
+
+---
+
+## CodeLens: Results (N)
+
+Each test definition shows a `Results (N)` button with the count of saved history results. Click to open the latest result in the Result Viewer. If no results exist yet, clicking prompts you to run the test first.
+
+---
+
+## Data-driven patterns
+
+### test.each — array of cases
+
+Run the same test logic with different inputs. Each row appears as a child node in Test Explorer.
+
+```typescript
+export const statusCodes = test.each([
+  { id: 1,   expected: 200 },
+  { id: 999, expected: 404 },
+])("get-item-$id", async (ctx, { id, expected }) => {
+  const res = await ctx.http.get(`/items/${id}`);
+  ctx.expect(res.status).toBe(expected);
+});
+```
+
+Data can come from files too: `test.each(fromCsv("./data/items.csv"))`.
+
+### test.pick — named examples (key-value)
+
+**Why:** Separate test logic from test data. Write the verification once, let the team add cases by editing data files — no code changes needed. Each case gets its own CodeLens button so you can run and debug one at a time.
+
+```typescript
+const cases = await fromDir.merge<UserCase>("./data/users/");
+
+export const getUser = test.pick(cases)(
+  { id: "get-user-$_pick", name: "Get user: $_pick" },
+  async (ctx, { id, expected }) => {
+    const res = await ctx.http.get(`/users/${id}`);
+    ctx.expect(res.status).toBe(expected);
+  },
+);
+```
+
+Data files can be JSON or YAML (with comments). Each team member can add a `*.local.json` file with personal test cases that won't conflict with the shared baseline.
+
+For the full data-driven guide — including `fromDir.merge`, `fromCsv`, `fromYaml`, structured data patterns, and `.local.json` overrides — see [Data-Driven](/sdk/data-driven) and [Local Data](/sdk/local-data).
+
+---
+
+## test.extend aliases
+
+If your team creates custom test functions with `test.extend()`, the extension discovers them automatically:
+
+```typescript
+// config/browser-test.ts
+export const browserTest = test.extend({ /* plugins */ });
+
+// tests/login.test.ts
+export const login = browserTest("login", async (ctx) => { ... });
+```
+
+Tests defined with `browserTest` are discovered and appear in Test Explorer alongside regular tests.
+
+---
+
+## Project structure
+
+### explore/ vs tests/
+
+| Directory | Purpose | CI behavior |
+|---|---|---|
+| `explore/` | Quick experiments, AI-generated drafts, bug reproduction | Requires `--explore` flag or explicit path |
+| `tests/` | Committed regression suite | Default `glubean run` target |
+
+Test Explorer groups them separately: **Explore** and **Tests**.
+
+When a test is stable, move it from `explore/` to `tests/`. That is the only change needed — the same file runs in CI with `glubean run tests/`.
+
+### config/ and data/
+
+- `config/` — shared `configure.ts` for base URL, auth, plugins
+- `data/` — JSON, YAML, CSV files for data-driven tests
+
+---
+
+## What's next?
+
+- [Running Tests](/extension/running-tests) — All the ways to execute tests
+- [Result Viewer](/extension/result-viewer) — Inspect traces, assertions, and events
+- [Generate Tests with AI](/extension/generate-with-ai) — Let AI write the first draft

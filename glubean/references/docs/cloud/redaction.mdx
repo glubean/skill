@@ -1,0 +1,124 @@
+# Cloud Redaction Policies
+
+Glubean redacts sensitive data before results leave your machine. The CLI applies redaction rules from your project config during upload. See [CLI Redaction](/cli/redaction) for the local rules.
+
+Cloud adds a team-facing control surface on top of that local behavior.
+
+## Recommended workflow
+
+```text
+1. Configure rules        2. Export config         3. Use locally
+┌─────────────────┐      ┌──────────────────┐     ┌──────────────────┐
+│ Cloud dashboard │ ───► │ Copy as JSON     │ ──► │ Paste into       │
+│ (visual editor) │      │                  │     │ glubean.json     │
+└─────────────────┘      └──────────────────┘     └──────────────────┘
+```
+
+1. Use the Cloud dashboard's visual editor to build your redaction rules (easier than writing JSON by hand).
+2. Export the config as JSON.
+3. Paste into your project's `glubean.json` under `glubean.redaction`.
+
+The CLI applies these rules **locally before upload** — sensitive data never leaves your machine.
+
+## Configuring rules in Cloud
+
+Go to **Team → Redaction** in the Cloud dashboard.
+
+### Scopes
+
+Scopes control which data areas are scanned for sensitive values. Each scope targets a specific field in a specific event type.
+
+**HTTP scopes:**
+
+| Scope | What it covers |
+|---|---|
+| HTTP Request Headers | Authorization, cookies, API keys |
+| HTTP Request Query | URL query parameters |
+| HTTP Request Body | POST/PUT/PATCH body content |
+| HTTP Response Headers | Set-Cookie headers |
+| HTTP Response Body | Response body content |
+
+**General scopes:**
+
+| Scope | What it covers |
+|---|---|
+| Log Messages | `ctx.log()` message strings |
+| Log Data | `ctx.log()` data objects |
+| Error Messages | Test failure messages |
+| Error Stack Traces | Stack traces |
+| Assertion Messages | Assertion failure text |
+| Assertion Values | Actual/expected values |
+| Warning Messages | Warning text |
+| Step Return State | Step return values |
+
+Each scope can be individually enabled or disabled. Disabled scopes skip redaction entirely for that field.
+
+Plugins like `@glubean/grpc` add their own scopes (gRPC metadata, request, response) automatically.
+
+### Global Sensitive Keys
+
+Add additional keys that should be treated as sensitive across **all** scopes. These are additive — built-in scope-specific keys (like `authorization` in request headers, `password` in request bodies) are always active.
+
+### Value Patterns
+
+Built-in patterns detect common secret formats in string values:
+
+| Pattern | Example | Default |
+|---|---|---|
+| JWT Tokens | `eyJhbGci...` | On |
+| Bearer Tokens | `Bearer sk-...` | On |
+| AWS Keys | `AKIA...` | On |
+| GitHub Tokens | `ghp_...`, `gho_...` | On |
+| Credit Cards | 16-digit numbers | On |
+| Email Addresses | `user@example.com` | Off |
+| IP Addresses | `192.168.1.1` | Off |
+| Hex Keys | 32+ char hex strings | Off |
+
+Toggle each pattern on/off. You can also add **custom regex patterns** with a name and regex.
+
+### Replacement Format
+
+Choose how redacted values appear:
+
+| Format | Example |
+|---|---|
+| **Simple** | `[REDACTED]` |
+| **Labeled** | `[REDACTED:jwt]` — includes which rule matched |
+| **Partial** | `sk_li***_4xN` — preserves prefix/suffix hints for debugging (default) |
+
+## Local Config Format
+
+The CLI reads redaction rules from `glubean.json` or `package.json`:
+
+```json
+{
+  "glubean": {
+    "redaction": {
+      "sensitiveKeys": ["x-custom-secret", "internal-token"],
+      "customPatterns": [
+        { "name": "stripe_key", "regex": "sk_live_\\w+" },
+        { "name": "internal_id", "regex": "int_[a-f0-9]{32}" }
+      ],
+      "replacementFormat": "labeled"
+    }
+  }
+}
+```
+
+The built-in baseline (scope-specific sensitive keys + 5 default patterns) is always active and **cannot be weakened**. Your config can only add rules on top.
+
+## Preview before uploading
+
+Use `glubean redact` to see exactly what will be masked without uploading:
+
+```bash
+glubean redact .glubean/last-run.result.json
+```
+
+This uses partial masking in the console so you can verify which values are caught. See [CLI Redaction](/cli/redaction) for details.
+
+## Server-side redaction
+
+Cloud applies baseline redaction **server-side** at ingestion time as a safety net. Even if the CLI skips or misconfigures redaction, the server will catch common secrets before persisting events.
+
+For CLI uploads, redaction happens locally first. Server-side redaction is idempotent — already-redacted values pass through unchanged.

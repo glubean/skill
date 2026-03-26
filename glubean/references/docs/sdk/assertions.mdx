@@ -1,0 +1,105 @@
+# Assertions
+
+Glubean gives you four verification tools with different failure behavior.
+
+## `ctx.expect`
+
+Soft assertion by default. Several failures can be collected in one run without stopping execution.
+
+```typescript
+ctx.expect(body.role).toBe("admin");
+ctx.expect(body.features).toContain("beta-access");
+```
+
+If a particular expectation should stop execution immediately, chain `.orFail()`:
+
+```typescript
+ctx.expect(res.status).toBe(200).orFail();
+```
+
+### Available matchers
+
+```typescript
+// Equality
+ctx.expect(x).toBe(y);
+ctx.expect(x).toEqual(y);
+
+// Truthiness
+ctx.expect(x).toBeTruthy();
+ctx.expect(x).toBeFalsy();
+ctx.expect(x).toBeNull();
+ctx.expect(x).toBeUndefined();
+ctx.expect(x).toBeDefined();
+
+// Numeric
+ctx.expect(n).toBeGreaterThan(5);
+ctx.expect(n).toBeGreaterThanOrEqual(5);
+ctx.expect(n).toBeLessThan(10);
+ctx.expect(n).toBeLessThanOrEqual(10);
+ctx.expect(n).toBeWithin(1, 10);
+
+// Strings & collections
+ctx.expect(s).toContain("sub");
+ctx.expect(s).toMatch(/regex/);
+ctx.expect(s).toStartWith("pre");
+ctx.expect(s).toEndWith("suf");
+ctx.expect(arr).toHaveLength(3);
+
+// Objects
+ctx.expect(obj).toMatchObject({ key: "val" });
+ctx.expect(obj).toHaveProperty("path.to.key", expectedValue);
+ctx.expect(obj).toHaveProperties(["a", "b"]);
+
+// HTTP responses
+ctx.expect(res).toHaveStatus(200);
+await ctx.expect(res).toHaveJsonBody({ key: "val" });
+ctx.expect(res).toHaveHeader("content-type", /json/);
+
+// Modifiers
+ctx.expect(x).not.toBe(y);
+ctx.expect(x).toSatisfy(v => v > 0);
+ctx.expect(x).toBeType("string");
+```
+
+## `ctx.assert`
+
+Hard assertion. Stops execution immediately on failure.
+
+```typescript
+ctx.assert(res.ok, "Request should succeed");
+ctx.assert(body.id > 0, "User ID should be positive", {
+  actual: body.id,
+  expected: "> 0",
+});
+```
+
+## `ctx.validate`
+
+Schema validation using Zod, Valibot, ArkType, or other parse-style validators.
+
+```typescript
+import { z } from "zod";
+
+const UserSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string().email(),
+});
+
+ctx.validate(responseBody, UserSchema, "user response");
+```
+
+## `ctx.warn`
+
+Non-failing tests for budgets and best-practice monitoring:
+
+```typescript
+ctx.warn(durationMs < 500, "Response should stay under 500ms");
+```
+
+Warnings are visible in the Result Viewer and Cloud dashboard without failing the run.
+
+## Next
+
+- [HTTP Requests](/sdk/http-client)
+- [Control Flow](/sdk/test-control)

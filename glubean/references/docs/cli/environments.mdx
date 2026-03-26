@@ -1,0 +1,78 @@
+# Environments & Secrets
+
+glubean splits environment data into two files by design: public vars and private secrets.
+
+## File model
+
+```text
+.env                    # Public vars — committed to git
+.env.secrets            # Credentials — gitignored
+.env.staging            # Staging vars — committed
+.env.staging.secrets    # Staging credentials — gitignored
+```
+
+Add `*.secrets` to `.gitignore`.
+
+## Why two files
+
+| | `.env` (vars) | `.env.secrets` (secrets) |
+|---|---|---|
+| **API** | `ctx.vars.require("KEY")` | `ctx.secrets.require("KEY")` |
+| **Git** | Committed — shared baseline | Gitignored — never in repo |
+| **Cloud upload** | Visible in dashboard | Auto-redacted |
+
+The SDK APIs are separate. `vars` never reads `.env.secrets`. `secrets` never reads `.env`.
+
+## Reading values in tests
+
+```typescript
+const baseUrl = ctx.vars.require("BASE_URL");     // from .env
+const token = ctx.secrets.require("API_TOKEN");    // from .env.secrets
+```
+
+### Template resolution in configure()
+
+`{{KEY}}` in `configure()` searches secrets first, then vars:
+
+```typescript
+export const api = configure({
+  http: {
+    prefixUrl: "{{BASE_URL}}",
+    headers: {
+      Authorization: "Bearer {{API_TOKEN}}",
+    },
+  },
+});
+```
+
+## Lookup order
+
+Each key resolves file-first, then falls back to the system environment:
+
+- `ctx.vars.*("KEY")` — `.env` file, then `process.env.KEY`
+- `ctx.secrets.*("KEY")` — `.env.secrets` file, then `process.env.KEY`
+
+If your shell variable names differ from test names, map them with `${...}`:
+
+```dotenv
+# .env
+BASE_URL=${GLUBEAN_URL}
+
+# .env.secrets
+API_KEY=${GLUBEAN_API_KEY}
+```
+
+## Switching environments
+
+```bash
+glubean run                              # Uses .env (default)
+glubean run --env-file .env.staging      # Uses .env.staging + .env.staging.secrets
+glubean run --env-file .env.prod         # Uses .env.prod + .env.prod.secrets
+```
+
+The CLI automatically pairs each env file with its matching `.secrets` file.
+
+## Next
+
+- [SDK: Variables & Secrets](/sdk/env-and-secrets)
+- [Extension: Environments](/extension/environments)

@@ -1,0 +1,78 @@
+# Glubean for QA Teams
+
+You don't need to write code. AI writes the tests. You use the Glubean Panel to run them every day.
+
+Glubean works like a code-based tool, but QA engineers interact with it through the VS Code UI and AI chat — not by writing TypeScript from scratch.
+
+---
+
+## Your daily workflow
+
+1. **Open VS Code** — your project is already set up (a developer or AI did that once).
+2. **Open the Glubean Panel** — pinned tests are waiting for you. Click **▶** on any test or run the full suite.
+3. **Read the Result Viewer** — the Assertions tab tells you what passed and what failed. Expected vs actual, side by side.
+4. **Something failed?** Ask AI: _"/glubean why did this test fail?"_ — it reads the structured failure, explains the cause in plain language, and offers a fix.
+5. **AI fixes the test** — or tells you the API itself is broken. Either way, you have your answer in seconds.
+
+That's it. Open, run, read, ask. Repeat.
+
+---
+
+## Pin the tests you care about
+
+Not every test in the project matters to you daily. Pin the ones that do:
+
+- Click the **$(pin) Pin** button above any test in the editor.
+- The test appears in the Glubean Panel sidebar under **Pinned Tests**.
+- Tomorrow, open the panel and click **▶**. No file hunting.
+
+Think of it as a bookmark bar for your test suite.
+
+---
+
+## Reading the Result Viewer
+
+The Result Viewer opens automatically after every run. Focus on these tabs:
+
+- **Assertions tab** — the most important tab for QA. Shows each assertion with expected and actual values. Green = pass, red = fail. Start here.
+- **Trace tab** — shows every HTTP request and response. Useful when you need to check what the API actually returned.
+- **Events tab** — the full event stream. Useful for debugging complex flows.
+
+You don't need to understand the test code to read these results. They show you what the test checked and whether reality matched expectations.
+
+---
+
+## Working with AI
+
+AI is your pair — not a replacement for your judgment. You know the business logic. AI knows the syntax.
+
+Useful prompts:
+
+- _"/glubean write a smoke test for the users API"_ — AI creates the test file.
+- _"/glubean why did this fail?"_ — AI reads the structured result and explains.
+- _"/glubean add a test for the 404 case"_ — AI adds a boundary test to an existing file.
+- _"/glubean this API should return `active` users only, but it's returning all of them"_ — AI writes an assertion for exactly that.
+
+You describe what should happen. AI writes the verification.
+
+---
+
+## What you need to understand
+
+You don't need to learn TypeScript. But you do need to know:
+
+- **What the API should return** — "this endpoint returns a list of active users" is enough for AI to write the right assertion.
+- **What changed** — when a test fails, was the API updated? Did a requirement change? That judgment is yours.
+- **When to escalate** — if AI can't fix it, the API has a real bug. File it.
+
+Your domain knowledge is the most important input. The code is just how it gets expressed.
+
+---
+
+## How this compares to traditional QA tools
+
+Glubean is not Selenium. There's no record-and-playback. No fragile element selectors. No flaky browser sessions.
+
+Instead: tests are code, stored in git, reviewed in PRs, run in CI. AI writes them, you verify they check the right things. When the API changes, AI updates the tests — or flags the change as a potential bug.
+
+The result is verification that stays current with the product, not a test suite that rots after the first sprint.

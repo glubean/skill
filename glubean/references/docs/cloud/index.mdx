@@ -1,0 +1,29 @@
+# Use In Cloud
+
+Cloud is where Glubean becomes shared and historical.
+
+Your tests still run on your laptop or CI runner. Cloud stores uploaded runs, traces, metrics, and alerts. It does not execute your code.
+
+## What you get after `--upload`
+
+- a run timeline your team can inspect
+- a dashboard for the latest pass or fail state
+- analytics for pass rate, latency, and flakiness
+- notifications when important runs fail
+- centralized redaction and retention controls
+
+## Start with these pages
+
+1. [Upload Your First Run](/getting-started/upload-to-cloud)
+2. [Tokens](/cloud/tokens)
+3. [Dashboard](/cloud/dashboard)
+4. [Analytics](/cloud/analytics)
+5. [Notifications](/cloud/notifications)
+
+## One key mental model
+
+```text
+run locally or in CI  ->  add --upload  ->  inspect the run in Cloud
+```
+
+A run is one execution of `glubean run --upload`, regardless of how many tests it contains.

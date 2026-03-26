@@ -1,0 +1,95 @@
+# Usage Scenarios
+
+Commands organized by what you are trying to do. For the full option list, run `glubean -h` or `glubean <command> -h`.
+
+## Daily development
+
+```bash
+glubean run                              # Run tests/ directory
+glubean run --explore                    # Run explore/ directory
+glubean run tests/users.test.ts          # Run a single file
+glubean run --filter "create-user"       # Filter by test ID or name
+glubean run --tag smoke                  # Filter by tag
+glubean run --tag smoke --tag auth --tag-mode and   # Require all tags
+glubean run --pick edge,invalid          # Run specific test.pick() examples
+glubean run --verbose                    # Show HTTP traces in console
+```
+
+## Project setup
+
+```bash
+glubean init                             # Interactive wizard
+glubean init --minimal                   # Minimal template (explore only)
+glubean init --hooks --github-actions    # With git hooks and CI workflow
+```
+
+## AI tool integration
+
+```bash
+glubean config mcp --target claude-code  # Configure MCP server
+glubean config skill --target claude-code # Install test-writing skill
+glubean docs pull                        # Download SDK docs for AI agents
+```
+
+## CI / CD
+
+```bash
+glubean run tests/ --ci                  # Enables --fail-fast + junit reporter
+glubean run tests/ --result-json results.json --reporter junit:results.xml
+glubean run tests/ --upload              # Run and upload to glubean Cloud
+```
+
+## Metadata and sync
+
+```bash
+glubean scan                             # Generate metadata.json
+glubean validate-metadata                # Check metadata is in sync (CI gate)
+glubean sync -p <project-id>             # Sync test bundle to Cloud
+```
+
+## OpenAPI tools
+
+```bash
+glubean patch openapi.yaml               # Apply .patch.yaml overlay
+glubean spec split openapi.yaml          # Split spec into per-endpoint files
+```
+
+## Cloud authentication
+
+```bash
+glubean login                            # Interactive login
+glubean login --token <token>            # Non-interactive
+```
+
+## Configuration
+
+glubean reads config from `package.json` (under the `"glubean"` key) or from a standalone JSON file passed with `--config`.
+
+```json
+{
+  "glubean": {
+    "run": {
+      "testDir": "./tests",
+      "exploreDir": "./explore",
+      "envFile": ".env",
+      "failFast": false,
+      "perTestTimeoutMs": 30000,
+      "concurrency": 1
+    },
+    "redaction": {
+      "sensitiveKeys": ["x-internal-token"],
+      "customPatterns": [
+        { "name": "stripe-key", "regex": "sk_live_[a-zA-Z0-9]{24,}" }
+      ]
+    }
+  }
+}
+```
+
+Multiple config files merge left-to-right:
+
+```bash
+glubean run --config base.json,staging.json
+```
+
+Run `glubean -h` or `glubean <command> -h` for the full option list.

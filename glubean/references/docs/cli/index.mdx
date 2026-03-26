@@ -1,0 +1,45 @@
+# CLI
+
+The glubean CLI runs API verifications from the terminal. Use it for local development, CI pipelines, and team workflows.
+
+## Install
+
+```bash
+# Global install
+npm install -g @glubean/cli
+
+# Or run without installing
+npx @glubean/cli <command>
+
+# Or add to your project
+npm install -D @glubean/cli
+```
+
+## Quick start
+
+```bash
+# Scaffold a new project
+glubean init
+
+# Run all tests
+glubean run
+
+# Run a single file
+glubean run tests/users.test.ts
+```
+
+## Get help
+
+```bash
+glubean -h              # All commands
+glubean run -h          # Options for a specific command
+```
+
+## Pages in this section
+
+- [Usage Scenarios](/cli/reference) — common commands organized by workflow
+- [Environments & Secrets](/cli/environments) — env files, secrets, switching environments
+- [Debugging](/cli/debugging) — narrowing failures and inspecting output
+- [Common Recipes](/cli/recipes) — copy-paste patterns for CI, tags, and more
+- [Redaction & Privacy](/cli/redaction) — how sensitive data is masked before upload
+- [Result Files](/cli/result-files) — .result.json format and artifacts

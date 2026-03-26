@@ -1,0 +1,108 @@
+# Test Shape
+
+Use `test()` for simple tests and the builder API for multi-step flows.
+
+## Simple test
+
+This is the default shape for one request or one short assertion path:
+
+```typescript
+import { test } from "@glubean/sdk";
+
+export const login = test("login", async (ctx) => {
+  const res = await ctx.http.post(`${ctx.vars.require("BASE_URL")}/login`, {
+    json: { username: "demo", password: "demo" },
+  });
+
+  ctx.expect(res.status).toBe(200);
+});
+```
+
+## Multi-step flow
+
+Use the builder API when steps depend on shared state or when cleanup matters:
+
+```typescript
+type CheckoutState = {
+  baseUrl: string;
+  cartId: string;
+};
+
+export const checkout = test<CheckoutState>("checkout-flow")
+  .meta({ tags: ["e2e", "critical"] })
+  .setup(async (ctx) => {
+    const baseUrl = ctx.vars.require("BASE_URL");
+    const cart = await ctx.http.post(`${baseUrl}/carts`).json<{ id: string }>();
+    return { baseUrl, cartId: cart.id };
+  })
+  .step("add item", async (ctx, state) => {
+    await ctx.http.post(`${state.baseUrl}/carts/${state.cartId}/items`, {
+      json: { productId: "product-123" },
+    });
+    return state;
+  })
+  .teardown(async (ctx, state) => {
+    await ctx.http.delete(`${state.baseUrl}/carts/${state.cartId}`);
+  });
+```
+
+The `.build()` call is optional. The builder auto-finalizes via microtask after all synchronous chaining completes.
+
+## Metadata
+
+Use metadata when the test needs tags, a clearer name, or a custom timeout:
+
+```typescript
+export const health = test({
+  id: "health",
+  name: "API health",
+  tags: ["smoke"],
+  timeout: 10000,
+}, async (ctx) => {
+  ctx.expect((await ctx.http.get("/health")).status).toBe(200);
+});
+```
+
+## Reusable step sequences
+
+Use `.use()` to apply reusable builder transforms, and `.group()` to visually group steps in reports:
+
+```typescript
+import { test, type TestBuilder } from "@glubean/sdk";
+
+// TestBuilder<T> generic = accumulated state from previous steps (input constraint)
+// unknown = no dependency on prior state; use { token: string } if this transform needs a token
+const withAuth = (b: TestBuilder<unknown>) => b
+  .step("login", async (ctx) => {
+    const data = await ctx.http.post("/login", { json: creds }).json<{ token: string }>();
+    return { token: data.token };
+  });
+
+export const testA = test("test-a").use(withAuth).step("act", async (ctx, { token }) => { /* ... */ });
+export const testB = test("test-b").group("auth", withAuth).step("verify", async (ctx, { token }) => { /* ... */ });
+```
+
+## Focus and skip
+
+```typescript
+export const onlyThis = test.only("only-this", async (ctx) => {
+  // Only this test runs (local debugging)
+});
+
+export const skipThis = test.skip("skip-this", async (ctx) => {
+  // This test is excluded
+});
+```
+
+Builder mode also supports `.only()` and `.skip()`:
+
+```typescript
+export const focused = test("focused").only().step("do it", async (ctx) => { /* ... */ });
+```
+
+## Next
+
+- [HTTP Requests](/sdk/http-client)
+- [Assertions](/sdk/assertions)
+- [Data-Driven](/sdk/data-driven)
+- [Control Flow](/sdk/test-control)

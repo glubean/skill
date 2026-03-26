@@ -1,0 +1,48 @@
+# Notifications
+
+Notifications let teams react to important run events without living in the dashboard.
+
+Each notification rule combines:
+
+- events
+- a delivery channel
+- optional filters
+
+## Events
+
+| Event | Description |
+|---|---|
+| `run.failed` | A run finishes with at least one test failure |
+| `run.passed` | A run finishes with all tests passing |
+| `run.flaky` | A run contains tests flagged as flaky |
+| `build.failed` | A bundle build fails |
+| `quota.exceeded` | Monthly run quota is exhausted |
+| `daily.digest` | Summary of the day's runs |
+| `worker.offline` | A connected worker stops responding |
+| `worker.back_online` | A previously offline worker recovers |
+
+## Levels
+
+- **Team-wide** for all projects in a team
+- **Project-level** for one project only
+
+## Channels
+
+- **Email**
+- **Slack**
+- **Discord**
+- **Webhook**
+
+## Useful filters
+
+- branches
+- tags
+- severity
+- minimum failure count
+
+## A practical setup
+
+1. Send `run.failed` to Slack for the default branch
+2. Keep a quieter daily digest by email
+3. Exclude exploratory branches from paging rules
+4. Use **Send test notification** before trusting the rule

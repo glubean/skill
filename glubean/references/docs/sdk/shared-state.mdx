@@ -1,0 +1,148 @@
+# Shared State
+
+Glubean provides two scopes for sharing state between tests: **module scope** (within a file) and **session scope** (across files).
+
+Session scope is **per run**. It exists only for a single `glubean run` execution and is not persisted across runs.
+
+## Module scope — within a file
+
+Tests in the same file run sequentially in a single process. Module-level variables persist between tests:
+
+```ts
+import { test } from "@glubean/sdk";
+
+let authToken: string;
+
+export const login = test("login", async (ctx) => {
+  const res = await ctx.http.post("/auth/login", {
+    json: { user: ctx.vars.require("USER"), pass: ctx.secrets.require("PASS") },
+  });
+  const body = await res.json();
+  authToken = body.access_token;
+  ctx.assert(!!authToken, "should receive token");
+});
+
+export const getProfile = test("get-profile", async (ctx) => {
+  // authToken is available — same process, same module
+  const res = await ctx.http.get("/me", {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  ctx.expect(res).toHaveStatus(200);
+});
+```
+
+Use module scope when:
+
+- Tests in the same file share setup (login, seed data, etc.)
+- You want ordered execution with shared context
+- The shared value doesn't need to cross file boundaries
+
+## Session scope — across files
+
+When you need to share state across multiple test files (e.g., authenticate once, use the token everywhere), use session scope.
+
+### 1. Create session.ts
+
+Place a `session.ts` file at your test root. The runner auto-discovers it:
+
+```ts
+// session.ts
+import { defineSession } from "@glubean/sdk";
+
+export default defineSession({
+  async setup(ctx) {
+    const res = await ctx.http.post("/auth/login", {
+      json: {
+        user: ctx.vars.require("TEST_USER"),
+        pass: ctx.secrets.require("TEST_PASS"),
+      },
+    });
+    const { access_token, user_id } = await res.json();
+
+    ctx.session.set("token", access_token);
+    ctx.session.set("userId", user_id);
+    ctx.log("Authenticated as user " + user_id);
+  },
+
+  async teardown(ctx) {
+    const token = ctx.session.get("token");
+    if (token) {
+      await ctx.http.post("/auth/logout", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+  },
+});
+```
+
+### 2. Read session values in tests
+
+Any test file can read session values via `ctx.session`:
+
+```ts
+// tests/users.test.ts
+import { test } from "@glubean/sdk";
+
+export const listUsers = test("list-users", async (ctx) => {
+  const token = ctx.session.require("token"); // throws if missing
+  const res = await ctx.http.get("/users", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  ctx.expect(res).toHaveStatus(200);
+});
+```
+
+### 3. Session lifecycle
+
+```
+glubean run tests/
+  |
+  +- 1. Discover session.ts
+  |
+  +- 2. Run setup()
+  |     Sets token, userId
+  |
+  +- 3. Run test files (sequential)
+  |     users.test.ts   -> reads token
+  |     orders.test.ts  -> reads token, userId; writes orderId
+  |     billing.test.ts -> reads orderId
+  |
+  +- 4. Run teardown()
+  |     Logs out
+  |
+  Done
+```
+
+## Session API
+
+| Method | Returns | Behavior |
+|--------|---------|----------|
+| `ctx.session.get(key)` | `T \| undefined` | Returns value if present |
+| `ctx.session.require(key)` | `T` | Returns value or throws |
+| `ctx.session.set(key, value)` | `void` | Sets JSON-serializable value |
+| `ctx.session.entries()` | `Record<string, unknown>` | Returns all key-value pairs |
+
+## File discovery
+
+The runner looks for `session.ts` or `session.setup.ts` starting from your test directory and walking up toward the project root. Running a single file still walks up to find the nearest `session.ts`.
+
+Use `--no-session` to skip session setup/teardown:
+
+```bash
+glubean run tests/users.test.ts --no-session
+```
+
+## When to use which
+
+| Need | Use |
+|------|-----|
+| Share state within one file | Module-level `let` variables |
+| Share state across files | `session.ts` + `ctx.session` |
+| Share config (baseUrl, headers) | `configure()` in a shared config file |
+| Share secrets | `.env.secrets` + `ctx.secrets` |
+
+## Current limitations
+
+- **Sequential mode only.** Session state propagates file-to-file in discovery order.
+- **JSON-serializable values only.** Strings, numbers, booleans, arrays, plain objects.
+- **No parallel guarantees.** Cross-file session writes require sequential execution.

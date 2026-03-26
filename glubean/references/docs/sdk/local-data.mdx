@@ -1,0 +1,64 @@
+# Local Data
+
+Use this page when teammates need personal test data without merge conflicts.
+
+## The two recommended patterns
+
+| What changes locally | Mechanism |
+| --- | --- |
+| Scalar config like URLs, IDs, flags | `.env.local` and `.env.local.secrets` |
+| Structured request bodies or example rows | `*.local.json` next to shared data files |
+
+## Local env files
+
+Keep the team baseline committed and personal overrides gitignored:
+
+```text
+.env                  # committed — team defaults
+.env.secrets          # gitignored — team credentials
+.env.local            # gitignored — personal overrides
+.env.local.secrets    # gitignored — personal credentials
+```
+
+Switch to personal env files locally with:
+
+```bash
+glubean run --env-file .env.local
+```
+
+## Local JSON data
+
+For structured examples, keep shared and personal files in the same directory:
+
+```text
+data/create-user/
+  shared.json
+  alice.local.json
+```
+
+With `fromDir.merge()`, local keys override shared keys. With `fromDir()` or `fromDir.concat()`, local rows are appended.
+
+## Data mode
+
+`GLUBEAN_DATA_MODE` controls which data files are loaded:
+
+| Mode | Behavior |
+|------|----------|
+| _(default)_ | Load all files (shared + local) |
+| `local_only` | Only `*.local.*` files (skip shared) |
+| `shared_only` | Only shared files (skip `*.local.*` — use for CI) |
+
+```bash
+# Only my data
+GLUBEAN_DATA_MODE=local_only glubean run
+
+# Only shared (CI)
+GLUBEAN_DATA_MODE=shared_only glubean run
+```
+
+No test code changes needed. The same `fromDir.*` call reads both shared and local files automatically. `GLUBEAN_DATA_MODE` controls the mix.
+
+## Next
+
+- [Data-Driven](/sdk/data-driven)
+- [CLI Environments & Secrets](/cli/environments)

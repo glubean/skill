@@ -1,0 +1,77 @@
+# Logs, Traces, Metrics
+
+Use these APIs when a pass or fail result alone does not explain enough.
+
+## `ctx.log()`
+
+Use structured logs for useful context that should travel with the run.
+
+```typescript
+export const orderTest = test("order-test", async (ctx) => {
+  const orderId = "ord_123xyz";
+
+  ctx.log("Starting order processing", {
+    orderId,
+    items: 4,
+    userId: "usr_abc",
+  });
+});
+```
+
+Logs appear in the Result Viewer timeline and are uploaded to Cloud with the run.
+
+## `ctx.metric()`
+
+Use metrics for values you want to chart over time.
+
+```typescript
+export const reportTest = test("report-test", async (ctx) => {
+  const start = Date.now();
+  const res = await ctx.http.get("/reports/daily").json();
+  const duration = Date.now() - start;
+
+  ctx.metric("report_generation_ms", duration, {
+    unit: "ms",
+    tags: { reportType: "daily", environment: ctx.vars.get("ENV") },
+  });
+
+  ctx.metric("report_row_count", res.rows.length, {
+    unit: "count",
+  });
+});
+```
+
+## `ctx.trace()`
+
+Most HTTP traces are created automatically by `ctx.http`. If you use a custom client, you can emit traces manually.
+
+```typescript
+export const customClientTest = test("custom-client", async (ctx) => {
+  const start = Date.now();
+  const result = await proprietarySdk.getUser(123);
+
+  ctx.trace({
+    method: "RPC",
+    url: "grpc://internal.service/getUser",
+    status: 200,
+    duration: Date.now() - start,
+    responseBody: result,
+  });
+});
+```
+
+## `ctx.getMemoryUsage()`
+
+Use this when a heavy test may be leaking memory or processing large payloads.
+
+## Result output
+
+All events (logs, metrics, traces, assertions) are written to `.result.json` files after each run. These files are consumed by:
+
+- **Result Viewer** (VS Code extension) — visual timeline of all events
+- **Cloud dashboard** — uploaded via `glubean run --upload`
+
+## Next
+
+- [Use In Cloud](/cloud)
+- [VS Code Extension](/extension)

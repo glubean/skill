@@ -1,0 +1,129 @@
+---
+title: Environments & Secrets
+description: Switch environments, preview variables on hover, and manage secrets safely.
+---
+
+# Environments & Secrets
+
+Glubean separates public configuration from sensitive credentials **at the SDK level** — not by convention, by design. `vars` and `secrets` are two different APIs with two different storage files. This makes it impossible to accidentally commit a secret or mix up which values are sensitive.
+
+This is different from most tools where all environment variables live in one place and security depends on discipline.
+
+For the canonical rules (file model, resolution order), see [CLI Environments & Secrets](/cli/environments).
+
+---
+
+## The separation model
+
+| | `.env` (vars) | `.env.secrets` (secrets) |
+|---|---|---|
+| **API** | `ctx.vars.require("KEY")` | `ctx.secrets.require("KEY")` |
+| **Git** | Committed | Gitignored |
+| **Content** | URLs, flags, public IDs | API keys, tokens, passwords |
+| **Hover preview** | Full value shown | Masked (`sk-l****en`) |
+| **Cloud upload** | Visible in dashboard | Redacted by builtin rules (key-name matching) |
+
+## Environment files
+
+- `.env` — default public variables
+- `.env.staging`, `.env.prod`, etc. — named environments
+- `.env.secrets` — sensitive values for the default environment
+- `.env.staging.secrets` — sensitive values for the staging environment
+
+`.env.secrets` files should be added to `.gitignore`.
+
+---
+
+## Switching environments
+
+The active environment is shown in the status bar:
+
+```
+$(server-environment) env: default
+```
+
+Click it (or run `Glubean: Select Environment` from the Command Palette) to open the environment picker. All subsequent test runs use the selected `.env` file.
+
+### Display names
+
+| File | Shown as |
+|---|---|
+| `.env` | default |
+| `.env.staging` | staging |
+| `.env.prod` | prod |
+
+### Excluded files
+
+These files never appear in the picker:
+
+- `.env.secrets` (and any `*.secrets` variant)
+- `.env.local`
+- `.env.example`
+
+The selection persists across VS Code restarts (stored in workspace state).
+
+---
+
+## Accessing variables in tests
+
+```typescript
+export const getUser = test("get-user", async (ctx) => {
+  const baseUrl = ctx.vars.require("BASE_URL");
+  const token = ctx.secrets.require("API_TOKEN");
+
+  const res = await ctx.http.get(`${baseUrl}/users/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+});
+```
+
+For full API details (`get` vs `require`, validation), see [SDK Environment & Secrets](/sdk/env-and-secrets).
+
+---
+
+## Template resolution in configure()
+
+When you use `{{KEY}}` templates in `configure()` HTTP options (headers, prefixUrl), the resolution searches **secrets first, then vars**:
+
+```typescript
+export const api = configure({
+  vars: { baseUrl: "{{BASE_URL}}" },
+  secrets: { token: "{{API_TOKEN}}" },
+  http: {
+    prefixUrl: "{{BASE_URL}}",                    // found in .env (vars)
+    headers: {
+      Authorization: "Bearer {{API_TOKEN}}",      // found in .env.secrets (secrets)
+    },
+  },
+});
+```
+
+This means you _can_ put a secret in `.env` and `{{KEY}}` will still find it — **but you shouldn't.** Keep secrets in `.env.secrets` so they stay gitignored, masked in hover preview, and redacted on Cloud upload.
+
+> **Where to put what:** If the value would be dangerous to leak in a git commit or a dashboard screenshot, it belongs in `.env.secrets`. Everything else goes in `.env`.
+
+---
+
+## Hover preview
+
+Hover over `vars.require("KEY")` or `secrets.require("KEY")` in your test file to see the resolved value from the currently selected environment.
+
+- **vars** — shows the full value and its source file:
+  ```
+  BASE_URL = "https://api.staging.example.com"  (.env.staging)
+  ```
+- **secrets** — value is masked. Only the first 4 and last 2 characters are shown, the rest is replaced with `****`:
+  ```
+  API_TOKEN = "sk-l****en"  (.env.staging.secrets)
+  ```
+- **Not found** — shows a warning:
+  ```
+  WARNING  BASE_URL — not found in .env.staging
+  ```
+
+---
+
+## What's next?
+
+- [Running Tests](/extension/running-tests) — Run tests in the selected environment
+- [CLI Environments & Secrets](/cli/environments) — File model, resolution order, CI usage

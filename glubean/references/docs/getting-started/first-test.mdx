@@ -1,0 +1,60 @@
+# Run Your First Test
+
+This is the shortest path from empty folder to one passing test.
+
+## 1. Create a project
+
+```bash
+mkdir my-project && cd my-project
+npx @glubean/cli init
+```
+
+Expected layout:
+
+```text
+my-project/
+├── explore/
+├── tests/
+└── package.json
+```
+
+Use `explore/` for fast local iteration. Move stable files to `tests/` when you want them in CI.
+
+## 2. Add a base URL
+
+Create `.env` in project root:
+
+```bash
+BASE_URL=http://localhost:3000
+```
+
+## 3. Write a test
+
+```typescript
+import { test } from "@glubean/sdk";
+
+export const health = test("health", async (ctx) => {
+  const baseUrl = ctx.vars.require("BASE_URL");
+  const res = await ctx.http.get(`${baseUrl}/health`);
+  ctx.expect(res.status).toBe(200);
+});
+```
+
+## 4. Run it
+
+```bash
+npm test
+```
+
+If you installed the extension, you can also run the same file from the editor gutter or Test Explorer.
+
+## 5. Know what to inspect
+
+- Trace files live in `.glubean/traces/`
+- Result JSON usually lives at `.glubean/last-run.json`
+- Failure triage starts in [VS Code Extension](/extension) or [CLI Debugging](/cli/debugging)
+
+## Next
+
+- [Connect CI](/getting-started/ci)
+- [Artifacts](/reference/artifacts)

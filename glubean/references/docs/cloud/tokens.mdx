@@ -1,0 +1,55 @@
+# Tokens
+
+Glubean Cloud uses two token types. Most teams only need one rule: use project tokens by default.
+
+## Project token (`gpt_`)
+
+Use this for:
+
+- CI uploads
+- shared team automation
+- local work on one project
+
+Properties:
+
+- created in **Project Settings → Tokens**
+- scoped to one project
+- permissioned by scopes such as `runs:write`
+- easy to revoke without touching a user account
+
+## User API key (`gb_`)
+
+Use this when one person needs access across multiple projects from one credential.
+
+Properties:
+
+- created in **Account Settings → API Keys**
+- scoped to whatever that user can access
+- useful as a personal fallback
+
+## Recommended choice by scenario
+
+| Scenario | Recommended token |
+|---|---|
+| CI uploads | `gpt_` |
+| Shared automation | `gpt_` |
+| Local work on one project | `gpt_` |
+| Personal work across many projects | `gb_` |
+
+## Where to store it
+
+| Location | Best for |
+|---|---|
+| `.env.secrets` | local project work |
+| CI secret store | CI uploads |
+| `~/.glubean/credentials.json` via `glubean login` | personal fallback |
+| `package.json` `glubean.cloud` | demos and short-lived setups only |
+
+## Minimal scope for uploads
+
+For CI upload, a project token only needs `runs:write`.
+
+## Next
+
+- [Upload Your First Run](/getting-started/upload-to-cloud)
+- [Plans & Quotas](/cloud/quotas)

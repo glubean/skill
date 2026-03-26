@@ -1,0 +1,97 @@
+# HTTP Requests
+
+`ctx.http` is a thin wrapper around [ky](https://github.com/sindresorhus/ky) — a popular, well-tested HTTP client for Node.js. **All ky APIs are available** (retry, timeout, hooks, searchParams, json, etc.). Glubean adds automatic tracing, metrics, and schema validation on top.
+
+Three differences from vanilla ky:
+
+- **Leading slashes work with `prefixUrl`** — `ctx.http.get("/users")` just works. Ky normally [rejects this](https://github.com/sindresorhus/ky/issues/70); Glubean strips the leading `/` automatically.
+- **Non-2xx responses don't throw** — ky defaults to `throwHttpErrors: true`, but in a verification context you need to assert on 4xx/5xx responses, not catch exceptions. Glubean sets `throwHttpErrors: false` so you always get a response object back. Use `ctx.expect(res).toHaveStatus(404)` to verify error status codes.
+- **Empty `searchParams` don't pollute URLs** — passing `searchParams: {}` in ky appends a bare `?` to the URL. Glubean removes empty searchParams automatically so your traces stay clean.
+
+Every request automatically produces traces and metrics — no extra setup needed.
+
+> **Tired of repeating URLs and headers?** Use [`configure()`](/sdk/configuration) to create a shared HTTP client with `prefixUrl`, auth headers, and environment-specific settings — then just write `ctx.http.get("/users")` in your tests.
+
+## Basic usage
+
+```typescript
+import { test } from "@glubean/sdk";
+
+export const getUser = test("get-user", async (ctx) => {
+  const baseUrl = ctx.vars.require("BASE_URL");
+
+  const users = await ctx.http.get(`${baseUrl}/users`).json();
+  const created = await ctx.http.post(`${baseUrl}/users`, {
+    json: { name: "Alice" },
+  }).json();
+});
+```
+
+## Create a scoped client
+
+When multiple requests share a base URL or headers, use `.extend()`:
+
+```typescript
+export const userFlow = test("user-flow", async (ctx) => {
+  const api = ctx.http.extend({
+    prefixUrl: ctx.vars.require("BASE_URL"),
+    headers: {
+      Authorization: `Bearer ${ctx.secrets.require("TOKEN")}`,
+    },
+  });
+
+  await api.get("users/1").json();
+  await api.get("users/1/settings").json();
+});
+```
+
+## Request options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `json` | `object` | JSON body (auto-serialized) |
+| `body` | `FormData \| string` | Raw body |
+| `searchParams` | `Record<string, string>` | Query string |
+| `headers` | `Record<string, string>` | Request headers |
+| `timeout` | `number \| false` | Timeout in ms (default 10000, `false` to disable) |
+| `retry` | `number \| object` | Retry count or `{ limit, statusCodes, methods }` |
+| `throwHttpErrors` | `boolean` | Throw on 4xx/5xx (default `false`) |
+
+## Response methods
+
+```typescript
+const res = await ctx.http.get(url);
+
+await res.json<T>();          // Parse JSON body
+await res.text();             // Plain text
+await res.blob();             // Binary blob
+await res.arrayBuffer();      // Raw buffer
+```
+
+## Retries
+
+For flaky environments, you can retry selected status codes:
+
+```typescript
+await ctx.http.get("https://api.example.com/status", {
+  retry: {
+    limit: 3,
+    statusCodes: [429, 502, 503, 504],
+  },
+});
+```
+
+## Auto-instrumentation
+
+Every `ctx.http` request automatically records:
+
+- An API trace via `ctx.trace()` (method, URL, status, duration)
+- A metric `http_duration_ms` via `ctx.metric()` (with method and path tags)
+
+No manual instrumentation needed. Results appear in the Result Viewer and Cloud dashboard.
+
+## Next
+
+- [Assertions](/sdk/assertions)
+- [Variables & Secrets](/sdk/env-and-secrets)
+- [Logs, Traces, Metrics](/sdk/observability)

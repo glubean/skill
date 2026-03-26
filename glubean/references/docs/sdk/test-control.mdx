@@ -1,0 +1,76 @@
+# Control Flow
+
+These APIs help when real systems are asynchronous, environment-specific, or occasionally flaky.
+
+## `ctx.pollUntil()`
+
+Use `pollUntil()` when an action is eventually consistent and a fixed sleep would be wasteful or brittle.
+
+```typescript
+export const asyncJob = test("async-job", async (ctx) => {
+  const job = await ctx.http.post("/jobs/export").json();
+
+  await ctx.pollUntil({ timeoutMs: 30000, intervalMs: 2000 }, async () => {
+    const status = await ctx.http.get(`/jobs/${job.id}/status`).json();
+    return status.state === "completed";
+  });
+
+  const file = await ctx.http.get(`/jobs/${job.id}/download`);
+  ctx.expect(file.status).toBe(200);
+});
+```
+
+## `ctx.skip()`
+
+Use `skip()` when the current environment should not run a test.
+
+```typescript
+export const betaFeature = test("beta-feature", async (ctx) => {
+  if (ctx.vars.get("ENV") === "production") {
+    ctx.skip("Beta features are not enabled in production");
+  }
+});
+```
+
+## `ctx.fail()`
+
+Use `fail()` when further execution would be misleading or dangerous.
+
+```typescript
+export const checkAuth = test("auth-check", async (ctx) => {
+  const res = await ctx.http.delete("/admin/database", {
+    throwHttpErrors: false,
+  });
+  if (res.status !== 403) {
+    ctx.fail("CRITICAL: Unauthenticated request to delete database was not rejected!");
+  }
+  ctx.expect(res.status).toBe(403);
+});
+```
+
+## `ctx.setTimeout()`
+
+Use `setTimeout()` when one test legitimately needs more time than the default 30s:
+
+```typescript
+export const slowQuery = test("slow-query", async (ctx) => {
+  ctx.setTimeout(60000);
+  await ctx.http.get("/analytics/heavy-report");
+});
+```
+
+You can also set timeout via metadata:
+
+```typescript
+export const slow = test({
+  id: "slow-query",
+  timeout: 60000,
+}, async (ctx) => {
+  await ctx.http.get("/analytics/heavy-report");
+});
+```
+
+## Next
+
+- [Assertions](/sdk/assertions)
+- [Logs, Traces, Metrics](/sdk/observability)

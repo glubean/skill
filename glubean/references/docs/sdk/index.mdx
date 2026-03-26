@@ -1,0 +1,51 @@
+# Write Tests
+
+The SDK is the authoring surface of Glubean — a developer-owned API verification platform.
+
+You write tests in TypeScript, commit them to git, run them locally or in CI, and optionally upload the results to Cloud. The code stays the same across environments.
+
+## Install
+
+```bash
+npm install @glubean/sdk
+```
+
+## The mental model
+
+Every test receives a `ctx` object. That context gives you:
+
+- `ctx.http` for requests (auto-traced)
+- `ctx.vars` and `ctx.secrets` for runtime values
+- `ctx.expect`, `ctx.assert`, and `ctx.validate` for verification
+- `ctx.log`, `ctx.trace`, and `ctx.metric` for observability
+- `ctx.session` for shared state across files
+- **plugins** for browser automation, GraphQL, auth, and anything custom
+
+## A minimal test
+
+```typescript
+import { test } from "@glubean/sdk";
+
+export const health = test("health", async (ctx) => {
+  const baseUrl = ctx.vars.require("BASE_URL");
+  const res = await ctx.http.get(`${baseUrl}/health`);
+
+  ctx.expect(res.status).toBe(200);
+});
+```
+
+## Start with these pages
+
+1. [Test Shape](/sdk/test-api) — `test()`, builder API, `test.each`, `test.pick`
+2. [Configuration](/sdk/configuration) — `configure()` for shared setup
+3. [HTTP Requests](/sdk/http-client) — `ctx.http` client
+4. [Assertions](/sdk/assertions) — `expect`, `assert`, `validate`, `warn`
+5. [Data-Driven](/sdk/data-driven) — `test.each`, `test.pick`, data loaders
+6. [Variables & Secrets](/sdk/env-and-secrets) — `ctx.vars`, `ctx.secrets`
+
+## When the suite grows
+
+- Use the builder API for multi-step flows
+- Use `configure()` and plugins for shared setup
+- Use `session.ts` for cross-file shared state
+- Emit logs and metrics when a green or red result alone is not enough

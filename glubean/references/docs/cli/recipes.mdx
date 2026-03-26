@@ -1,0 +1,70 @@
+# Common Recipes
+
+Copy-paste patterns for common workflows.
+
+## CI with machine-readable output
+
+```bash
+glubean run tests/ \
+  --result-json results.json \
+  --reporter junit:test-results.xml
+```
+
+Produces both a glubean result file and a JUnit XML for CI dashboards.
+
+## CI shorthand
+
+```bash
+glubean run tests/ --ci
+```
+
+`--ci` enables `--fail-fast` and `--reporter junit` in one flag.
+
+## Switch environments without changing code
+
+```bash
+glubean run                              # default (.env)
+glubean run --env-file .env.staging
+glubean run --env-file .env.prod
+```
+
+The CLI auto-pairs each env file with its `.secrets` counterpart. See [Environments & Secrets](/cli/environments).
+
+## Map shell variables to test names
+
+```bash
+export GLUBEAN_URL=https://api.example.com
+export GLUBEAN_API_KEY=sk_live_xxx
+
+printf "BASE_URL=\${GLUBEAN_URL}\n" > .env
+printf "API_KEY=\${GLUBEAN_API_KEY}\n" > .env.secrets
+
+glubean run
+```
+
+## Run by tags
+
+```bash
+glubean run --tag smoke
+glubean run --tag smoke --tag auth --tag-mode and
+```
+
+## Run and upload to Cloud
+
+```bash
+glubean run tests/ --upload --project <id>
+```
+
+Or upload a previous result file:
+
+```bash
+glubean sync -p <project-id>
+```
+
+## Preview redaction before upload
+
+```bash
+glubean redact .glubean/last-run.result.json
+```
+
+See [Redaction & Privacy](/cli/redaction) for details.

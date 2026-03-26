@@ -32,6 +32,85 @@ Quick lookup for AI agents. Read this first, then open only the files you need.
 | [plugins.md](patterns/plugins.md) | Plugin index — **check here before writing auth/plugin code by hand** |
 | [auth.md](patterns/auth.md) | `@glubean/auth` — bearer, apiKey, basic, OAuth2, withLogin, combining strategies |
 
+## Documentation
+
+Full product docs. Read when the patterns/reference above aren't enough.
+
+### Getting Started
+
+| File | Topic |
+|------|-------|
+| [docs/getting-started/installation.mdx](docs/getting-started/installation.mdx) | Install SDK, CLI, extension |
+| [docs/getting-started/first-test.mdx](docs/getting-started/first-test.mdx) | Write and run your first test |
+| [docs/getting-started/concepts.mdx](docs/getting-started/concepts.mdx) | Core concepts (test, configure, ctx) |
+| [docs/getting-started/ci.mdx](docs/getting-started/ci.mdx) | CI/CD integration |
+| [docs/getting-started/upload-to-cloud.mdx](docs/getting-started/upload-to-cloud.mdx) | Upload results to Glubean Cloud |
+
+### SDK
+
+| File | Topic |
+|------|-------|
+| [docs/sdk/test-api.mdx](docs/sdk/test-api.mdx) | test(), test.each, test.pick, builder API |
+| [docs/sdk/http-client.mdx](docs/sdk/http-client.mdx) | HTTP client, request/response, typed JSON |
+| [docs/sdk/configuration.mdx](docs/sdk/configuration.mdx) | configure(), clients, plugins |
+| [docs/sdk/assertions.mdx](docs/sdk/assertions.mdx) | ctx.expect, status, headers, body |
+| [docs/sdk/data-driven.mdx](docs/sdk/data-driven.mdx) | Data files, YAML/JSON loading, test.pick |
+| [docs/sdk/env-and-secrets.mdx](docs/sdk/env-and-secrets.mdx) | .env, .env.secrets, {{VAR}} references |
+| [docs/sdk/local-data.mdx](docs/sdk/local-data.mdx) | fromJson, fromYaml, fromJson.map, fromYaml.map |
+| [docs/sdk/shared-state.mdx](docs/sdk/shared-state.mdx) | defineSession, ctx.session |
+| [docs/sdk/test-control.mdx](docs/sdk/test-control.mdx) | skip, only, timeout, retry |
+| [docs/sdk/observability.mdx](docs/sdk/observability.mdx) | ctx.log, ctx.metric, traces |
+| [docs/sdk/plugins.mdx](docs/sdk/plugins.mdx) | Plugin system overview |
+| [docs/sdk/auth-plugin.mdx](docs/sdk/auth-plugin.mdx) | @glubean/auth plugin |
+| [docs/sdk/browser-plugin.mdx](docs/sdk/browser-plugin.mdx) | @glubean/browser plugin |
+| [docs/sdk/graphql-plugin.mdx](docs/sdk/graphql-plugin.mdx) | @glubean/graphql plugin |
+
+### CLI
+
+| File | Topic |
+|------|-------|
+| [docs/cli/reference.mdx](docs/cli/reference.mdx) | All CLI commands |
+| [docs/cli/environments.mdx](docs/cli/environments.mdx) | Environment profiles |
+| [docs/cli/recipes.mdx](docs/cli/recipes.mdx) | Common CLI workflows |
+| [docs/cli/debugging.mdx](docs/cli/debugging.mdx) | Debug test runs |
+| [docs/cli/redaction.mdx](docs/cli/redaction.mdx) | Redact secrets from results |
+| [docs/cli/result-files.mdx](docs/cli/result-files.mdx) | Result file format |
+
+### VS Code Extension
+
+| File | Topic |
+|------|-------|
+| [docs/extension/quick-start.mdx](docs/extension/quick-start.mdx) | Extension quick start |
+| [docs/extension/writing-tests.mdx](docs/extension/writing-tests.mdx) | Writing tests in VS Code |
+| [docs/extension/running-tests.mdx](docs/extension/running-tests.mdx) | Running tests (Play buttons, CodeLens) |
+| [docs/extension/environments.mdx](docs/extension/environments.mdx) | Environment switching |
+| [docs/extension/result-viewer.mdx](docs/extension/result-viewer.mdx) | Result viewer panel |
+| [docs/extension/editor-experience.mdx](docs/extension/editor-experience.mdx) | Editor features (pin, refactor, data) |
+| [docs/extension/generate-with-ai.mdx](docs/extension/generate-with-ai.mdx) | AI test generation |
+| [docs/extension/debugging.mdx](docs/extension/debugging.mdx) | Debugging tests |
+| [docs/extension/diagnostics.mdx](docs/extension/diagnostics.mdx) | Diagnostics & troubleshooting |
+| [docs/extension/comparison.mdx](docs/extension/comparison.mdx) | Glubean vs Postman/Thunder Client |
+| [docs/extension/migrate-from-postman.mdx](docs/extension/migrate-from-postman.mdx) | Migrate from Postman |
+| [docs/extension/for-qa-teams.mdx](docs/extension/for-qa-teams.mdx) | Guide for QA teams |
+| [docs/extension/reference.mdx](docs/extension/reference.mdx) | Extension settings reference |
+
+### Cloud
+
+| File | Topic |
+|------|-------|
+| [docs/cloud/dashboard.mdx](docs/cloud/dashboard.mdx) | Cloud dashboard |
+| [docs/cloud/analytics.mdx](docs/cloud/analytics.mdx) | Test analytics |
+| [docs/cloud/tokens.mdx](docs/cloud/tokens.mdx) | API tokens |
+| [docs/cloud/notifications.mdx](docs/cloud/notifications.mdx) | Notifications |
+| [docs/cloud/redaction.mdx](docs/cloud/redaction.mdx) | Cloud redaction |
+| [docs/cloud/quotas.mdx](docs/cloud/quotas.mdx) | Usage quotas |
+
+### Blog
+
+| File | Topic |
+|------|-------|
+| [docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx](docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx) | Why TypeScript tests beat Postman |
+
 ## Rules (always follow)
 
 1. **Secrets → `.env.secrets`**, public vars → `.env`. NEVER inline as `const`.

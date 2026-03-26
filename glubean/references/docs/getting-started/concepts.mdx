@@ -1,0 +1,94 @@
+---
+title: Core Concepts
+description: The mental model behind Glubean — tests, verification, and the explore/tests split.
+---
+
+# Core Concepts
+
+## Test
+
+A test is a single exported function that verifies one behavior:
+
+```typescript
+export const getUser = test("get-user", async (ctx) => {
+  const res = await ctx.http.get(`${API}/users/1`);
+  ctx.expect(res).toHaveStatus(200);
+});
+```
+
+Every `export const x = test(...)` is one test. This is the unit you write, run, and debug. Glubean uses the word "test" everywhere in daily usage — in the CLI, the extension, the SDK API.
+
+## Verification
+
+Testing a single endpoint is easy — `GET /users/1`, expect 200, done. But real APIs don't work in isolation. A real business flow looks like:
+
+1. Create a user → get back an ID
+2. Generate an auth token for that user
+3. Use the token to access a protected resource
+4. Update the resource
+5. Delete the user and confirm cleanup
+
+If any step loses context, passes the wrong ID, or breaks the auth chain, the whole workflow fails. **This is what's actually hard to verify** — not individual endpoints, but the connections between them.
+
+Verification is what your tests achieve together: <b>continuous verification</b> — proof that your API workflows work correctly across environments, not just once but on every commit, every deploy, every schedule. A test that only runs once during development is useful. The same workflow running in CI on every commit, and against production on a schedule, is _verification_.
+
+This is what separates Glubean from tools like Postman (manual requests, no shared state), REST Client (fire-and-forget), or plain unit tests (mocked, no real HTTP). Glubean tests are workflow-aware — shared state flows between tests in the same file, steps pass data to the next step, and the whole chain runs as one atomic operation.
+
+## explore/ vs tests/
+
+Glubean projects have two directories for test files. Both use the same `*.test.ts` format and the same SDK — the difference is intent.
+
+| | `explore/` | `tests/` |
+|---|---|---|
+| **Purpose** | Your API collection — try endpoints, save parameter sets, pick one and run | Regression suite — CI runs everything on every commit |
+| **How you run** | Pick one case: `glubean run --explore --pick by-name` | Run all: `glubean run` |
+| **Data pattern** | `test.pick` — multiple named examples, run one at a time | `test.each` — multiple rows, run all for coverage |
+| **Analogous to** | Postman Collections + Examples | Jest/Vitest test suites |
+| **Git** | Committed and shared (this is your team's API knowledge base) | Committed and shared |
+| **CLI default** | Needs `--explore` flag or explicit path | Runs by default |
+
+Both directories share `data/` and `config/`. A test file can live in either directory — or move between them as it matures.
+
+> **Common misconception:** `explore/` is not a scratchpad or temporary folder. It's your code-first replacement for Postman collections — committed, versioned, shared with the team.
+
+## Shared state
+
+Tests in the same file share the module scope and run sequentially in export order. This enables workflow-style tests:
+
+```typescript
+let userId: number;
+
+export const create = test("create", async (ctx) => {
+  // ... creates user, assigns userId
+});
+
+export const verify = test("verify", async (ctx) => {
+  // ... uses userId from the test above
+});
+```
+
+Declare shared variables at the top level. Assign them only inside test callbacks. Export order is execution order.
+
+Files are the isolation boundary — different files don't share state by default. For cross-file state (e.g. a login token reused across multiple test files), use the [Session Scope API](/sdk/shared-state).
+
+For multi-step flows within a single test, the builder API passes state between steps automatically:
+
+```typescript
+export const checkout = test("checkout-flow")
+  .step("Add to cart", async (ctx) => {
+    const res = await ctx.http.post(`${API}/cart`, { json: { productId: 1 } });
+    return { cartId: (await res.json()).id };
+  })
+  .step("Place order", async (ctx, { cartId }) => {
+    const res = await ctx.http.post(`${API}/orders`, { json: { cartId } });
+    ctx.expect(res).toHaveStatus(201);
+  });
+```
+
+Two levels of workflow: **shared state across tests** (module variables) and **shared state within a test** (builder steps). Together they cover everything from simple CRUD to complex multi-service orchestration.
+
+## What's next?
+
+- [First Test](/getting-started/first-test) — Write and run your first test
+- [SDK Reference](/sdk) — The full API surface
+- [Limitations](/reference/limitations) — Trade-offs and known constraints

@@ -1,0 +1,151 @@
+# Auth Plugin (`@glubean/auth`)
+
+`@glubean/auth` provides first-party authentication helpers for common API verification scenarios.
+
+> **Status:** Experimental (pre-1.0). API may evolve.
+
+## Install
+
+```bash
+npm install @glubean/auth
+```
+
+## Quick Start
+
+```typescript
+import { configure, test } from "@glubean/sdk";
+import { bearer } from "@glubean/auth";
+
+const { http } = configure({
+  http: bearer({ prefixUrl: "{{BASE_URL}}", token: "{{API_TOKEN}}" }),
+});
+
+export const getUser = test("get-user", async (ctx) => {
+  const user = await http.get("/users/1").json<{ id: number }>();
+  ctx.expect(user.id).toBe(1);
+});
+```
+
+## Helpers
+
+All helpers accept an **options object** with named properties. Values support `{{KEY}}` template syntax for runtime resolution from vars and secrets.
+
+### `bearer(options)`
+
+Adds `Authorization: Bearer <token>` header.
+
+```typescript
+import { bearer } from "@glubean/auth";
+
+const { http } = configure({
+  http: bearer({ prefixUrl: "{{BASE_URL}}", token: "{{API_TOKEN}}" }),
+});
+```
+
+### `basicAuth(options)`
+
+Adds `Authorization: Basic <base64(username:password)>` header.
+
+```typescript
+import { basicAuth } from "@glubean/auth";
+
+const { http } = configure({
+  http: basicAuth({
+    prefixUrl: "{{BASE_URL}}",
+    username: "{{USERNAME}}",
+    password: "{{PASSWORD}}",
+  }),
+});
+```
+
+### `apiKey(options)`
+
+Supports header mode (default) and query param mode.
+
+```typescript
+import { apiKey } from "@glubean/auth";
+
+// Header mode (default)
+const { http: byHeader } = configure({
+  http: apiKey({
+    prefixUrl: "{{BASE_URL}}",
+    param: "X-API-Key",
+    value: "{{API_KEY}}",
+  }),
+});
+
+// Query param mode
+const { http: byQuery } = configure({
+  http: apiKey({
+    prefixUrl: "{{BASE_URL}}",
+    param: "api_key",
+    value: "{{API_KEY}}",
+    location: "query",
+  }),
+});
+```
+
+### `oauth2.clientCredentials(options)`
+
+Fetches and caches access tokens for client credentials flow.
+
+```typescript
+import { oauth2 } from "@glubean/auth";
+
+const { http } = configure({
+  http: oauth2.clientCredentials({
+    prefixUrl: "{{BASE_URL}}",
+    tokenUrl: "{{TOKEN_URL}}",
+    clientId: "{{CLIENT_ID}}",
+    clientSecret: "{{CLIENT_SECRET}}",
+    scope: "read:users",
+  }),
+});
+```
+
+### `oauth2.refreshToken(options)`
+
+Uses refresh token flow. Automatically retries after `401` with a refreshed token.
+
+```typescript
+const { http } = configure({
+  http: oauth2.refreshToken({
+    prefixUrl: "{{BASE_URL}}",
+    tokenUrl: "{{TOKEN_URL}}",
+    refreshToken: "{{REFRESH_TOKEN}}",
+    clientId: "{{CLIENT_ID}}",
+    clientSecret: "{{CLIENT_SECRET}}",
+  }),
+});
+```
+
+### `withLogin(options)`
+
+Builder transform that performs login and injects `authedHttp` into subsequent steps.
+
+```typescript
+import { test } from "@glubean/sdk";
+import { withLogin } from "@glubean/auth";
+
+export const userFlow = test("user-flow")
+  .use(withLogin({
+    endpoint: "{{BASE_URL}}/auth/login",
+    credentials: {
+      username: "{{USERNAME}}",
+      password: "{{PASSWORD}}",
+    },
+    extractToken: (body) => body.access_token,
+    headerName: "Authorization",
+    headerPrefix: "Bearer ",
+  }))
+  .step("get profile", async (ctx, { authedHttp }) => {
+    const profile = await authedHttp.get("/me").json<{ email: string }>();
+    ctx.expect(profile.email).toBeDefined();
+  });
+```
+
+## Notes
+
+- All `{{KEY}}` references resolve at runtime via `ctx.vars` / `ctx.secrets`.
+- Prefer storing credentials in `.env.secrets` files (gitignored).
+- Each helper returns a `ConfigureHttpOptions` object — pass it directly to `configure({ http: ... })`.

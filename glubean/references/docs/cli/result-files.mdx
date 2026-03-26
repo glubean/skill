@@ -1,0 +1,46 @@
+# Result Files
+
+glubean writes structured output to `.result.json` files that you can inspect, upload, or feed into CI.
+
+## Generating result files
+
+```bash
+glubean run tests/ --result-json results.json
+```
+
+Without an explicit path, `--result-json` writes to `glubean-run.result.json` in the current directory.
+
+## What's inside
+
+A `.result.json` file contains:
+
+- **Run metadata** — timestamp, environment, CLI version, custom metadata (`--meta`)
+- **Test results** — pass/fail status, assertions, timing for each test
+- **HTTP events** — request/response summaries (add `--emit-full-trace` for full headers and bodies)
+- **Errors and logs** — any `ctx.log()` output or caught errors
+
+## Trace files
+
+When you use `--emit-full-trace`, glubean also writes per-test trace files under `.glubean/traces/`. These contain the full HTTP request/response bodies for detailed inspection.
+
+Use `--trace-limit <N>` to control how many trace files are kept per test (default: 20).
+
+## Uploading results
+
+```bash
+glubean run tests/ --upload              # Run and upload in one step
+glubean sync -p <project-id>             # Upload an existing bundle
+```
+
+Before uploading, results pass through [redaction](/cli/redaction) to mask sensitive values.
+
+## Viewing results
+
+- **VS Code/Cursor** — The glubean extension opens `.result.json` files with a visual viewer. See [Extension: Result Viewer](/extension/result-viewer).
+- **Terminal** — Use `jq` or any JSON tool to query the file directly.
+- **Cloud** — Uploaded results appear in the glubean Cloud dashboard.
+
+## Next
+
+- [Redaction & Privacy](/cli/redaction)
+- [Artifacts](/reference/artifacts)

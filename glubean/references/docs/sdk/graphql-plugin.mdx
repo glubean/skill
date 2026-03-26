@@ -1,0 +1,100 @@
+# GraphQL Plugin (`@glubean/graphql`)
+
+`@glubean/graphql` is a first-party GraphQL client plugin for Glubean.
+
+> **Status:** Experimental (pre-1.0). API may evolve.
+
+## Install
+
+```bash
+npm install @glubean/graphql
+```
+
+## Quick Start (configure plugin mode)
+
+```typescript
+import { configure, test } from "@glubean/sdk";
+import { graphql } from "@glubean/graphql";
+
+const { gql } = configure({
+  plugins: {
+    gql: graphql({
+      endpoint: "{{GRAPHQL_URL}}",
+      headers: { Authorization: "Bearer {{API_KEY}}" },
+      throwOnGraphQLErrors: true,
+    }),
+  },
+});
+
+export const getUser = test("get-user", async (ctx) => {
+  const { data } = await gql.query<{ user: { name: string } }>(
+    `query GetUser($id: ID!) { user(id: $id) { name } }`,
+    { variables: { id: "1" } },
+  );
+
+  ctx.expect(data?.user.name).toBe("Alice");
+});
+```
+
+## Standalone mode (`createGraphQLClient`)
+
+```typescript
+import { test } from "@glubean/sdk";
+import { createGraphQLClient } from "@glubean/graphql";
+
+export const quick = test("quick-gql", async (ctx) => {
+  const gql = createGraphQLClient(ctx.http, {
+    endpoint: ctx.vars.require("GQL_URL"),
+    headers: { Authorization: `Bearer ${ctx.secrets.require("TOKEN")}` },
+  });
+
+  const { data } = await gql.query<{ health: string }>(`{ health }`);
+  ctx.assert(data?.health === "ok", "Service healthy");
+});
+```
+
+## Extra helpers
+
+### `gql` tagged template
+
+Identity tag for better GraphQL editor highlighting:
+
+```typescript
+import { gql } from "@glubean/graphql";
+
+const GET_USER = gql`
+  query GetUser($id: ID!) {
+    user(id: $id) { id name email }
+  }
+`;
+```
+
+### `fromGql(path)`
+
+Load query text from `.gql` files:
+
+```typescript
+import { fromGql } from "@glubean/graphql";
+
+const GET_USER = await fromGql("./queries/get-user.gql");
+```
+
+## Client methods
+
+- `gql.query<T>(query, options?)` — execute a query
+- `gql.mutate<T>(mutation, options?)` — execute a mutation
+
+Both return `Promise<{ data: T | null; errors?: GraphQLError[] }>`.
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `endpoint` | `string` | _(required)_ | GraphQL endpoint URL (`{{KEY}}` supported) |
+| `headers` | `Record<string, string>` | `{}` | Default headers (`{{KEY}}` supported) |
+| `throwOnGraphQLErrors` | `boolean` | `false` | Throw when `errors` array is non-empty |
+
+## Next
+
+- [Plugins](/sdk/plugins)
+- [Configuration](/sdk/configuration)

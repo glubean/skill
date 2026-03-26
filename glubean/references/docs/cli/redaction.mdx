@@ -1,0 +1,100 @@
+# Redaction & Privacy
+
+Before results leave your machine, glubean scans them and masks sensitive values.
+
+## How it works
+
+The engine applies two layers:
+
+1. **Key-level** — If a JSON key name contains a sensitive keyword (`authorization`, `token`, `secret`, etc.), the entire value is replaced.
+2. **Value-level** — String values are scanned for patterns like JWTs, Bearer tokens, AWS keys, and GitHub PATs. Only the matched portion is replaced.
+
+Key-level runs first. If a key is already flagged, value-level is skipped for that field.
+
+## Scope-based model
+
+Each scope targets a specific field in a specific event type. Built-in scopes cover HTTP traces, logs, errors, assertions, and step return state.
+
+| Scope | What it covers |
+|---|---|
+| `http.request.headers` | Authorization, cookie, etc. |
+| `http.request.query` | URL query parameters |
+| `http.request.body` | POST/PUT/PATCH body |
+| `http.response.headers` | Set-cookie, etc. |
+| `http.response.body` | Response body |
+| `log.message` / `log.data` | `ctx.log()` output |
+| `error.message` | Error messages |
+| `assertion.message` | Assertion messages |
+| `step.returnState` | Step return values |
+
+Plugins (like `@glubean/grpc`) can declare additional scopes for their own protocol.
+
+## Preview before uploading
+
+```bash
+glubean redact .glubean/last-run.result.json
+```
+
+To write fully redacted output to a file:
+
+```bash
+glubean redact .glubean/last-run.result.json --out redacted.json
+```
+
+## Default value patterns
+
+| Pattern | Detects | Default |
+|---|---|---|
+| `jwt` | JSON Web Tokens | on |
+| `bearer` | `Bearer <token>` strings | on |
+| `awsKeys` | AWS Access Key IDs | on |
+| `githubTokens` | GitHub PATs (`ghp_`, `gho_`, etc.) | on |
+| `creditCard` | 16-digit card numbers | on |
+| `email` | Email addresses | off |
+| `ipAddress` | IPv4 addresses | off |
+| `hexKeys` | Hex strings 32+ chars | off |
+
+Patterns marked "off" are available but disabled by default to avoid false positives.
+
+## Customizing redaction
+
+Add a `redaction` section to your `package.json` or config file:
+
+```json
+{
+  "glubean": {
+    "redaction": {
+      "sensitiveKeys": ["x-internal-token", "session-id"],
+      "customPatterns": [
+        { "name": "stripe-key", "regex": "sk_live_[a-zA-Z0-9]{24,}" }
+      ],
+      "replacementFormat": "simple"
+    }
+  }
+}
+```
+
+### Replacement formats
+
+| Format | Output | Use case |
+|---|---|---|
+| `"partial"` | `Bea***Xfk` | Verify the right values are masked (default) |
+| `"simple"` | `[REDACTED]` | Clean output for sharing |
+| `"labeled"` | `[REDACTED:jwt]` | Debug which rule caught a value |
+
+## Server-side safety net
+
+When results are uploaded to glubean Cloud, the server applies baseline redaction again before persisting. Even if CLI redaction is skipped, secrets are not stored in plaintext.
+
+## Skipping redaction
+
+```bash
+glubean run --no-redact tests/
+```
+
+Not recommended for production APIs.
+
+## Next
+
+- [Cloud Redaction Policies](/cloud/redaction)
+- [Artifacts](/reference/artifacts)

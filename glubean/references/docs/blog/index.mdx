@@ -1,0 +1,42 @@
+---
+title: Glubean Blog
+description: Product essays and workflow guides about API testing, editor-first verification, and AI-friendly tooling.
+sidebar: false
+toc: false
+pagination: false
+typesetting: article
+---
+
+import { Cards, Callout } from "nextra/components"
+
+# Glubean Blog
+
+<div className="blog-hero">
+  <div className="blog-eyebrow">Product writing for the workflow behind Glubean</div>
+  <div className="blog-lede">
+    Essays, migration guides, and workflow notes about API testing that lives in your editor,
+    survives into CI, and works with AI instead of fighting it.
+  </div>
+</div>
+
+<Cards num={1}>
+  <Cards.Card
+    title="Why I Replaced Postman with a TypeScript Workflow in VS Code"
+    href="/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode"
+    arrow
+  >
+    API exploration usually dies as throwaway work. This post explains why I wanted the same file
+    to survive exploration, verification, and CI.
+  </Cards.Card>
+</Cards>
+
+## What this blog covers
+
+- Workflow shifts behind Glubean, not just feature announcements
+- Practical paths from Postman, cURL, scratch files, and ad hoc scripts
+- Notes on AI-assisted authoring, result files, traces, and editor-first debugging
+
+<Callout type="info">
+  If you want the fastest path into the product instead of the essays, start with the{" "}
+  [VS Code Quick Start](/extension/quick-start) or [Run Your First Test](/getting-started/first-test).
+</Callout>

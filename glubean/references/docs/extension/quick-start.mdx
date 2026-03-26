@@ -1,0 +1,79 @@
+---
+title: Quick Start
+description: From zero to a running API test in under a minute.
+---
+
+# Quick Start
+
+## Prerequisites
+
+- **Node.js 20+** — check with `node -v`
+- **VS Code** (or Cursor / VSCodium)
+
+Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Glubean.glubean) or download a [VSIX](https://github.com/glubean/vscode/releases) for editor forks.
+
+---
+
+## Option A: Scratch Mode (zero config)
+
+![Scratch mode demo](https://3ese0ujr3e86dvfp.public.blob.vercel-storage.com/glubean-demo-scratch.gif)
+
+No project, no dependencies, no setup. Perfect for trying Glubean for the first time.
+
+1. Create any file ending in `.test.js` (e.g. `demo.test.js`).
+2. Type `gb-scratch` and press Tab to expand the snippet — it generates a complete test with import, HTTP request, and assertions.
+3. Click the **Play** button in the gutter next to `test(`.
+
+The extension detects you are outside a Glubean project and runs in Scratch Mode automatically. A one-time notification confirms: _"Running in scratch mode — great for trying things out!"_
+
+> **Why `.test.js` and not `.test.ts`?** Scratch Mode skips TypeScript compilation to stay zero-config. Use `.test.js` for scratch files. In a full project, `.test.ts` works normally.
+
+---
+
+## Option B: Clone the Cookbook (recommended)
+
+The fastest way to see the full picture — 23 real test files covering every feature.
+
+```bash
+git clone https://github.com/glubean/cookbook.git
+cd cookbook
+npm install
+```
+
+Open any file in `explore/` or `tests/`, click **Play**, and explore. This is the best way to learn Glubean patterns before building your own project.
+
+---
+
+## Option C: Project Mode
+
+For new projects with environment variables, shared config, and CI integration.
+
+```bash
+mkdir my-project && cd my-project
+npx glubean init
+```
+
+This creates:
+
+```
+my-project/
+├── explore/          # API collection — pick one case, run it (replaces Postman)
+├── tests/            # regression suite — CI runs all cases every time
+├── data/             # shared test data (JSON/YAML/CSV) — used by both explore/ and tests/
+├── .env              # environment variables
+├── .env.secrets      # sensitive values (gitignored)
+└── package.json      # scripts and @glubean/sdk dependency
+```
+
+Open the generated `*.test.ts` file and click **Play** in the gutter. The Result Viewer opens beside your code with the full trace.
+
+You can also run **Glubean: Initialize Project** from the Command Palette (`Cmd+Shift+P`) to scaffold into the current workspace.
+
+---
+
+## What's next?
+
+- [Writing Tests](/extension/writing-tests) — Snippets, CodeLens, data-driven patterns
+- [Running Tests](/extension/running-tests) — All the ways to run tests from the editor
+- [Result Viewer](/extension/result-viewer) — Understand traces, assertions, and history
+- [Generate Tests with AI](/extension/generate-with-ai) — One sentence to a working test

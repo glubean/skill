@@ -1,0 +1,74 @@
+# Upload Your First Run
+
+Use this page when local tests already work and you want a shared run history in Cloud.
+
+## Before you start
+
+- The CLI is installed
+- `glubean run` already works locally
+- You have access to a Glubean Cloud project
+
+## 1. Create a project token
+
+In Glubean Cloud, open your project and go to **Settings → Tokens**.
+
+Create a token with at least `runs:write`. Project tokens start with `gpt_`.
+
+For token types and tradeoffs, see [Tokens](/cloud/tokens).
+
+## 2. Store the token
+
+For local development, put it in `.env.secrets`:
+
+```bash
+GLUBEAN_TOKEN=gpt_your_project_token
+GLUBEAN_PROJECT_ID=prj_abc123
+```
+
+`.env.secrets` should stay out of git.
+
+For CI, store the same values in your provider's secret store:
+
+```yaml
+env:
+  GLUBEAN_TOKEN: ${{ secrets.GLUBEAN_TOKEN }}
+  GLUBEAN_PROJECT_ID: ${{ vars.GLUBEAN_PROJECT_ID }}
+```
+
+## 3. Upload a run
+
+```bash
+npx glubean run --ci --upload
+```
+
+You can still target a file, folder, filter, or tag:
+
+```bash
+glubean run ./tests/auth.test.ts --upload
+glubean run --filter "login" --upload
+glubean run --tag smoke --upload
+```
+
+## 4. Open the run
+
+After upload, the CLI prints a Cloud URL. Open it to inspect:
+
+- run summary
+- test results
+- logs, traces, and metrics
+
+## Credential lookup order
+
+The CLI uses the first matching credential source:
+
+1. `--token`
+2. `GLUBEAN_TOKEN`
+3. project env files such as `.env.secrets`
+4. `package.json` → `glubean.cloud`
+5. `~/.glubean/credentials.json` from `glubean login`
+
+## Next
+
+- [Dashboard](/cloud/dashboard)
+- [Analytics](/cloud/analytics)
+- [Plans & Quotas](/cloud/quotas)

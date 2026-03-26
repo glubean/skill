@@ -1,0 +1,175 @@
+# Browser Testing
+
+Glubean supports browser automation through the `@glubean/browser` plugin, powered
+by [puppeteer-core](https://pptr.dev). It brings Glubean's observability layer —
+traces, metrics, console forwarding, and auto-screenshots — to browser testing.
+
+## Quick Setup
+
+```ts filename="tests/configure.ts"
+import { configure, test, type ExtensionFn } from "@glubean/sdk";
+import { browser, type GlubeanPage } from "@glubean/browser";
+
+const config = configure({
+  vars: { appUrl: "{{APP_URL}}" },
+  plugins: {
+    chrome: browser({ launch: true }),
+  },
+});
+
+const pageFixture: ExtensionFn<GlubeanPage> = async (ctx, use) => {
+  const pg = await config.chrome.newPage(ctx);
+  try {
+    await use(pg);
+  } catch (err) {
+    await pg.screenshotOnFailure();
+    throw err;
+  } finally {
+    await pg.close();
+    await config.chrome.close();
+  }
+};
+
+export const browserTest = test.extend({ page: pageFixture });
+```
+
+```ts filename="tests/login.test.ts"
+import type {} from "@glubean/sdk";
+import { browserTest } from "./configure.ts";
+
+export const loginFlow = browserTest(
+  { id: "login-flow", name: "User can log in", tags: ["auth", "smoke"] },
+  async (ctx) => {
+    await ctx.page.goto("/login");
+    await ctx.page.type("#email", "user@test.com");
+    await ctx.page.type("#password", ctx.secrets.require("TEST_PASSWORD"));
+    await ctx.page.click('button[type="submit"]');
+
+    ctx.expect(ctx.page.url()).toContain("/dashboard");
+    ctx.expect(await ctx.page.title()).toBe("Dashboard");
+  },
+);
+```
+
+## What you get for free
+
+Every browser action is automatically instrumented:
+
+- **Navigation tracing** — `page.goto()` emits a trace event with status and duration
+- **Network tracing** — all in-page XHR/fetch calls appear in the same trace timeline
+- **Performance metrics** — `page_load_ms` and `dom_content_loaded_ms` via `ctx.metric()`
+- **Console forwarding** — browser `console.*` output flows to `ctx.log()` / `ctx.warn()`
+- **Auto-screenshots** — capture on failure or after every step
+
+Results appear in the Result Viewer alongside API traces — unified timeline.
+
+## Auto-Screenshots
+
+Configure screenshot behavior per plugin instance:
+
+```ts
+// Screenshot only when something fails (default)
+browser({ launch: true, screenshot: "on-failure" })
+
+// Screenshot after every goto/click/type
+browser({ launch: true, screenshot: "every-step" })
+
+// No automatic screenshots
+browser({ launch: true, screenshot: "off" })
+```
+
+Screenshots are saved to `.glubean/screenshots/{testId}/`.
+
+## Combining API and browser tests
+
+Test that your API and UI agree:
+
+```ts
+export const profileConsistency = browserTest(
+  { id: "profile-api-ui", name: "API and UI show same user data" },
+  async (ctx) => {
+    // API call — traced automatically
+    const res = await ctx.http.get(`${ctx.vars.require("API_URL")}/me`, {
+      headers: { Authorization: `Bearer ${ctx.secrets.require("TOKEN")}` },
+    });
+    ctx.expect(res.status).toBe(200);
+    const apiName = res.body.name;
+
+    // Browser test — traced in the same timeline
+    await ctx.page.goto("/profile");
+    const uiName = await ctx.page.evaluate(
+      () => document.querySelector(".profile-name")?.textContent,
+    );
+    ctx.expect(uiName).toBe(apiName);
+  },
+);
+```
+
+## Connection modes
+
+### Launch mode (local development)
+
+```ts
+browser({ launch: true })
+```
+
+Auto-detects Chrome on your machine. No setup needed.
+
+### Connect mode (remote Chrome)
+
+```ts
+browser({ endpoint: "CHROME_ENDPOINT" })
+```
+
+```env
+# HTTP auto-discovery (recommended — survives Chrome restarts)
+CHROME_ENDPOINT=http://localhost:9222
+
+# Direct WebSocket
+CHROME_ENDPOINT=ws://localhost:9222/devtools/browser/abc123...
+```
+
+### Docker / CI
+
+Pre-install Chromium in your image and use launch mode:
+
+```dockerfile
+RUN apt-get update && apt-get install -y chromium
+```
+
+```ts
+browser({ launch: true, executablePath: "/usr/bin/chromium" })
+```
+
+## Why not just use Playwright?
+
+> **If all you test is a browser, use Playwright. If your system has APIs, services,
+> and a browser — use Glubean.**
+
+Playwright is the best browser automation framework. We don't try to compete on that axis.
+
+Glubean is a **verification framework** where browser is one plugin among many. The value
+is in what surrounds the browser:
+
+| Capability | Playwright | Glubean |
+|---|---|---|
+| Browser automation quality | Best-in-class | Good (Puppeteer-based) |
+| API + browser in one test | Awkward | Natural — same context, same trace |
+| Environment management | Manual | Built-in (`ctx.vars`, `ctx.secrets`) |
+| Data-driven testing | DIY | `fromCsv`, `fromYaml`, `test.pick` |
+| Observability | Local trace viewer | Result Viewer + Cloud dashboard |
+| Production monitoring | Not designed for it | Built for it |
+| MCP / AI agent testing | No | Yes |
+
+### When to use Playwright instead
+
+- Cross-browser is a hard requirement (Firefox, Safari)
+- Complex SPA interactions: drag-drop, canvas, rich text editors
+- Your test suite is 100% browser-only
+
+### When to use Glubean
+
+- You verify APIs and browser flows together
+- You run tests across dev / staging / prod
+- You want traces and metrics, not just pass/fail
+- You need to test MCP servers or AI agents alongside browser flows

@@ -1,0 +1,95 @@
+---
+title: Limitations & Trade-offs
+description: Known limitations and the design trade-offs behind them.
+---
+
+# Limitations & Trade-offs
+
+Every tool makes trade-offs. Here are the ones Glubean makes — and why.
+
+## Scratch Mode
+
+- **`.test.ts` files show TypeScript errors** — no `node_modules` means no type definitions. Use `.test.js` for scratch files. In a full project, `.test.ts` works normally with full type safety.
+- **No `.env` / `.env.secrets`** — environment variables and secrets aren't loaded in scratch mode. Hardcode values or use `process.env` directly.
+- **No `configure()`** — shared HTTP clients need a project setup. Each test writes its own URL and headers.
+
+## Shared State & Execution Order
+
+Tests in the same file share the module scope and run sequentially in export order. This is by design — it enables workflow-style tests where one test creates a resource and the next verifies it.
+
+```typescript
+let userId: number; // ✅ declare at module level
+
+export const createUser = test("create-user", async (ctx) => {
+  const res = await ctx.http.post("https://api.example.com/users", {
+    json: { name: "Test" },
+  });
+  userId = (await res.json()).id; // ✅ assign inside test
+});
+
+export const verifyUser = test("verify-user", async (ctx) => {
+  const res = await ctx.http.get(`https://api.example.com/users/${userId}`);
+  ctx.expect(res).toHaveStatus(200);
+});
+```
+
+**Rules:**
+- **Declare** shared variables at module top level
+- **Assign** them only inside test callbacks, never at the top level
+- Export order = execution order — put dependencies first
+- Running a single test skips earlier tests, so shared variables keep their initial value
+
+> **Why not parallel?** Parallel execution within a file would break shared state. Files are the isolation boundary — different files can run in parallel (planned).
+
+## CodeLens Static Analysis
+
+The extension uses regex-based static analysis (no runtime imports) to show CodeLens buttons. Some patterns can't be resolved statically:
+
+- **Nested generics** lose pick key resolution: `fromDir.merge<Record<string, T>>()` may not show individual pick buttons — `fromDir.merge<T>()` works
+- **Dynamic keys** — computed variable names or conditional data loading won't show pick buttons
+- **`require()` syntax** — only ES `import` is detected; CommonJS `require` is not
+
+When static analysis fails, tests still run correctly — only the inline CodeLens buttons are affected. Use `glubean run --pick <name>` from the CLI as a fallback.
+
+## Template Resolution (`{{KEY}}`)
+
+In `configure()` HTTP options, `{{KEY}}` templates resolve from **both** vars and secrets (secrets checked first). There is no strict mode that limits resolution to secrets only.
+
+```typescript
+export const api = configure({
+  vars: { baseUrl: "{{BASE_URL}}" },           // reads from .env
+  secrets: { apiKey: "{{API_KEY}}" },           // reads from .env.secrets
+  http: {
+    prefixUrl: "{{BASE_URL}}",
+    headers: {
+      Authorization: "Bearer {{API_KEY}}",      // checks .env.secrets first, then .env
+    },
+  },
+});
+```
+
+> If you put a secret in `.env` instead of `.env.secrets`, it will still work — but **you shouldn't**. Secrets in `.env` are committed to git and visible in Cloud uploads. Always use `.env.secrets` for sensitive values.
+
+## Plugins Require Separate Install
+
+Browser automation, auth strategies, GraphQL, and gRPC each require their own package:
+
+```bash
+npm install @glubean/auth      # bearer, apiKey, OAuth, basicAuth
+npm install @glubean/browser   # Puppeteer-based browser tests
+npm install @glubean/graphql   # GraphQL query/mutation helpers
+npm install @glubean/grpc      # gRPC client
+```
+
+This keeps the core SDK lightweight — you only install what you use.
+
+## CLI Defaults to `tests/` Only
+
+`glubean run` without arguments only scans the `tests/` directory. To run explore files:
+
+```bash
+glubean run --explore              # run all files in explore/
+glubean run explore/smoke.test.ts  # run a specific explore file
+```
+
+This is intentional — `explore/` is your interactive API collection, not something CI should run automatically.

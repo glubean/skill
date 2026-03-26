@@ -1,0 +1,102 @@
+# Configuration
+
+Use `configure()` when several tests in one file need the same runtime setup.
+
+This keeps repeated environment access, headers, and plugin wiring out of each individual test.
+
+## File-level setup
+
+Use `configure()` to set up shared HTTP defaults, variables, and secrets once per file. All values use `{{KEY}}` template syntax and resolve lazily at runtime.
+
+```typescript
+import { configure, test } from "@glubean/sdk";
+
+export const { http, vars, secrets } = configure({
+  vars: {
+    baseUrl: "{{BASE_URL}}",
+  },
+  secrets: {
+    apiKey: "{{API_KEY}}",
+  },
+  http: {
+    prefixUrl: "{{BASE_URL}}",
+    headers: { Authorization: "Bearer {{API_KEY}}" },
+  },
+});
+
+export const listUsers = test("list-users", async (ctx) => {
+  const data = await http.get("users?limit=5").json<{ users: any[] }>();
+  ctx.expect(data.users.length).toBe(5);
+  ctx.log(`Tested against ${vars.baseUrl}`);
+});
+```
+
+The `{{KEY}}` placeholders resolve from both `ctx.vars` and `ctx.secrets` at runtime. Secrets take precedence over vars if both have the same key.
+
+## Shared across files
+
+Extract `configure()` into a shared file to reuse across your test suite:
+
+```typescript
+// tests/configure.ts
+import { configure } from "@glubean/sdk";
+
+export const { vars, secrets, http } = configure({
+  vars: { baseUrl: "{{BASE_URL}}" },
+  secrets: { apiKey: "{{API_KEY}}" },
+  http: {
+    prefixUrl: "{{BASE_URL}}",
+    headers: { Authorization: "Bearer {{API_KEY}}" },
+  },
+});
+
+// tests/users.test.ts
+import { test } from "@glubean/sdk";
+import { http } from "./configure.js";
+
+export const listUsers = test("list-users", async (ctx) => {
+  const res = await http.get("users").json();
+});
+```
+
+## Plugin registration
+
+`configure()` is also where you register plugins. Reserved keys (`vars`, `secrets`, `http`) cannot be used as plugin names.
+
+```typescript
+import { configure, test } from "@glubean/sdk";
+import { graphql } from "@glubean/graphql";
+
+const { gql } = configure({
+  plugins: {
+    gql: graphql({
+      endpoint: "{{GRAPHQL_URL}}",
+      headers: { Authorization: "Bearer {{API_KEY}}" },
+      throwOnGraphQLErrors: true,
+    }),
+  },
+});
+
+export const checkGraphql = test("graphql", async (ctx) => {
+  const { data } = await gql.query(`{ me { id } }`);
+});
+```
+
+## HTTP options
+
+The `http` field supports these options:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `prefixUrl` | `string` | Base URL (`{{KEY}}` resolved) |
+| `headers` | `Record<string, string>` | Default headers (`{{KEY}}` resolved) |
+| `timeout` | `number` | Request timeout in ms |
+| `retry` | `number \| object` | Retry configuration |
+| `throwHttpErrors` | `boolean` | Throw on 4xx/5xx |
+| `hooks` | `object` | `beforeRequest` / `afterResponse` hooks |
+
+## Next
+
+- [Plugins](/sdk/plugins)
+- [Auth Plugin](/sdk/auth-plugin)
+- [GraphQL Plugin](/sdk/graphql-plugin)

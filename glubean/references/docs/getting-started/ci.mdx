@@ -1,0 +1,49 @@
+# Connect CI
+
+Use the same command locally and in CI. That is the simplest way to avoid drift.
+
+## Recommended command
+
+```bash
+npx glubean run --ci --result-json .glubean/last-run.json --reporter junit:test-results.xml
+```
+
+This shape works well because:
+
+- `./tests` keeps CI focused on committed regression tests.
+- `--result-json .glubean/last-run.json` gives you a stable machine-readable artifact.
+- `--reporter junit:test-results.xml` integrates with common CI test dashboards.
+
+## GitHub Actions example
+
+```yaml
+name: test-api
+on: [push, pull_request]
+
+jobs:
+  glubean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npx glubean run --ci --result-json .glubean/last-run.json --reporter junit:test-results.xml
+```
+
+## When you are ready for uploads
+
+Add `--upload` to send results to Glubean Cloud after each CI run:
+
+```bash
+npx glubean run --ci --upload
+```
+
+This requires `GLUBEAN_TOKEN`. Setup is covered in [Upload Your First Run](/getting-started/upload-to-cloud).
+
+## Next
+
+- [Upload Your First Run](/getting-started/upload-to-cloud)
+- [CLI Recipes](/cli/recipes)
+- [CLI Environments](/cli/environments)

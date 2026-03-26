@@ -1,0 +1,29 @@
+# Analytics
+
+Analytics answers the question that raw CI logs cannot: is this suite getting better, worse, or noisier over time?
+
+All views support rolling windows such as 7, 14, 30, or 90 days.
+
+## The charts most teams use
+
+- **Pass rate trend** to spot regressions
+- **Flaky tests** to find unstable tests
+- **Top failing tests** to prioritize cleanup work
+- **Failure distribution** to separate assertion bugs from timeout or network noise
+- **Endpoint latency** to find performance regressions from trace data
+- **Test duration trend** to catch tests that are getting slower
+
+## Custom metrics
+
+If your tests emit custom metrics through `ctx.metric()`, Cloud can chart them over time on dedicated metric views.
+
+## Good uses of analytics
+
+- deciding which failures matter most
+- proving a flaky suite is actually improving
+- detecting a slow endpoint before it becomes a production issue
+
+## Next
+
+- [Dashboard](/cloud/dashboard)
+- [Notifications](/cloud/notifications)

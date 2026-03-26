@@ -1,0 +1,72 @@
+---
+title: Diagnostics
+description: Diagnose your environment, troubleshoot common problems, and check CLI status.
+---
+
+# Diagnostics
+
+When something is not working, the Diagnose command and the tips below help you find the root cause quickly.
+
+---
+
+## Glubean: Diagnose
+
+Run `Glubean: Diagnose` from the Command Palette. The extension checks four areas and writes results to the Output Channel:
+
+1. **Runtime** — Node.js version, CLI installation status and version.
+2. **Project status** — `package.json` presence, `@glubean/sdk` dependency.
+3. **Test discovery** — how many test files and test cases were found.
+4. **Current file** — whether the active file is a test file, its parse result.
+
+If problems are detected, the output includes specific suggestions (e.g. "CLI version is outdated, run `npm update @glubean/cli`").
+
+---
+
+## Common problems
+
+### Tests are not discovered
+
+- **Check the file extension.** Only `.test.ts`, `.test.js`, and `.test.mjs` are recognized.
+- **Check the export.** Tests must be exported: `export const myTest = test(...)`.
+- **Check `glubean.autoDiscover`.** If set to `false`, tests are only parsed when you open the file.
+
+### Play button does not appear
+
+- The file must match `*.test.ts`, `*.test.js`, or `*.test.mjs`.
+- Ensure the extension is installed and activated (check the Extensions sidebar).
+
+### Scratch Mode type errors
+
+Scratch Mode skips TypeScript compilation. Use `.test.js` (not `.test.ts`) for scratch files to avoid type-checking issues.
+
+### Environment variables not loaded
+
+- Verify the `.env` file is in the project root (same level as `package.json`).
+- Check which environment is selected in the status bar — it might be pointing to a different `.env` file.
+- Secret variables must be in `.env.secrets` (or the matching `.env.{name}.secrets`), not the regular `.env` file.
+
+### Result Viewer does not open
+
+- Results are stored in `.glubean/results/`. If this directory was deleted, there is nothing to show.
+- Check that the run actually completed (look at the Test Results panel for errors).
+
+---
+
+## CLI status bar
+
+The status bar shows the Glubean CLI installation status (only visible in Glubean projects):
+
+| Status bar display | Meaning | Click action |
+|---|---|---|
+| `$(alert) Glubean CLI` (yellow) | CLI not installed | Runs `npm install --save-dev @glubean/cli` |
+| `$(arrow-up) CLI 0.1.12 -> 0.1.15` | Update available | Runs `npm update @glubean/cli` |
+| `$(check) CLI 0.1.15` | Up to date | Shows confirmation message |
+
+Version checks query the npm registry with a 24-hour cache.
+
+---
+
+## What's next?
+
+- [Commands & Settings](/extension/reference) — Full command and configuration reference
+- [Quick Start](/extension/quick-start) — Start fresh if your setup is broken

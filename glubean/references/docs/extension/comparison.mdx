@@ -1,0 +1,100 @@
+# Comparison
+
+## Glubean vs Postman
+
+The most common comparison — and the most misunderstood.
+
+**Postman is a request tool.** You compose requests, organize them in collections, and share them through a proprietary cloud. It's great for exploring APIs. It's not designed for ongoing verification.
+
+**Glubean is a verification system.** Tests are TypeScript, versioned in git, executed in the editor and CI. Every run produces structured results — assertions, traces, events — that AI can read, interpret, and act on.
+
+The mapping between concepts:
+
+- `explore/` files = Postman Collections (but git-safe, code-first, and diffable)
+- `test.pick` = Postman Examples (but inline, type-checked, and AI-readable)
+- `configure()` = Postman Environments (but separated vars/secrets by architecture)
+- `glubean run` in CI = Newman (but same code, zero conversion)
+
+| | Glubean | Postman |
+|---|---|---|
+| Format | TypeScript in git | JSON in proprietary cloud |
+| Assertions | Fluent `expect`, schema validation | JS test scripts |
+| Data-driven | `test.each` + `test.pick` | Collection Runner |
+| Multi-step | `.step()` with typed state passing | Collection chaining |
+| Env management | `.env` + `.env.secrets` (architecture-level) | GUI environments (mixed) |
+| AI integration | MCP server + skill + schema inference | Limited |
+| CI | `glubean run` — same file | Newman — different format |
+| Pricing | Free, open source | Free + paid tiers |
+
+**When to choose Postman:** your team is non-technical and needs a standalone GUI with zero coding.
+
+---
+
+## Glubean vs Playwright
+
+Playwright is the closest engineering-grade competitor.
+
+**Playwright is browser-first.** It excels at testing web UIs through headless browsers. API testing is supported but secondary — it bolts onto the browser testing infrastructure.
+
+**Glubean is workflow-first.** API verification is the primary use case. Browser automation is available as a plugin, but the core value is in structured HTTP verification with data-driven patterns, environment management, and AI integration.
+
+| | Glubean | Playwright |
+|---|---|---|
+| Primary focus | API workflows | Browser UI |
+| Data-driven | `test.each`, `test.pick`, data loaders | Manual parameterization |
+| Result inspection | Built-in Result Viewer (traces, assertions, events) | HTML reporter |
+| AI integration | MCP server, structured results, self-healing loop | Not built-in |
+| Environment switching | Status bar + `.env` architecture | Manual config |
+| CI reporting | Structured events + Cloud upload | HTML/JSON reports |
+
+**When to choose Playwright:** you're primarily testing browser UI, not API workflows.
+
+---
+
+## Glubean vs Datadog Synthetic / Checkly
+
+Monitoring tools, not developer workflows.
+
+These products run scheduled checks against production endpoints. They answer "is it up?" — not "does it behave correctly?" They're configured through web dashboards, not code editors. They don't integrate with your development loop.
+
+| | Glubean | Synthetic Monitoring |
+|---|---|---|
+| Primary use | Development + CI verification | Production uptime |
+| Authoring | Code in editor | Web dashboard |
+| Version control | Git-native | Not code-first |
+| AI integration | MCP, skill, structured results | Not available |
+| Local development | Full editor experience | Not designed for local |
+
+**When to choose monitoring tools:** you only need uptime checks against production. You don't need a developer workflow.
+
+---
+
+## Glubean vs Jest / Vitest
+
+General-purpose test runners. Powerful, but they don't know anything about APIs.
+
+With Jest or Vitest, you can absolutely test HTTP endpoints — but you build everything yourself: HTTP clients, assertion helpers, environment management, data-driven patterns, result inspection. It works. It's also a lot of undifferentiated effort.
+
+Glubean gives you all of that out of the box: `ctx.http` with automatic tracing, `expect` with structured diffs, `test.each`/`test.pick` for data-driven patterns, `configure()` for shared setup, Result Viewer for instant inspection, and MCP for AI integration.
+
+| | Glubean | Jest / Vitest |
+|---|---|---|
+| HTTP tracing | Automatic, every call captured | DIY |
+| Data-driven | `test.each`, `test.pick`, data files | Manual parameterization |
+| Environment management | Built-in `.env` architecture | DIY or dotenv |
+| Result inspection | Result Viewer in editor | Terminal output |
+| AI integration | MCP server + structured results | Not available |
+| Scope | API verification | Everything |
+
+**When to choose Jest/Vitest:** you're writing unit tests for application logic, not verifying API behavior.
+
+---
+
+## When not to use Glubean
+
+- **You just need to fire one request and see the response** — use REST Client or `curl`.
+- **Your team is non-technical and needs a pure GUI** — use Postman.
+- **You only need uptime monitoring** — use Datadog Synthetic or Checkly.
+- **You're testing browser UI, not APIs** — use Playwright or Cypress.
+
+Every tool has its sweet spot. Glubean's is developer-owned API verification: git-safe, AI-native, running the same code from your editor to CI to production.

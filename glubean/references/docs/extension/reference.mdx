@@ -1,0 +1,105 @@
+---
+title: Commands & Settings
+description: Complete reference for commands, keybindings, configuration, menus, and activation events.
+---
+
+# Commands & Settings
+
+All commands are accessible via the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`).
+
+---
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `Glubean: Run All Tests in File` | Run every test in the active file |
+| `Glubean: Run All Tests in Project` | Run all tests in the workspace folder |
+| `Glubean: Re-run Last Request` | Repeat the most recent run (single test, file, or project) |
+| `Glubean: Rerun Failed Tests` | Re-run only the tests that failed in the last run |
+| `Glubean: Run Pick Example` | Run a specific `test.pick` example (triggered by CodeLens) |
+| `Glubean: Select Environment` | Open quick-pick to choose the active `.env` file |
+| `Glubean: Diagnose` | Check runtime, project, and test discovery health |
+| `Glubean: Diff with Previous Run` | Side-by-side diff of the two most recent results |
+| `Glubean: Copy as cURL` | Copy the HTTP request from the open result as a cURL command |
+| `Glubean: Open Latest Result` | Open the newest result in the Result Viewer |
+| `Glubean: Open Last Result JSON` | Open the raw `.result.json` from the last run |
+| `Glubean: Previous Result` | Navigate to the older result in history |
+| `Glubean: Next Result` | Navigate to the newer result in history |
+| `Glubean: Clean All Results` | Delete all files in `.glubean/results/` |
+| `Glubean: Initialize Project` | Scaffold a new Glubean project |
+| `Glubean: Setup` | Check Node.js version and CLI installation |
+| `View Source` | Switch from Result Viewer to raw JSON editor |
+| `View as Result` | Switch from raw JSON editor to Result Viewer |
+| `Run Task` | Run a single Glubean Task (from Tasks panel) |
+| `Run All Tasks` | Run all Glubean Tasks sequentially |
+| `Refresh Tasks` | Rescan `package.json` and refresh the Tasks panel |
+| `Glubean: Pin Test` | Pin the current test to the Glubean Panel (triggered by CodeLens) |
+| `Glubean: Unpin Test` | Remove a pinned test from the Glubean Panel |
+| `Glubean: Run Pinned Test` | Run a pinned test from the Glubean Panel |
+| `Glubean: Pin File` | Pin the current test file to the Glubean Panel |
+| `Glubean: Unpin File` | Remove a pinned file from the Glubean Panel |
+| `Glubean: Run Pinned File` | Run all tests in a pinned file |
+
+---
+
+## Keybindings
+
+| Shortcut (Mac) | Shortcut (Win/Linux) | Command | When |
+|---|---|---|---|
+| `Cmd+Alt+T` | `Ctrl+Alt+T` | Run All Tests in File | Editor focused, file is `.test.ts/.test.js/.test.mjs` |
+| `Cmd+Shift+R` | `Ctrl+Shift+R` | Re-run Last Request | Editor focused |
+| `Cmd+Alt+[` | `Ctrl+Alt+[` | Previous Result | Editor focused, file is `.json` |
+| `Cmd+Alt+]` | `Ctrl+Alt+]` | Next Result | Editor focused, file is `.json` |
+
+---
+
+## Configuration
+
+All settings are under the `glubean.*` namespace in VS Code settings.
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `glubean.autoDiscover` | boolean | `true` | Automatically discover tests when files are opened or changed |
+| `glubean.resultHistoryLimit` | number | `20` | Max result files per test (1-100). Older results auto-deleted |
+| `glubean.testExplorerLayout` | string | `"auto"` | Test Explorer layout: `"flat"`, `"tree"`, or `"auto"` (flat when ≤15 files) |
+| `glubean.taskTimeoutMs` | number | `300000` | Task timeout in ms (default 5 min, minimum 10s) |
+| `glubean.openResultAfterTask` | string | `"failures"` | Auto-open Result Viewer after task: `"always"`, `"failures"`, `"never"` |
+| `glubean.telemetry.enabled` | boolean | `false` | Share anonymous usage data (no code, paths, or personal data) |
+
+---
+
+## Context menus
+
+| Location | Command | Shown when |
+|---|---|---|
+| Editor title bar (run area) | Run All Tests in File | File matches `*.test.ts/js/mjs` |
+| Editor title bar (run area) | View Source | Result Viewer is active |
+| Editor title bar (run area) | View as Result | File is `.result.json` and not in Result Viewer |
+| File Explorer (right-click file) | Run All Tests in File | File matches `*.test.ts/js/mjs` |
+| File Explorer (right-click folder) | Run All Tests in Project | Folder is not `node_modules`, `.git`, or `dist` |
+| File Explorer (right-click file) | Pin to Glubean | File matches `*.test.ts/js/mjs` |
+| Glubean Panel — Pinned Tests (inline) | Run Pinned Test / Unpin Test | Item is a pinned test |
+| Glubean Panel — Pinned Files (inline) | Run Pinned File / Unpin File | Item is a pinned file |
+| Tasks panel (inline) | Run Task | Item is a Glubean Task |
+| Tasks panel (title bar) | Run All Tasks / Refresh Tasks | Tasks view is visible |
+
+---
+
+## Activation events
+
+The extension activates when any of these conditions are met:
+
+- Workspace contains `**/*.test.ts`
+- Workspace contains `**/*.test.js`
+- Workspace contains `**/*.test.mjs`
+- A TypeScript file is opened
+- A JavaScript file is opened
+
+---
+
+## Custom editors
+
+| File pattern | Editor | Priority |
+|---|---|---|
+| `*.result.json` | Glubean Result Viewer | default |

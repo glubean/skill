@@ -1,0 +1,86 @@
+# Plugins
+
+Plugins let you package reusable runtime behavior without changing the core SDK.
+
+Use them when multiple files need the same client, auth helper, or domain-specific utility.
+
+## Basic pattern
+
+1. Define a plugin with `definePlugin(...)`
+2. Register it in `configure({ plugins })`
+3. Use the shared instance in tests
+
+The plugin is created lazily on first access during test execution.
+
+## Example
+
+```typescript
+import { configure, definePlugin, test } from "@glubean/sdk";
+
+const myClient = (opts: { endpointKey: string }) =>
+  definePlugin((runtime) => {
+    const baseUrl = runtime.requireVar(opts.endpointKey);
+    return {
+      getStatus: async () => runtime.http.get(`${baseUrl}/status`).json(),
+    };
+  });
+
+const { api } = configure({
+  plugins: {
+    api: myClient({ endpointKey: "INTERNAL_API_URL" }),
+  },
+});
+
+export const health = test("internal-health", async (ctx) => {
+  const status = await api.getStatus();
+  ctx.expect(status.ok).toBe(true);
+});
+```
+
+## Plugin runtime
+
+Plugin factories receive a `GlubeanRuntime` object with:
+
+| Property | Description |
+|----------|-------------|
+| `runtime.http` | HTTP client (auto-traced) |
+| `runtime.requireVar(key)` | Read a var (throws if missing) |
+| `runtime.requireSecret(key)` | Read a secret (throws if missing) |
+| `runtime.resolveTemplate(str)` | Resolve `{{KEY}}` placeholders |
+| `runtime.vars` | Raw vars record |
+| `runtime.secrets` | Raw secrets record |
+| `runtime.action(a)` | Emit a custom action event |
+| `runtime.event(ev)` | Emit a custom event |
+| `runtime.log(msg, data?)` | Log from plugin context |
+
+## Plugin activation
+
+Plugins can be conditionally activated based on test tags or request patterns:
+
+```typescript
+const { api } = configure({
+  plugins: {
+    api: {
+      factory: myClient({ endpointKey: "API_URL" }),
+      activation: {
+        tags: { enable: ["api"], disable: ["browser-only"] },
+        requests: {
+          include: [{ path: "/api/" }],
+          exclude: [{ method: "DELETE", path: "/admin/" }],
+        },
+      },
+    },
+  },
+});
+```
+
+## First-party plugins
+
+- [Auth (`@glubean/auth`)](/sdk/auth-plugin) — OAuth, API key, and custom auth flows
+- [Browser (`@glubean/browser`)](/sdk/browser-plugin) — Puppeteer-powered browser automation
+- [GraphQL (`@glubean/graphql`)](/sdk/graphql-plugin) — Typed GraphQL queries and mutations
+
+## Notes
+
+- Reserved keys (`vars`, `secrets`, `http`) cannot be used as plugin names in `configure({ plugins })`.
+- Plugins are cached per test execution and recreated for each new test.
