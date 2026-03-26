@@ -2,20 +2,24 @@
 set -e
 
 # Glubean project bootstrap — from zero to runnable in one script.
-# Usage: bash init.sh [--scratch | --full] [--mcp]
+# Usage: bash init.sh [--scratch | --full] [--mcp] [--client <name>]
 #
-# --scratch  Install SDK only, skip glubean init (default)
-# --full     Run glubean init (config/, .env, directory structure)
-# --mcp      Configure MCP tools via Smithery
+# --scratch          Install SDK only, skip glubean init (default)
+# --full             Run glubean init (config/, .env, directory structure)
+# --mcp              Configure MCP tools for the specified client
+# --client <name>    Agent client name (claude-code, cursor, codex, windsurf, etc.)
 
 MODE="scratch"
 MCP=false
+CLIENT=""
 
-for arg in "$@"; do
-  case "$arg" in
-    --full)    MODE="full" ;;
-    --scratch) MODE="scratch" ;;
-    --mcp)     MCP=true ;;
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --full)    MODE="full"; shift ;;
+    --scratch) MODE="scratch"; shift ;;
+    --mcp)     MCP=true; shift ;;
+    --client)  CLIENT="$2"; shift 2 ;;
+    *)         shift ;;
   esac
 done
 
@@ -59,16 +63,24 @@ if [ "$MODE" = "full" ]; then
   npx glubean init 2>&1 >&2
 fi
 
-# --- MCP via Smithery (optional) ---
+# --- MCP install (optional) ---
 
 if [ "$MCP" = true ]; then
-  echo "Installing MCP server..." >&2
-  npx -y install-mcp @glubean/mcp --client claude-code -y --oauth no 2>&1 >&2
+  if [ -z "$CLIENT" ]; then
+    echo '{"ok":false,"error":"--mcp requires --client <name> (claude-code, cursor, codex, windsurf, etc.)"}'
+    exit 1
+  fi
+  echo "Installing MCP server for $CLIENT..." >&2
+  npx -y install-mcp @glubean/mcp --client "$CLIENT" -y --oauth no 2>&1 >&2
 fi
 
 # --- JSON result ---
 
 RESULT="{\"ok\":true,\"mode\":\"$MODE\",\"mcp\":$MCP"
+
+if [ -n "$CLIENT" ]; then
+  RESULT="$RESULT,\"client\":\"$CLIENT\""
+fi
 
 if [ "$MODE" = "full" ]; then
   RESULT="$RESULT,\"created\":[\"config/\",\".env\",\".env.secrets\",\"explore/\",\"tests/\"]"

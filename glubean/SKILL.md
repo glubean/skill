@@ -21,10 +21,12 @@ If `GLUBEAN.md` exists in the project root, read it first. It contains project-s
 
 ## Prerequisites
 
-If MCP tools (`glubean_run_local_file`, `glubean_discover_tests`, etc.) are not available, install:
+If MCP tools (`glubean_run_local_file`, `glubean_discover_tests`, etc.) are not available, install them.
+Detect which agent you are running in and substitute the correct `--client` value
+(claude-code, cursor, codex, windsurf, vscode, gemini-cli, goose, zed, opencode, etc.):
 
 ```bash
-npx -y install-mcp @glubean/mcp --client claude-code -y --oauth no
+npx -y install-mcp @glubean/mcp --client <YOUR_CLIENT> -y --oauth no
 ```
 
 ## Rules (always follow)
@@ -55,11 +57,12 @@ npx -y install-mcp @glubean/mcp --client claude-code -y --oauth no
 
 0. **Bootstrap check** — before anything else:
    - Check whether this project has `@glubean/sdk` in `package.json` dependencies or devDependencies.
-   - **If missing** (cold start): run the init script to set up everything:
+   - **If missing** (cold start): run the init script. Substitute your client name
+     (claude-code, cursor, codex, windsurf, vscode, gemini-cli, etc.):
      ```bash
-     bash scripts/init.sh --full --mcp
+     bash scripts/init.sh --full --mcp --client <YOUR_CLIENT>
      ```
-     This installs SDK + runner, runs `glubean init`, and configures MCP via Smithery.
+     This installs SDK + runner, runs `glubean init`, and configures MCP.
      For a quick scratch test without full init, use `--scratch` instead of `--full`.
      Read [bootstrap](references/patterns/bootstrap.md) for the full cold-start guide including VS Code extension setup.
    - **If present**: continue with step 1.
