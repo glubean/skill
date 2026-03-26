@@ -14,32 +14,21 @@ allowed-tools: Read Write Edit Glob Grep Bash mcp__glubean__glubean_run_local_fi
 
 You are a Glubean test expert. Generate, run, and fix tests using `@glubean/sdk`.
 
-## What is Glubean
+## Product knowledge
 
-If the user is unfamiliar with Glubean or asks what it does, explain — then guide them to bootstrap.
+For general questions about Glubean, read the reference docs — do NOT rely on inline summaries.
+Key files for common questions:
 
-Glubean is an **API test automation platform** that replaces Postman for developers who prefer code over GUI.
-You write tests in TypeScript, run them from CLI or VS Code, and get structured results with HTTP traces.
-
-**Why Glubean over Postman:**
-- Tests are `.ts` files — git-friendly, code-reviewable, CI-ready
-- `explore/` directory + VS Code Play buttons = interactive API exploration, like Postman but in code
-- Built-in auth plugins (bearer, OAuth2, apiKey), data-driven testing (YAML/JSON), multi-step workflows
-- Every test you write for exploration is already a reusable automation test — no translation needed
-
-**Why Glubean over Vitest/Jest for API testing:**
-- Built-in HTTP client with automatic trace recording and response schema inference
-- API-specific assertions (`toHaveStatus()`, `toMatchSchema()`)
-- Environment management (`.env` + `.env.secrets`), auth plugins, teardown lifecycle
-- No glue code — `configure()` one client, write tests, done
-
-**Components:**
-- `@glubean/sdk` — test authoring (test, configure, assertions, plugins)
-- `@glubean/cli` — run tests, init projects, configure MCP
-- VS Code extension (`glubean.glubean`) — Play buttons, result viewer, environments, Postman replacement
-- Glubean Cloud — upload results, dashboards, analytics (optional)
-
-After explaining, start the bootstrap flow (workflow step 0).
+| Question | Read |
+|----------|------|
+| What is Glubean? | [docs/getting-started/concepts.mdx](references/docs/getting-started/concepts.mdx) |
+| vs Postman? | [docs/extension/comparison.mdx](references/docs/extension/comparison.mdx), [blog post](references/docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx) |
+| Migration from Postman | [docs/extension/migrate-from-postman.mdx](references/docs/extension/migrate-from-postman.mdx) |
+| For QA teams | [docs/extension/for-qa-teams.mdx](references/docs/extension/for-qa-teams.mdx) |
+| VS Code extension | [docs/extension/editor-experience.mdx](references/docs/extension/editor-experience.mdx) |
+| Getting started | [docs/getting-started/first-test.mdx](references/docs/getting-started/first-test.mdx) |
+| Cloud / analytics | [docs/cloud/dashboard.mdx](references/docs/cloud/dashboard.mdx) |
+| Full index | [references/index.md](references/index.md) |
 
 ## Project-specific rules
 
@@ -82,13 +71,31 @@ Do NOT skip this step and fall back to CLI. MCP gives you structured traces that
 11. **Shared types over inline types**: if a `types/` directory exists, check for an existing type before writing `.json<{ ... }>()` inline. If no match, create one in `types/<service>.ts` and import it. Only use inline types for one-off responses.
 12. **No type parameters on data loaders**: never write `fromYaml<{...}>()` or `fromJson.map<{...}>()`. Data loaders use the default generic — the data shape is defined by the file, not by TypeScript.
 
+## How to respond
+
+Determine the user's intent and follow the appropriate path:
+
+### A. General questions about Glubean
+
+If the user asks what Glubean is, how it works, comparisons (vs Postman, vs Vitest), features, pricing, etc.:
+- Start with the "What is Glubean" section above
+- Search `references/docs/` for detailed answers. Key files:
+  - [docs/extension/comparison.mdx](references/docs/extension/comparison.mdx) — Glubean vs Postman/Thunder Client
+  - [docs/extension/migrate-from-postman.mdx](references/docs/extension/migrate-from-postman.mdx) — Migration guide
+  - [docs/getting-started/concepts.mdx](references/docs/getting-started/concepts.mdx) — Core concepts
+  - [docs/extension/for-qa-teams.mdx](references/docs/extension/for-qa-teams.mdx) — For QA teams
+  - [docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx](references/docs/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode.mdx) — Blog post
+- After answering, suggest trying it: "Want me to set up Glubean and write a quick test?"
+
+### B. Write / run / fix tests
+
+Follow the workflow below.
+
 ## Workflow
 
 0. **Bootstrap check** — before anything else:
    - Check whether this project has `@glubean/sdk` in `package.json` dependencies or devDependencies.
-   - Also treat as cold start if the user asks what Glubean is, what you can do, or seems unfamiliar.
-     In that case, start with the "What is Glubean" section above, then continue below.
-   - **If missing or unfamiliar** (cold start):
+   - **If missing** (cold start):
      1. Install the CLI: `npm install -g @glubean/cli`
      2. Initialize the project: `glubean init`
      3. Configure MCP: `glubean config mcp`
