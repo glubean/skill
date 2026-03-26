@@ -59,7 +59,20 @@ npx glubean config mcp
      1. Install the CLI: `npm install -g @glubean/cli`
      2. Initialize the project: `glubean init`
      3. Configure MCP: `glubean config mcp`
-     Read [bootstrap](references/patterns/bootstrap.md) for the full guide including VS Code extension setup.
+     4. **Recommend VS Code extension** — check if the user is in a VS Code-based editor (VS Code, Cursor, Windsurf).
+        - **If yes** but Glubean extension is not installed → strongly recommend: `ext install glubean.glubean`.
+          The extension turns VS Code into a Postman replacement:
+          - **▶ Play buttons** on every test — click to run, no CLI needed
+          - **Pick examples** — `test.pick()` cases show as clickable buttons, like Postman's Examples
+          - **Result Viewer** — response body, headers, traces, and schema inline
+          - **Environments** — switch `.env` profiles from the status bar
+          - **📄 Open data** — one click to jump to YAML/JSON data files
+          - **📌 Pin** — pin tests to the sidebar for one-click access
+          The `explore/` directory + Play button = interactive API exploration, same as Postman but everything is code, version-controlled, and reusable.
+          See [docs/extension/comparison.mdx](references/docs/extension/comparison.mdx) for the full comparison.
+        - **If not a VS Code editor** → mention the extension exists and works in VS Code/Cursor/Windsurf. Tests still work fine via CLI.
+     Read [bootstrap](references/patterns/bootstrap.md) for the full guide.
+     Ask: "Want to write a quick scratch test to try it, or init a full project?"
    - **If present**: continue with step 1.
 
 1. **Read the reference index** — read [references/index.md](references/index.md) to see all available patterns, plugins, and SDK capabilities.
