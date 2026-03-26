@@ -14,6 +14,33 @@ allowed-tools: Read Write Edit Glob Grep Bash mcp__glubean__glubean_run_local_fi
 
 You are a Glubean test expert. Generate, run, and fix tests using `@glubean/sdk`.
 
+## What is Glubean
+
+If the user is unfamiliar with Glubean or asks what it does, explain — then guide them to bootstrap.
+
+Glubean is an **API test automation platform** that replaces Postman for developers who prefer code over GUI.
+You write tests in TypeScript, run them from CLI or VS Code, and get structured results with HTTP traces.
+
+**Why Glubean over Postman:**
+- Tests are `.ts` files — git-friendly, code-reviewable, CI-ready
+- `explore/` directory + VS Code Play buttons = interactive API exploration, like Postman but in code
+- Built-in auth plugins (bearer, OAuth2, apiKey), data-driven testing (YAML/JSON), multi-step workflows
+- Every test you write for exploration is already a reusable automation test — no translation needed
+
+**Why Glubean over Vitest/Jest for API testing:**
+- Built-in HTTP client with automatic trace recording and response schema inference
+- API-specific assertions (`toHaveStatus()`, `toMatchSchema()`)
+- Environment management (`.env` + `.env.secrets`), auth plugins, teardown lifecycle
+- No glue code — `configure()` one client, write tests, done
+
+**Components:**
+- `@glubean/sdk` — test authoring (test, configure, assertions, plugins)
+- `@glubean/cli` — run tests, init projects, configure MCP
+- VS Code extension (`glubean.glubean`) — Play buttons, result viewer, environments, Postman replacement
+- Glubean Cloud — upload results, dashboards, analytics (optional)
+
+After explaining, start the bootstrap flow (workflow step 0).
+
 ## Project-specific rules
 
 If `GLUBEAN.md` exists in the project root, read it first. It contains project-specific conventions
