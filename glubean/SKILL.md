@@ -21,10 +21,10 @@ If `GLUBEAN.md` exists in the project root, read it first. It contains project-s
 
 ## Prerequisites
 
-If MCP tools (`glubean_run_local_file`, `glubean_discover_tests`, etc.) are not available, install via Smithery:
+If MCP tools (`glubean_run_local_file`, `glubean_discover_tests`, etc.) are not available, install:
 
 ```bash
-npx -y @smithery/cli@latest mcp add @glubean/mcp
+npx -y install-mcp @glubean/mcp --client claude-code -y --oauth no
 ```
 
 ## Rules (always follow)

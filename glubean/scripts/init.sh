@@ -62,8 +62,8 @@ fi
 # --- MCP via Smithery (optional) ---
 
 if [ "$MCP" = true ]; then
-  echo "Installing MCP server via Smithery..." >&2
-  npx -y @smithery/cli@latest mcp add @glubean/mcp 2>&1 >&2
+  echo "Installing MCP server..." >&2
+  npx -y install-mcp @glubean/mcp --client claude-code -y --oauth no 2>&1 >&2
 fi
 
 # --- JSON result ---
