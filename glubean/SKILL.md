@@ -56,7 +56,7 @@ npx glubean config mcp
 0. **Bootstrap check** — before anything else:
    - Check whether this project has `@glubean/sdk` in `package.json` dependencies or devDependencies.
    - **If missing** (cold start):
-     1. Install/upgrade the CLI: `bash scripts/init.sh`
+     1. Install the CLI: `npm install -g @glubean/cli`
      2. Initialize the project: `glubean init`
      3. Configure MCP: `glubean config mcp`
      Read [bootstrap](references/patterns/bootstrap.md) for the full guide including VS Code extension setup.

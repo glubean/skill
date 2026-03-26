@@ -17,8 +17,6 @@ Supports 40+ agents including Claude Code, Cursor, GitHub Copilot, Codex, Gemini
 ```
 glubean/
 ├── SKILL.md                    # Agent instructions
-├── scripts/
-│   └── init.sh                 # Install/upgrade Glubean CLI
 └── references/
     ├── index.md                # Pattern & capability index
     ├── sdk-reference.md        # Full SDK API reference
