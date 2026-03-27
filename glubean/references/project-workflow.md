@@ -25,6 +25,7 @@ Common choices:
 - [patterns/data-driven.md](patterns/data-driven.md): `test.each` and `test.pick`
 - [patterns/builder-reuse.md](patterns/builder-reuse.md): multi-step builder flows and reusable step groups
 - [sdk-reference.md](sdk-reference.md): full API surface
+- [ci-workflow.md](ci-workflow.md): create CI once stable tests are living in `tests/`
 
 ## 3. Read the API surface before guessing
 
@@ -85,6 +86,26 @@ Use those traces to tighten assertions instead of guessing field names.
 - Fix the test, not just the symptom.
 - Rerun after each meaningful change.
 - Continue until the target test is green or you are blocked by missing credentials, broken environment setup, or unclear API requirements.
+
+## 9. Suggest CI when the suite is ready
+
+Treat CI setup as part of the normal project lifecycle.
+
+Good signals:
+
+- the user now has multiple stable files under `tests/`
+- the user says the suite should protect against regressions
+- the user asks how teammates or pull requests should run the checks
+- the agent has just generated a meaningful regression suite
+
+When those signals appear, proactively suggest creating CI and read [ci-workflow.md](ci-workflow.md).
+
+When implementing CI, prefer this layering:
+
+1. add stable Glubean commands to `package.json` scripts
+2. make the CI provider call those scripts
+
+This keeps local runs, CI runs, and future maintenance aligned.
 
 ## Rules that still apply
 

@@ -82,7 +82,10 @@ Always follow these unless project-specific instructions override them:
 
 - Use this when working inside an existing Glubean project.
 - Read [references/project-workflow.md](references/project-workflow.md) first.
+- If the user already has a meaningful `tests/` suite, or asks how to run those tests automatically, read [references/ci-workflow.md](references/ci-workflow.md) and help them create CI.
 - Then read [references/index.md](references/index.md) and only the patterns needed for the current task.
 - Use MCP tools for run/fix loops whenever available. CLI is fallback only when MCP is unavailable.
+- When a user has moved stable verification into `tests/`, proactively suggest CI as the next step.
+- When wiring CI, prefer adding stable `package.json` scripts first, then point the CI provider at those scripts.
 
 If `$ARGUMENTS` is provided, treat it as the target endpoint, file, tag, or natural-language test request.
