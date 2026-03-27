@@ -26,9 +26,8 @@ glubean init --hooks --github-actions    # With git hooks and CI workflow
 ## AI tool integration
 
 ```bash
-glubean config mcp --target claude-code  # Configure MCP server
-glubean config skill --target claude-code # Install test-writing skill
-glubean docs pull                        # Download SDK docs for AI agents
+glubean config mcp --target claude-code   # Configure MCP server
+npx skills add glubean/skill              # Install test-writing skill (docs bundled)
 ```
 
 ## CI / CD

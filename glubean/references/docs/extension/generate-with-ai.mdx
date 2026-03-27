@@ -13,14 +13,13 @@ Most API tools were built for humans clicking buttons. AI agents can't click a G
 3. **Schema inference** — large API responses are summarized as JSON Schema, so AI understands the shape without reading megabytes of data
 4. **Structured failures** — when a test fails, AI sees exactly which assertion failed with `expected` vs `actual`, not a wall of text
 
-With the right project context — ideally API source code in the same workspace, or an up-to-date OpenAPI spec, plus skill and lens — we've achieved an AI self-healing loop: describe what to verify → AI writes the test → MCP runs it → AI reads structured failures → fixes and reruns → loop until green. In practice, the quality depends heavily on how much context is available — we're continuously improving this to make it more seamless. But even without perfect setup, AI-generated tests are a strong starting point that you refine, not write from scratch.
+With the right project context — ideally API source code in the same workspace, or an up-to-date OpenAPI spec, plus the skill (which bundles SDK reference docs) — we've achieved an AI self-healing loop: describe what to verify → AI writes the test → MCP runs it → AI reads structured failures → fixes and reruns → loop until green. In practice, the quality depends heavily on how much context is available — we're continuously improving this to make it more seamless. But even without perfect setup, AI-generated tests are a strong starting point that you refine, not write from scratch.
 
 ### Setup
 
 ```bash
-npx glubean config mcp       # install MCP server for your AI editor
-npx glubean config skill     # install the Glubean skill
-npx glubean docs pull        # download @glubean/lens — SDK patterns & reference for AI
+npx glubean config mcp        # install MCP server for your AI editor
+npx skills add glubean/skill   # install the Glubean skill (SDK docs bundled)
 ```
 
 After this, your AI tool (Claude Code, Cursor, Codex) can discover tests, run them, and read results — all through structured APIs.
@@ -167,7 +166,7 @@ The examples above work with zero setup — great for exploring public APIs. For
 - **API source code in the same workspace** — the best context is the actual implementation. Put your test project alongside your API repo in the same VS Code workspace and AI can read routes, handlers, validation rules, and response shapes directly from source. This beats any spec because source code is always up to date
 - **OpenAPI spec** in `context/` — when you can't share source code, an OpenAPI spec is the next best option. AI knows your routes and response shapes, though specs can drift from reality
 - **Skill + MCP** (set up above) — AI follows your conventions, runs tests, and fixes failures in the same chat turn
-- **Lens** (`glubean docs pull`) — AI reads SDK patterns and uses advanced features like `test.pick`, `configure()`, auth plugins
+- **Skill references** (bundled with `glubean/skill`) — AI reads SDK patterns and uses advanced features like `test.pick`, `configure()`, auth plugins
 
 With all three, generated tests typically run on first try instead of needing 2-3 rounds of manual fixes.
 

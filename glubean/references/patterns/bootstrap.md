@@ -146,5 +146,4 @@ After init, guide the user to:
 
 ## Optional next steps
 
-- Pull docs for local agent use: `glubean docs pull`
 - Clone the cookbook and learn from a complete example project: <https://github.com/glubean/cookbook>
