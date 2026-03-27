@@ -44,8 +44,9 @@ Always follow these unless project-specific instructions override them:
 4. Put tags on every test.
 5. Use builder mode when a test needs teardown or multi-step state passing.
 6. Use kebab-case test IDs, unique across the project.
-7. Prefer shared response types from `types/` over duplicated inline types.
-8. Treat `test.each` and `test.pick` as parameter variation for the same endpoint, not a way to group unrelated endpoints together.
+7. In real projects, create and use a `types/` directory for API response types. Do not declare response types inside test files except for tiny scratch demos.
+8. In real projects, keep Zod schemas in a dedicated `schemas/` directory. Do not declare reusable Zod schemas inside test files except for tiny scratch demos.
+9. Treat `test.each` and `test.pick` as parameter variation for the same endpoint, not a way to group unrelated endpoints together.
 
 ## Mode guides
 

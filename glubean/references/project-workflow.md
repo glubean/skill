@@ -7,7 +7,10 @@ Use this guide when the user is already inside a Glubean project and wants to wr
 - Read `GLUBEAN.md` first if it exists.
 - Check `package.json` for `@glubean/sdk`.
 - Read `config/`, `tests/`, and `explore/` to learn the project's conventions.
-- Check whether a `types/` directory already exists before creating inline response types.
+- Check whether a `types/` directory already exists.
+- Check whether a `schemas/` directory already exists.
+- If it does not exist and you are adding typed API responses, create `types/` and put shared response types there instead of declaring them inside test files.
+- If it does not exist and you are adding reusable Zod schemas, create `schemas/` and put shared Zod schemas there instead of declaring them inside test files.
 
 ## 2. Read the reference index, then only the needed patterns
 
@@ -52,10 +55,13 @@ Before writing or expanding tests:
 - If they did not specify one:
   - `explore/` is for trying, probing, and interactive API exploration.
   - `tests/` is for permanent regression and CI coverage.
+- Keep response and payload types in `types/*.ts`, not in the test file itself.
+- Keep reusable Zod schemas in `schemas/*.ts`, not in the test file itself.
 - Keep one exported test per endpoint.
 - Use builder mode for multi-step flows, teardown, or state handoff between steps.
 - Use `test.each` or `test.pick` only for varying parameters on the same endpoint.
-- Prefer shared types from `types/` over repeated inline response shapes.
+- If `types/` does not exist yet, create it as the project's dedicated home for shared API types.
+- If `schemas/` does not exist yet, create it as the project's dedicated home for shared Zod schemas.
 
 ## 7. Run with MCP first
 

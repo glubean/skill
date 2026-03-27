@@ -104,6 +104,8 @@ export const getProduct = test(
 );
 ```
 
+For this scratch demo, a tiny inline type is acceptable for speed. Once the user moves to a real project, create a dedicated `types/` directory and move API types there.
+
 ## 6. Run the demo
 
 Preferred:

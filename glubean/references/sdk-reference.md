@@ -138,9 +138,17 @@ http.delete(url, options?).json<T>()
 
 ### Response typing
 
+For real projects, keep API response types in a dedicated `types/` directory and import them into tests. Do not define response types inline in test files unless you are writing a tiny scratch demo.
+
 Prefer importing shared types over inline:
 
 ```typescript
+// types/directions.ts
+export interface DirectionsResponse {
+  status: string;
+  routes: { geometry: string; distance: number }[];
+}
+
 // ✅ Shared type — reusable, stays in sync
 import type { DirectionsResponse } from "../types/directions.ts";
 const res = await api.get("directions/json").json<DirectionsResponse>();
@@ -150,7 +158,34 @@ const res = await api.get("directions/json")
   .json<{ status: string; routes: { geometry: string; distance: number }[] }>();
 ```
 
-Check `types/` for existing types before creating inline ones.
+If `types/` does not exist yet, create it before adding more typed tests.
+
+### Schema organization
+
+For real projects, keep reusable Zod schemas in a dedicated `schemas/` directory and import them into tests. Do not define reusable Zod schemas inline in test files unless you are writing a tiny scratch demo.
+
+```typescript
+// schemas/directions.ts
+import { z } from "zod";
+
+export const DirectionsSchema = z.object({
+  status: z.string(),
+  routes: z.array(
+    z.object({
+      geometry: z.string(),
+      distance: z.number(),
+    }),
+  ),
+});
+
+// tests/maps/directions.test.ts
+import { DirectionsSchema } from "../schemas/directions.ts";
+
+const data = await api.get("directions/json").json();
+ctx.validate(data, DirectionsSchema, "Directions response");
+```
+
+If `schemas/` does not exist yet, create it before adding more Zod-schema-based tests.
 
 ### Options
 
