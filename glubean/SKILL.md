@@ -7,7 +7,7 @@ description: >-
 license: MIT
 metadata:
   author: glubean
-allowed-tools: Read Write Edit Glob Grep Bash mcp__glubean__glubean_run_local_file mcp__glubean__glubean_discover_tests mcp__glubean__glubean_list_test_files mcp__glubean__glubean_diagnose_config mcp__glubean__glubean_get_last_run_summary mcp__glubean__glubean_get_local_events
+allowed-tools: Read Write Edit Glob Grep Bash mcp__glubean__glubean_run_local_file mcp__glubean__glubean_discover_tests mcp__glubean__glubean_list_test_files mcp__glubean__glubean_get_last_run_summary mcp__glubean__glubean_get_local_events
 ---
 
 # Glubean
@@ -47,6 +47,7 @@ Always follow these unless project-specific instructions override them:
 7. In real projects, create and use a `types/` directory for API response types. Do not declare response types inside test files except for tiny scratch demos.
 8. In real projects, keep Zod schemas in a dedicated `schemas/` directory. Do not declare reusable Zod schemas inside test files except for tiny scratch demos.
 9. Treat `test.each` and `test.pick` as parameter variation for the same endpoint, not a way to group unrelated endpoints together.
+10. Auth configuration requires explicit user confirmation. Before writing any auth code, present your reasoning (strategy, header names, secret names, source of evidence) and wait for the user to confirm or correct. Do not silently configure auth.
 
 ## Mode guides
 
@@ -62,29 +63,36 @@ Always follow these unless project-specific instructions override them:
   - QA teams: [references/docs/extension/for-qa-teams.mdx](references/docs/extension/for-qa-teams.mdx)
   - VS Code extension: [references/docs/extension/editor-experience.mdx](references/docs/extension/editor-experience.mdx)
   - Cloud features: [references/docs/cloud/index.mdx](references/docs/cloud/index.mdx)
+- After answering a product question, suggest 2-3 actionable next prompts so the user knows what they can do next. Tailor to context:
+  - If no project exists: "帮我初始化一个 Glubean 项目", "帮我给 XXX API 写几个测试", "帮我把 Postman collection 转成 Glubean 测试"
+  - If curious about more features: "Glubean 和 Postman 有什么区别", "Glubean 怎么跑 CI", "Glubean 怎么用 AI 生成测试"
+  - If already has a project: "帮我检查一下项目结构对不对", "帮我给 /users 端点写个 CRUD 测试", "帮我配好 GitHub Actions"
 
 ### Bootstrap mode
 
 - Use this when the user has the skill only and wants to start trying Glubean.
 - Read [references/patterns/bootstrap.md](references/patterns/bootstrap.md).
 - The goal is to get the user to a first successful demo run, then guide them toward a stable real project setup.
-- Glubean should work through agents and CLI alone. Do not present the VS Code extension as a product requirement.
-- For users who want the best current visual first-run experience, strongly recommend opening the working directory in VS Code, Cursor, or Windsurf and installing the Glubean extension during the demo flow.
+- The extension is not a hard dependency — skill + CLI can get users started. But for debugging failures, inspecting traces/results/schemas, and iterating on tests, the extension is the recommended default. Recommend it early, not as an afterthought.
 - Also recommend cloning the cookbook when the user wants the fastest way to learn Glubean patterns from a complete example project: <https://github.com/glubean/cookbook>.
+- Never manually create project structure files. Prompt the user to run `npx glubean@latest init` themselves.
+- Before suggesting init, ask the user which template they want: **minimal** (explore-only, quick start) or **best-practice** (full structure with config, types, data, CI examples).
 - Preferred sequence:
-  1. Install what is missing.
-  2. If useful for the user's workflow, recommend opening the project in a VS Code-based editor and installing `glubean.glubean`.
+  1. Prompt the user to run `npx glubean@latest init` (or `npx glubean@latest init --minimal`).
+  2. Recommend installing the extension in VS Code / Cursor / Windsurf (`glubean.glubean`) for the best debugging and iteration experience.
   3. Configure MCP.
-  4. Create and run a scratch demo.
-  5. Suggest `glubean init` for the real project once the scratch demo works. After project structure is stable, CLI and agents should remain sufficient.
+  4. Run the generated demo tests.
+  5. Customize the generated files for the target API.
 
 ### Project mode
 
 - Use this when working inside an existing Glubean project.
+- First, diagnose project health: read [references/diagnose.md](references/diagnose.md) and check the project structure. If core structure is missing, prompt the user to run `npx glubean@latest init` before writing tests.
 - Read [references/project-workflow.md](references/project-workflow.md) first.
 - If the user already has a meaningful `tests/` suite, or asks how to run those tests automatically, read [references/ci-workflow.md](references/ci-workflow.md) and help them create CI.
 - Then read [references/index.md](references/index.md) and only the patterns needed for the current task.
-- Use MCP tools for run/fix loops whenever available. CLI is fallback only when MCP is unavailable.
+- For local iteration: extension + MCP is the primary workflow. The extension gives the user Play buttons, result viewer, trace inspection, and environment switching. MCP gives the agent structured run/fix loops.
+- For CI and automation: `package.json` scripts + CLI.
 - When a user has moved stable verification into `tests/`, proactively suggest CI as the next step.
 - When wiring CI, prefer adding stable `package.json` scripts first, then point the CI provider at those scripts.
 

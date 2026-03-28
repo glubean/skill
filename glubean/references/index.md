@@ -19,6 +19,7 @@ Use this index after you know which mode you are in:
 | [sdk-reference.md](sdk-reference.md) | Need full API surface — test(), ctx, expect, HTTP client, data loading |
 | [cli-reference.md](cli-reference.md) | Need to run, filter, upload, or init a project |
 | [ci-workflow.md](ci-workflow.md) | Need to wire stable tests into CI or create a CI workflow |
+| [diagnose.md](diagnose.md) | Need to check project health, structure, or conventions before writing tests |
 
 ## Patterns
 

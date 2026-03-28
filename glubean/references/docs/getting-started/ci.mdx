@@ -5,7 +5,7 @@ Use the same command locally and in CI. That is the simplest way to avoid drift.
 ## Recommended command
 
 ```bash
-npx glubean run --ci --result-json .glubean/last-run.json --reporter junit:test-results.xml
+npx glubean run tests/ --ci --result-json .glubean/last-run.json --reporter junit:test-results.xml
 ```
 
 This shape works well because:
@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: "22"
       - run: npm ci
-      - run: npx glubean run --ci --result-json .glubean/last-run.json --reporter junit:test-results.xml
+      - run: npx glubean run tests/ --ci --result-json .glubean/last-run.json --reporter junit:test-results.xml
 ```
 
 ## When you are ready for uploads
@@ -37,7 +37,7 @@ jobs:
 Add `--upload` to send results to Glubean Cloud after each CI run:
 
 ```bash
-npx glubean run --ci --upload
+npx glubean run tests/ --ci --upload
 ```
 
 This requires `GLUBEAN_TOKEN`. Setup is covered in [Upload Your First Run](/getting-started/upload-to-cloud).

@@ -144,6 +144,35 @@ export const userFlow = test("user-flow")
   });
 ```
 
+## OAuth2 Authorization Code (`@glubean/oauth-code`)
+
+For APIs that only support authorization code flow (no client_credentials, no pre-existing token). This is a **separate package** — interactive, explore-mode only.
+
+```bash
+npm install @glubean/oauth-code
+```
+
+```typescript
+import { configure } from "@glubean/sdk";
+import { oauthCode } from "@glubean/oauth-code";
+
+const { http } = configure({
+  http: oauthCode({
+    prefixUrl: "{{BASE_URL}}",
+    authorizeUrl: "{{OAUTH_AUTHORIZE_URL}}",
+    tokenUrl: "{{OAUTH_TOKEN_URL}}",
+    clientId: "{{CLIENT_ID}}",
+    clientSecret: "{{CLIENT_SECRET}}",
+    scopes: ["read", "write"],
+  }),
+});
+// First run: opens browser for login. Subsequent runs: uses cached token.
+```
+
+When promoting tests from `explore/` to `tests/` for CI, replace `oauthCode()` with a non-interactive strategy (`oauth2.clientCredentials()`, `oauth2.refreshToken()`, or `bearer()`). Test logic stays the same — only the `configure({ http })` line changes.
+
+For the full OAuth2 decision tree and tunnel guidance for non-localhost providers, see [patterns/auth.md](/patterns/auth.md).
+
 ## Notes
 
 - All `{{KEY}}` references resolve at runtime via `ctx.vars` / `ctx.secrets`.

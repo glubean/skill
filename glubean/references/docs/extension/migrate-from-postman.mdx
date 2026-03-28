@@ -18,7 +18,7 @@ The short answer is: **no**.
 Do not ask AI to convert Postman/OpenAPI files in a random folder. Initialize a real Glubean project first:
 
 ```bash
-npx @glubean/cli init
+npx glubean@latest init
 ```
 
 The AI assistant needs to see `package.json`, the `@glubean/sdk` dependency, and your `tests/` conventions. Without this context, it will generate generic Node/Jest-style code instead of Glubean SDK tests.
@@ -144,7 +144,7 @@ This gives you both quality and speed.
 
 ### Set up and feasibility scan
 
-Make sure you are in a Glubean project root (created by `npx @glubean/cli init`).
+Make sure you are in a Glubean project root (created by `npx glubean@latest init`).
 
 Drop your source file (Postman JSON, OpenAPI spec, or `.http` file) into the project folder.
 
@@ -356,6 +356,6 @@ That is normal. Migration succeeds when 80-90% is automated and the remaining 10
 
 Ready to start? Set up your project first, then come back here with your export file.
 
-- [Quick Start](/extension/quick-start) — install the extension and run `npx @glubean/cli init`
+- [Quick Start](/extension/quick-start) — install the extension and run `npx glubean@latest init`
 - [Generate Tests with AI](/extension/generate-with-ai) — tips for better AI-generated tests
 - [Writing Tests](/extension/writing-tests) — snippets, data-driven patterns, project structure

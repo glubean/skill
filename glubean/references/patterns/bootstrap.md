@@ -6,66 +6,63 @@ If the user wants the best way to learn Glubean from a complete working example,
 
 The goal is:
 
-1. install the missing tooling
+1. initialize a project with the CLI
 2. optionally add a VS Code-based editor plus the Glubean extension for a better visual first-run experience
 3. configure MCP
-4. create and run a small scratch demo
-5. then guide the user to a real project setup
+4. run the generated demo, then customize for the target API
 
-## 1. Prepare the workspace
+## CLI-first rule
+
+Never manually create project structure files (`package.json`, `.env`, `.env.secrets`, `.gitignore`, `config/`, etc.). Always prompt the user to run the CLI themselves. The CLI generates correct defaults, dependencies, and scaffolding that manual creation would miss.
+
+## 1. Initialize the project
 
 Prerequisites:
 
-- Node.js 18+
+- Node.js 20+
 - a writable working directory
 
-If there is no `package.json` yet, initialize one first:
+Before suggesting init, ask the user which template they want:
+
+> Do you want the **minimal** template (bare essentials — explore-only, quick start) or the **best-practice** template (full project structure with config, types, data directories, CI examples)?
+
+Then prompt the user to run:
 
 ```bash
-npm init -y
+npx glubean@latest init            # best-practice template
+npx glubean@latest init --minimal  # quick-start template
 ```
 
-## 2. Install the tools needed for a first run
+The CLI handles everything: `package.json`, dependencies, `.env`, `.env.secrets`, `.gitignore`, `config/`, `explore/`, `tests/`, `types/`, and runs `npm install` automatically.
 
-Install the CLI and local runtime:
+Do not run `npx glubean@latest init` on behalf of the user — it is an interactive wizard that requires their input.
 
-```bash
-npm install -g @glubean/cli
-npm install -D @glubean/sdk @glubean/runner
-```
+## 2. Install the extension (recommended)
 
-The global CLI is for setup commands such as `glubean init` and `glubean config mcp`.
-The local packages are enough to create and run a scratch test immediately.
+The extension is not a hard dependency — skill + CLI can get users started. But for debugging failures, inspecting traces and response schemas, and iterating on tests, the extension is the recommended default. Recommend it early, not as an afterthought.
 
-## 3. Optional: VS Code, Cursor, or Windsurf for the visual workflow
-
-Glubean should work through agents and CLI alone. The extension is not a product requirement.
-
-For users who want the best current visual first-run experience, recommend opening the working directory in a VS Code-based editor and installing the Glubean extension before or during the demo flow.
-
-Install:
+Open the project in VS Code, Cursor, or Windsurf and install:
 
 ```bash
 ext install glubean.glubean
 ```
 
-Why this can help during onboarding:
+What the extension gives you:
 
 - Play buttons above each exported test
-- clickable `test.pick()` examples
 - inline result viewer with traces and response schemas
 - environment switching from the status bar
+- clickable `test.pick()` examples
 - quick navigation to YAML and JSON data files
-- better debugging and iterative exploration
 
-Once the project structure is stable, users should still be able to work effectively through agents and CLI without depending on the extension.
+Without the extension, users can still write and run tests through agents and CLI. But once they are debugging failures or inspecting responses, the extension is significantly faster.
 
-## 4. Configure MCP
+## 3. Configure MCP
 
 MCP gives the agent structured results, traces, and response schemas.
 
 ```bash
-glubean config mcp
+npx glubean@latest config mcp
 ```
 
 This should register tools such as:
@@ -76,73 +73,33 @@ This should register tools such as:
 
 If MCP cannot be configured in the current environment, CLI is the fallback for the scratch demo.
 
-## 5. Create a scratch demo
+## 4. Run the generated demo
 
-Create `explore/scratch.test.ts`:
-
-```typescript
-import { test } from "@glubean/sdk";
-
-export const health = test(
-  { id: "dummyjson-health", tags: ["smoke"] },
-  async (ctx) => {
-    const res = await ctx.http.get("https://dummyjson.com/test");
-    ctx.expect(res).toHaveStatus(200);
-  },
-);
-
-export const getProduct = test(
-  { id: "dummyjson-product", tags: ["smoke"] },
-  async (ctx) => {
-    const product = await ctx.http
-      .get("https://dummyjson.com/products/1")
-      .json<{ id: number; title: string }>();
-
-    ctx.expect(product.id).toBe(1);
-    ctx.expect(product.title).toBeDefined();
-  },
-);
-```
-
-For this scratch demo, a tiny inline type is acceptable for speed. Once the user moves to a real project, create a dedicated `types/` directory and move API types there.
-
-## 6. Run the demo
+`glubean init` creates demo tests in `explore/` and `tests/`. Run them immediately to verify the setup works.
 
 Preferred:
 
-- run it with MCP so the agent can inspect structured traces
+- run with MCP so the agent can inspect structured traces
 
 Fallback:
 
 ```bash
-npx glubean run explore/scratch.test.ts --verbose
+npx glubean@latest run explore/ --verbose
 ```
 
-Once the scratch demo passes, explain what just worked and ask whether the user wants to keep exploring or initialize a real project.
+Once the demo passes, explain what just worked.
 
-If the user is still learning the Glubean mental model, recommend cloning the cookbook before or alongside `glubean init` so they can inspect a complete reference project.
+## 5. Customize for the target API
 
-## 7. Move from scratch to a real project
+After the demo runs successfully:
 
-When the user is ready:
+1. Set `BASE_URL` and other public vars in `.env`
+2. Put credentials in `.env.secrets`
+3. Write the first real test in `explore/`
 
-```bash
-glubean init
-```
+Do not manually recreate files that `glubean init` already generated. Edit the generated files to match the target API instead.
 
-This creates the standard project structure:
-
-- `config/`
-- `explore/`
-- `tests/`
-- `.env`
-- `.env.secrets`
-
-After init, guide the user to:
-
-1. set `BASE_URL` and other public vars in `.env`
-2. put credentials in `.env.secrets`
-3. write the first real test in `explore/`
+If the user is still learning the Glubean mental model, recommend cloning the cookbook so they can inspect a complete reference project.
 
 ## Optional next steps
 

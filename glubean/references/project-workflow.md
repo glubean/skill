@@ -4,6 +4,7 @@ Use this guide when the user is already inside a Glubean project and wants to wr
 
 ## 1. Read the project before writing code
 
+- Check project health using [diagnose.md](diagnose.md). If core structure is missing, prompt the user to run `npx glubean@latest init` before writing tests.
 - Read `GLUBEAN.md` first if it exists.
 - Check `package.json` for `@glubean/sdk`.
 - Read `config/`, `tests/`, and `explore/` to learn the project's conventions.
@@ -25,6 +26,7 @@ Common choices:
 - [patterns/data-driven.md](patterns/data-driven.md): `test.each` and `test.pick`
 - [patterns/builder-reuse.md](patterns/builder-reuse.md): multi-step builder flows and reusable step groups
 - [sdk-reference.md](sdk-reference.md): full API surface
+- [diagnose.md](diagnose.md): project health checklist — structure, conventions, environment
 - [ci-workflow.md](ci-workflow.md): create CI once stable tests are living in `tests/`
 
 ## 3. Read the API surface before guessing
@@ -34,14 +36,47 @@ Common choices:
 - If the codebase already has tests for the same service, read those before creating a new file.
 - If the API shape is still unclear and MCP is available, run an existing nearby test with traces to inspect the response schema.
 
-## 4. Derive auth from source, not placeholders
+## 4. Derive auth from source — then confirm with the user
+
+Auth is the single most impactful config decision. If it is wrong, every test fails and the root cause is hard to trace. Never silently configure auth.
+
+### Step 1: Gather evidence
 
 - Reuse existing configured clients when possible.
 - If auth setup is missing, derive it from project code, OpenAPI `securitySchemes`, or `GLUBEAN.md`.
 - Use exact header names, query parameter names, and secret names from the source.
 - Never invent placeholder auth names when the project already defines them elsewhere.
 
-## 5. Verify runnable credentials before writing a lot of tests
+### Step 2: Present reasoning and wait for confirmation
+
+Before writing any auth code, present your analysis to the user:
+
+- **Strategy**: what type (Bearer, API key, OAuth2 client credentials, OAuth2 authorization code, basic, cookie, etc.)
+- **Header / parameter**: exact name and placement (e.g. `Authorization: Bearer {{API_TOKEN}}`)
+- **Secret names**: what goes in `.env.secrets` (e.g. `API_TOKEN`)
+- **Evidence**: where you found this (OpenAPI `securitySchemes`, existing `config/`, `GLUBEAN.md`, etc.)
+- **Open questions**: anything you are not sure about (e.g. "Does this API need a login step first to get a token?")
+
+For OAuth2 specifically, follow the decision tree in [patterns/auth.md — OAuth2 decision tree](patterns/auth.md). If only authorization code flow is available and the target is `explore/`, suggest `@glubean/oauth-code` (interactive, browser-based). If the target is `tests/`, warn that a non-interactive alternative is needed for CI.
+
+Wait for the user to confirm or correct before proceeding.
+
+### Step 3: Configure after confirmation
+
+Only after the user confirms, write the `configure()` auth setup and add secret placeholders to `.env.secrets`.
+
+## 5. Ensure project structure exists (CLI gate)
+
+If the project has not been initialized — no `.gitignore` with Glubean entries, no scaffolded `config/`, missing `.env` or `.env.secrets` — do not create these files manually. Instead, prompt the user to run:
+
+```bash
+npx glubean@latest init            # best-practice template
+npx glubean@latest init --minimal  # quick-start template
+```
+
+The CLI generates `package.json`, dependencies, `.env`, `.env.secrets`, `.gitignore`, `config/`, `explore/`, `tests/`, `types/`, and runs `npm install` — never recreate these by hand.
+
+## 6. Verify runnable credentials before writing a lot of tests
 
 Before writing or expanding tests:
 
@@ -50,12 +85,20 @@ Before writing or expanding tests:
 - If a required secret is blank or obviously placeholder text, stop and ask the user for the real value.
 - If separate endpoints need different auth mechanisms, confirm whether the project should use another configured client.
 
-## 6. Write tests in the right style
+## 7. Write tests in the right style
 
 - Respect the directory the user requested.
 - If they did not specify one:
   - `explore/` is for trying, probing, and interactive API exploration.
   - `tests/` is for permanent regression and CI coverage.
+
+### Directory-aware CRUD routing
+
+- If the target directory is `explore/`, prefer individual exported tests over a single builder. Each CRUD operation should be its own export so the user can run and iterate on them independently. A combined lifecycle builder can be offered as a bonus. See [patterns/crud.md — Explore-style CRUD](patterns/crud.md).
+- If the target directory is `tests/`, prefer the builder lifecycle pattern for regression coverage. One builder chains create → read → update → delete with guaranteed teardown. See [patterns/crud.md — Full CRUD example](patterns/crud.md).
+
+### General style rules
+
 - Keep response and payload types in `types/*.ts`, not in the test file itself.
 - Keep reusable Zod schemas in `schemas/*.ts`, not in the test file itself.
 - Keep one exported test per endpoint.
@@ -64,9 +107,13 @@ Before writing or expanding tests:
 - If `types/` does not exist yet, create it as the project's dedicated home for shared API types.
 - If `schemas/` does not exist yet, create it as the project's dedicated home for shared Zod schemas.
 
-## 7. Run with MCP first
+## 8. Run and iterate
 
-Preferred run path:
+### Local iteration: extension + MCP
+
+For local development, the extension is the recommended debugging surface. It gives the user Play buttons, inline results, trace inspection, and environment switching. MCP gives the agent structured run/fix loops.
+
+Preferred agent run path:
 
 1. `glubean_run_local_file`
 2. `glubean_discover_tests` or related MCP helpers when needed
@@ -80,14 +127,18 @@ When using MCP, include traces when useful so you can inspect:
 
 Use those traces to tighten assertions instead of guessing field names.
 
-## 8. Fix failures iteratively
+### CI and automation: package.json scripts + CLI
+
+For CI, use `package.json` scripts calling `glubean run tests/`. See [ci-workflow.md](ci-workflow.md).
+
+## 9. Fix failures iteratively
 
 - Read structured failures carefully.
 - Fix the test, not just the symptom.
 - Rerun after each meaningful change.
 - Continue until the target test is green or you are blocked by missing credentials, broken environment setup, or unclear API requirements.
 
-## 9. Suggest CI when the suite is ready
+## 10. Suggest CI when the suite is ready
 
 Treat CI setup as part of the normal project lifecycle.
 

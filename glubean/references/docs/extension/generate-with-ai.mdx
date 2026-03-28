@@ -18,7 +18,7 @@ With the right project context — ideally API source code in the same workspace
 ### Setup
 
 ```bash
-npx glubean config mcp        # install MCP server for your AI editor
+npx glubean@latest config mcp        # install MCP server for your AI editor
 npx skills add glubean/skill   # install the Glubean skill (SDK docs bundled)
 ```
 
@@ -96,7 +96,7 @@ Notice what the AI figured out on its own — no hand-holding needed:
 </Callout>
 
 <Callout type="info">
-**One prerequisite: a Glubean project.** Run `npx @glubean/cli init` first so the AI can see `package.json`, the `@glubean/sdk` dependency, and your `tests/` / `explore/` layout. Without this context, it generates generic Node/Jest-style code instead of Glubean tests.
+**One prerequisite: a Glubean project.** Run `npx glubean@latest init` first so the AI can see `package.json`, the `@glubean/sdk` dependency, and your `tests/` / `explore/` layout. Without this context, it generates generic Node/Jest-style code instead of Glubean tests.
 </Callout>
 
 ---

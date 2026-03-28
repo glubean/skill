@@ -87,6 +87,68 @@ export const { http: api } = configure({
 // Auto-refreshes on 401
 ```
 
+## OAuth2 — authorization code (interactive, explore only)
+
+> **Requires:** `npm install @glubean/oauth-code`
+
+For APIs that only support authorization code flow (no client_credentials, no pre-existing token). Opens the system browser on first request, caches tokens to disk, auto-refreshes.
+
+```typescript
+import { configure } from "@glubean/sdk";
+import { oauthCode } from "@glubean/oauth-code";
+
+export const { http: api } = configure({
+  http: oauthCode({
+    prefixUrl: "{{BASE_URL}}",
+    authorizeUrl: "{{OAUTH_AUTHORIZE_URL}}",
+    tokenUrl: "{{OAUTH_TOKEN_URL}}",
+    clientId: "{{CLIENT_ID}}",
+    clientSecret: "{{CLIENT_SECRET}}",
+    scopes: ["read", "write"],
+  }),
+});
+// First run: opens browser for login. Subsequent runs: uses cached token.
+```
+
+### Tunnel for non-localhost providers
+
+Some providers (e.g. Twitter/X, Slack) don't support `localhost` redirect URIs. When the agent detects these from the authorize URL, proactively explain the tunnel requirement:
+
+```typescript
+oauthCode({
+  // ...
+  redirectUri: "https://xxx.ngrok-free.app/callback",
+  port: 9876,
+})
+```
+
+The user needs to run an HTTPS tunnel (e.g. `ngrok http 9876`) and register the tunnel URL as a redirect URI with the provider.
+
+### Explore → CI promotion
+
+When moving tests from `explore/` to `tests/`, replace `oauthCode()` with a non-interactive strategy. Test logic stays the same — only the `configure({ http })` line changes.
+
+| CI strategy | When to use |
+|---|---|
+| `oauth2.clientCredentials()` | Provider supports it |
+| `oauth2.refreshToken()` | Pre-provision a refresh token, store as CI secret |
+| `bearer()` | Pre-provision an access token |
+
+## OAuth2 decision tree
+
+When an API requires OAuth2, use this decision order:
+
+```
+API requires OAuth2?
+├─ Supports client_credentials? → use oauth2.clientCredentials() (works everywhere)
+├─ Has pre-existing refresh_token? → use oauth2.refreshToken() (works everywhere)
+├─ Only authorization code flow?
+│  ├─ Writing to explore/? → suggest oauthCode() + explain browser interaction
+│  └─ Writing to tests/? → warn: needs non-interactive alternative for CI
+│     Options: get refresh_token locally → store as CI secret → use oauth2.refreshToken()
+└─ No OAuth2? → check other auth types (bearer, apiKey, basic)
+```
+
 ## withLogin — builder transform
 
 ```typescript

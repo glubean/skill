@@ -6,7 +6,7 @@ This is the shortest path from empty folder to one passing test.
 
 ```bash
 mkdir my-project && cd my-project
-npx @glubean/cli init
+npx glubean@latest init
 ```
 
 Expected layout:
@@ -20,9 +20,9 @@ my-project/
 
 Use `explore/` for fast local iteration. Move stable files to `tests/` when you want them in CI.
 
-## 2. Add a base URL
+## 2. Set your base URL
 
-Create `.env` in project root:
+`npx glubean@latest init` already created `.env`. Open it and set your API's base URL:
 
 ```bash
 BASE_URL=http://localhost:3000

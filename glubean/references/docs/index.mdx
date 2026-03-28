@@ -40,7 +40,7 @@ export const health = test("health", async (ctx) => {
 
 - Start at [VS Code Extension](/extension)
 - Then use [Running Tests](/extension/running-tests)
-- Use the CLI through `npx @glubean/cli` when you need init or automation
+- Use the CLI through `npx glubean@latest` when you need init or automation
 
 ### I want team visibility over time
 
@@ -60,8 +60,8 @@ write verification locally  ->  keep in git  ->  run in CI  ->  upload when usef
 ```
 
 - The SDK is where you author tests.
-- The VS Code extension is the primary entry point.
-- The CLI is still needed for project init and automation, but you can invoke it with `npx @glubean/cli`.
+- The VS Code extension is the recommended local entry point for debugging, running tests, and inspecting results. You can start without it, but it is the fastest path for iterating on failures and understanding responses.
+- The CLI handles project init (`npx glubean@latest init`) and CI automation (`npx glubean@latest run tests/`).
 - Cloud stores uploaded runs, traces, metrics, and alerts. It does not execute your code.
 
 ## Why teams adopt it
