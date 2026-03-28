@@ -13,7 +13,7 @@
 | `glubean login` | Authenticate with Glubean Cloud |
 | `glubean init` | Initialize a new test project (interactive wizard) |
 | `glubean redact` | Preview redaction on a result JSON file |
-| `glubean config mcp` | Configure MCP server for AI coding tools (Claude Code, Cursor, Windsurf) |
+| `glubean config mcp` | Install MCP server via `npx add-mcp` (auto-detects installed AI tools) |
 | `glubean spec split` | Dereference $refs and split OpenAPI spec into per-endpoint files |
 | `glubean patch` | Merge an OpenAPI spec with its `.patch.yaml` overlay |
 | `glubean validate-metadata` | Validate metadata.json against local test files |
@@ -75,7 +75,7 @@ glubean run --upload --token gpt_xxx     # Specify token (or GLUBEAN_TOKEN env)
 
 ```bash
 glubean run --env-file .env.staging      # Use alternate .env file
-glubean run --config custom.json         # Use alternate config file
+glubean run --config ci-config/ci.yaml   # Use alternate config file
 glubean run --trace-limit 50             # Keep up to 50 trace files per test (default: 20)
 ```
 
@@ -137,7 +137,7 @@ Initialize a new test project with interactive wizard.
 glubean init                             # Start wizard in current directory
 ```
 
-Creates: `package.json`, `config/`, `tests/`, `.env.example`, `.env.secrets.example`, `AGENTS.md`.
+Creates: `package.json`, `ci-config/*.yaml`, `tests/`, `explore/`, `types/`, `.env`, `.env.secrets`, `.gitignore`.
 
 ---
 

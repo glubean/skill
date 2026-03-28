@@ -24,17 +24,69 @@ Read these before making CI changes:
 
 Prefer this shape:
 
-1. put stable Glubean commands in `package.json` scripts
-2. make CI call those scripts
+1. put run config in `ci-config/*.yaml` files (one per environment)
+2. put `package.json` scripts that point at those configs
+3. make CI call those scripts
 
-Example:
+### Config files
+
+`glubean init` generates these by default. If they do not exist, create them:
+
+**ci-config/default.yaml** — local development:
+
+```yaml
+# Default run config — used by: npm test
+run:
+  testDir: ./tests
+  exploreDir: ./explore
+  verbose: false
+  pretty: true
+
+redaction:
+  replacementFormat: simple
+```
+
+**ci-config/ci.yaml** — CI pipelines:
+
+```yaml
+# CI run config — used by: npm run test:ci
+# Optimized for CI pipelines: fail fast, structured output, no pretty-print
+run:
+  testDir: ./tests
+  failFast: true
+  pretty: false
+  # Emit full HTTP trace in results (useful for debugging CI failures)
+  emitFullTrace: false
+  # Stop after N failures (uncomment to enable)
+  # failAfter: 5
+
+redaction:
+  replacementFormat: simple
+```
+
+**ci-config/staging.yaml** — staging environment:
+
+```yaml
+# Staging run config — used by: npm run test:staging
+run:
+  testDir: ./tests
+  envFile: .env.staging
+  verbose: false
+  pretty: true
+
+redaction:
+  replacementFormat: simple
+```
+
+### package.json scripts
 
 ```json
 {
   "scripts": {
-    "test:api": "glubean run tests/",
-    "test:api:ci": "glubean run tests/ --ci --result-json .glubean/last-run.json --reporter junit:test-results.xml",
-    "test:api:upload": "glubean run tests/ --ci --upload"
+    "test": "glubean run --config ci-config/default.yaml",
+    "test:ci": "glubean run --config ci-config/ci.yaml",
+    "test:staging": "glubean run --config ci-config/staging.yaml",
+    "explore": "glubean run --config ci-config/explore.yaml"
   }
 }
 ```
@@ -42,16 +94,17 @@ Example:
 Then the underlying CI command becomes:
 
 ```bash
-npm run test:api:ci
+npm run test:ci
 ```
 
-Why this shape is preferred:
+### Why this shape is preferred
 
+- YAML files support comments — each option is self-documenting
+- changing CI behavior means editing a yaml file, not rewriting a `package.json` script
+- `--config` supports stacking (`--config base.yaml --config ci-overrides.yaml`)
+- consistent with `glubean init` output — no disconnect between scaffolding and CI guidance
 - the canonical command lives in one place
-- local runs and CI runs stay aligned
 - workflow files stay short and easier to review
-- `tests/` stays the CI target for committed regression coverage
-- `.glubean/last-run.json` and `junit:test-results.xml` stay stable across environments
 
 ## GitHub Actions
 
@@ -70,7 +123,7 @@ jobs:
         with:
           node-version: "22"
       - run: npm ci
-      - run: npm run test:api:ci
+      - run: npm run test:ci
 ```
 
 If the project already has a CI style, preserve the existing conventions instead of forcing this exact workflow.
@@ -83,17 +136,27 @@ If the user is still at project setup time and wants CI immediately, check wheth
 glubean init --hooks --github-actions
 ```
 
-Use this only when creating or re-initializing the project structure makes sense. Do not overwrite a hand-maintained CI setup without good reason.
+This generates `ci-config/*.yaml`, `package.json` scripts, and a GitHub Actions workflow in one step. Use this only when creating or re-initializing the project structure makes sense. Do not overwrite a hand-maintained CI setup without good reason.
 
 ## Cloud upload in CI
 
-If the user wants shared run history in Glubean Cloud, extend the CI command with upload:
+To enable Cloud upload, add the `cloud` section to `ci-config/ci.yaml`:
 
-```bash
-npm run test:api:upload
+```yaml
+run:
+  testDir: ./tests
+  failFast: true
+  pretty: false
+
+cloud:
+  upload: true
+  # projectId from env: GLUBEAN_PROJECT_ID
+
+redaction:
+  replacementFormat: simple
 ```
 
-Required CI secrets and variables:
+Required CI secrets:
 
 - `GLUBEAN_TOKEN`
 - `GLUBEAN_PROJECT_ID`

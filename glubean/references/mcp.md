@@ -182,7 +182,7 @@ Prefer `filter` to run only the test you are working on — it is faster and kee
 |---|---|
 | Agent in local project, MCP available | **MCP** (`glubean_run_local_file`) |
 | Agent exploring API, needs response shape | **MCP** (with `includeTraces: true`) |
-| CI pipeline (`npm run test:api:ci`) | **CLI** (`glubean run tests/ --ci`) |
+| CI pipeline (`npm run test:ci`) | **CLI** (`glubean run --config ci-config/ci.yaml`) |
 | Cloud upload from CI | **CLI** (`glubean run tests/ --upload`) |
 | MCP not available in environment | **CLI** (fallback only) |
 
