@@ -158,10 +158,9 @@ glubean redact --stdout                  # Output to stdout
 Configure the Glubean MCP server for AI coding tools.
 
 ```bash
-glubean config mcp                       # Auto-detect tool
-glubean config mcp --target claude-code  # Configure for Claude Code
-glubean config mcp --target cursor       # Configure for Cursor
-glubean config mcp --remove              # Remove MCP configuration
+glubean config mcp                            # Install via npx add-mcp (auto-detects all tools)
+glubean config mcp --remove                   # Remove MCP configuration
+glubean config mcp --remove --target cursor   # Remove for a specific tool
 ```
 
 ---

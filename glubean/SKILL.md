@@ -80,7 +80,7 @@ Always follow these unless project-specific instructions override them:
 - Preferred sequence:
   1. Prompt the user to run `npx glubean@latest init` (or `npx glubean@latest init --minimal`).
   2. Recommend installing the extension in VS Code / Cursor / Windsurf (`glubean.glubean`) for the best debugging and iteration experience.
-  3. Configure MCP — read [references/mcp.md](references/mcp.md) for setup instructions for each client type, including manual JSON config for clients not supported by `glubean config mcp`.
+  3. Configure MCP — run `npx add-mcp "npx -y @glubean/mcp@latest"` (auto-detects Claude Code, Cursor, Windsurf, and 10+ other tools). Or run `glubean config mcp` for the same effect.
   4. Run the generated demo tests.
   5. Customize the generated files for the target API.
 
