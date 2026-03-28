@@ -64,9 +64,9 @@ Always follow these unless project-specific instructions override them:
   - VS Code extension: [references/docs/extension/editor-experience.mdx](references/docs/extension/editor-experience.mdx)
   - Cloud features: [references/docs/cloud/index.mdx](references/docs/cloud/index.mdx)
 - After answering a product question, suggest 2-3 actionable next prompts so the user knows what they can do next. Tailor to context:
-  - If no project exists: "帮我初始化一个 Glubean 项目", "帮我给 XXX API 写几个测试", "帮我把 Postman collection 转成 Glubean 测试"
-  - If curious about more features: "Glubean 和 Postman 有什么区别", "Glubean 怎么跑 CI", "Glubean 怎么用 AI 生成测试"
-  - If already has a project: "帮我检查一下项目结构对不对", "帮我给 /users 端点写个 CRUD 测试", "帮我配好 GitHub Actions"
+  - If no project exists: "Set up a Glubean project for my API", "Write smoke tests for my /users endpoint", "Migrate my Postman collection to Glubean tests"
+  - If curious about more features: "How does Glubean compare to Postman?", "How do I run Glubean tests in CI?", "How does AI test generation work?"
+  - If already has a project: "Check if my project structure is correct", "Write CRUD tests for the /issues endpoint", "Set up GitHub Actions for my tests"
 
 ### Bootstrap mode
 
