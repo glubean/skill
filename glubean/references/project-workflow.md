@@ -111,18 +111,20 @@ Before writing or expanding tests:
 
 ### Local iteration: extension + MCP
 
-For local development, the extension is the recommended debugging surface. It gives the user Play buttons, inline results, trace inspection, and environment switching. MCP gives the agent structured run/fix loops.
+For local development, the extension is the recommended debugging surface. It gives the user Play buttons, inline results, trace inspection, and environment switching. MCP gives the agent structured run/fix loops with typed failures — not plain text output.
+
+Read [mcp.md](mcp.md) for the full tool reference: available tools, what each returns, and how to configure MCP for clients beyond the four supported by `glubean config mcp`.
 
 Preferred agent run path:
 
-1. `glubean_run_local_file`
+1. `glubean_run_local_file` — returns structured `assertions`, `logs`, `traces`
 2. `glubean_discover_tests` or related MCP helpers when needed
 3. CLI only if MCP is unavailable in the environment
 
-When using MCP, include traces when useful so you can inspect:
+When using MCP, set `includeTraces: true` when you need to inspect the API response shape:
 
-- `responseSchema`
-- `responseBody`
+- `responseSchema` — inferred JSON Schema of the response (use to find correct field names)
+- `responseBody` — truncated response body
 - status, headers, and timing
 
 Use those traces to tighten assertions instead of guessing field names.

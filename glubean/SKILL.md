@@ -80,7 +80,7 @@ Always follow these unless project-specific instructions override them:
 - Preferred sequence:
   1. Prompt the user to run `npx glubean@latest init` (or `npx glubean@latest init --minimal`).
   2. Recommend installing the extension in VS Code / Cursor / Windsurf (`glubean.glubean`) for the best debugging and iteration experience.
-  3. Configure MCP.
+  3. Configure MCP — read [references/mcp.md](references/mcp.md) for setup instructions for each client type, including manual JSON config for clients not supported by `glubean config mcp`.
   4. Run the generated demo tests.
   5. Customize the generated files for the target API.
 
@@ -91,7 +91,7 @@ Always follow these unless project-specific instructions override them:
 - Read [references/project-workflow.md](references/project-workflow.md) first.
 - If the user already has a meaningful `tests/` suite, or asks how to run those tests automatically, read [references/ci-workflow.md](references/ci-workflow.md) and help them create CI.
 - Then read [references/index.md](references/index.md) and only the patterns needed for the current task.
-- For local iteration: extension + MCP is the primary workflow. The extension gives the user Play buttons, result viewer, trace inspection, and environment switching. MCP gives the agent structured run/fix loops.
+- For local iteration: extension + MCP is the primary workflow. The extension gives the user Play buttons, result viewer, trace inspection, and environment switching. MCP gives the agent structured run/fix loops. Read [references/mcp.md](references/mcp.md) for the full tool reference and why MCP output is preferred over CLI for agent-driven iteration.
 - For CI and automation: `package.json` scripts + CLI.
 - When a user has moved stable verification into `tests/`, proactively suggest CI as the next step.
 - When wiring CI, prefer adding stable `package.json` scripts first, then point the CI provider at those scripts.

@@ -59,19 +59,30 @@ Without the extension, users can still write and run tests through agents and CL
 
 ## 3. Configure MCP
 
-MCP gives the agent structured results, traces, and response schemas.
+MCP gives the agent structured results, traces, and response schemas — this is what makes the agent write/run/fix loop effective. Without MCP, structured failure data is discarded and the agent can only read plain text CLI output.
+
+For Claude Code, Codex, Cursor, and Windsurf, the CLI auto-configures it:
 
 ```bash
 npx glubean@latest config mcp
 ```
 
-This should register tools such as:
+For other MCP-compatible clients, or if `glubean config mcp` is unavailable, add this to the client's MCP config:
 
-- `glubean_run_local_file`
-- `glubean_discover_tests`
-- `glubean_get_last_run_summary`
+```json
+{
+  "mcpServers": {
+    "glubean": {
+      "command": "npx",
+      "args": ["-y", "@glubean/mcp@latest"]
+    }
+  }
+}
+```
 
-If MCP cannot be configured in the current environment, CLI is the fallback for the scratch demo.
+See [../mcp.md](../mcp.md) for config locations per client, Codex TOML format, and the full tool reference.
+
+If MCP cannot be configured at all, CLI is the fallback for the scratch demo.
 
 ## 4. Run the generated demo
 
