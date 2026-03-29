@@ -1,5 +1,11 @@
 # Configure — Shared HTTP Clients, Vars, Secrets, Plugins
 
+## Why this pattern
+
+**Problem:** writing `fetch("https://api.example.com/users", { headers: { Authorization: "Bearer sk-xxx" } })` in every test duplicates the base URL, auth, and timeout config — and hardcodes secrets in source code.
+**Alternative:** use `ctx.http.extend()` per test — but this still requires every test to know the base URL and auth headers, there is no centralized place to change them, and secrets are not managed.
+**This pattern:** `configure()` creates a shared HTTP client with `{{KEY}}` interpolation from `.env` / `.env.secrets`. One file (`config/api.ts`) controls base URL, auth, headers, and plugins for every test that imports it. Change the URL once, every test follows. Secrets never appear in source code.
+
 ## .env vs .env.secrets — what goes where?
 
 | File | What goes here | Committed to git? | Example |

@@ -23,6 +23,8 @@ Common choices:
 - [patterns/smoke.md](patterns/smoke.md): single-endpoint smoke test
 - [patterns/crud.md](patterns/crud.md): create-read-update-delete flows with cleanup
 - [patterns/auth.md](patterns/auth.md): auth plugin and auth strategies
+- [patterns/assertions.md](patterns/assertions.md): choosing assertion depth by directory and purpose
+- [patterns/context-setup.md](patterns/context-setup.md): setting up `context/` for AI API knowledge
 - [patterns/data-driven.md](patterns/data-driven.md): `test.each` and `test.pick`
 - [patterns/builder-reuse.md](patterns/builder-reuse.md): multi-step builder flows and reusable step groups
 - [sdk-reference.md](sdk-reference.md): full API surface

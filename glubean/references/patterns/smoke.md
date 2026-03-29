@@ -2,6 +2,12 @@
 
 Simplest test — hit one endpoint, check it responds correctly.
 
+## Why this pattern
+
+**Problem:** you don't know if the API is reachable, auth works, or the base URL is correct — jumping straight to CRUD or schema tests means debugging infra issues mixed with logic failures.
+**Alternative:** write a full CRUD test first — but if the API is down or auth is misconfigured, every step fails and the root cause is buried.
+**This pattern:** a smoke test is the cheapest possible verification. If it passes, you know the connection, auth, and basic response shape work. Write this first, then build on it.
+
 ```typescript
 // tests/api/health.test.ts
 import { test } from "@glubean/sdk";

@@ -1,5 +1,11 @@
 # CRUD with Setup/Teardown
 
+## Why this pattern
+
+**Problem:** testing only GET endpoints misses write-path bugs — broken create, update, or delete operations go undetected until production.
+**Alternative:** test each operation independently — but without shared state (create returns an ID that read/update/delete need), you end up hardcoding IDs or duplicating setup logic, and there is no guaranteed cleanup.
+**This pattern:** a CRUD lifecycle test chains create → read → update → delete with state passed between steps and `.teardown()` that always runs. One test covers the full write path, verifies round-trip consistency, and cleans up after itself.
+
 ## When to use builder mode
 
 Use builder mode (`.setup()` / `.step()` / `.teardown()`) when your test:

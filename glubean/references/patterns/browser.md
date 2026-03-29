@@ -1,5 +1,11 @@
 # Browser Testing
 
+## Why this pattern
+
+**Problem:** you need to test a web UI (login form, dashboard rendering, data extraction) but raw Playwright has no integration with Glubean's assertion reporting, traces, or Cloud dashboard.
+**Alternative:** use Playwright directly — but you lose automatic screenshots on failure, HTTP trace capture, structured assertion reporting, and Cloud result upload. You also need a separate test runner and reporter.
+**This pattern:** `@glubean/browser` wraps Playwright with auto-tracing, screenshot capture, and Glubean assertion integration. Tests use the same `test()` / `expect()` / `configure()` API as HTTP tests, results appear in the same reports, and everything uploads to Cloud together.
+
 > **Requires:** `npm install @glubean/browser`
 
 ## Setup (see also configure.md)

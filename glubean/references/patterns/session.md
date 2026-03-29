@@ -2,6 +2,12 @@
 
 Share state (auth tokens, IDs) across test files without re-authenticating.
 
+## Why this pattern
+
+**Problem:** multiple test files need the same auth token or setup data — re-authenticating in every file is slow, wastes API calls, and can hit rate limits.
+**Alternative:** export a shared variable from a helper module — but execution order is not guaranteed, there is no automatic teardown, and you end up managing global mutable state by hand.
+**This pattern:** `defineSession()` runs once before all test files, stores state in `ctx.session`, and the runner manages the lifecycle. Every file reads the same token without re-authenticating, and session teardown is automatic.
+
 ## Session setup file
 
 ```typescript

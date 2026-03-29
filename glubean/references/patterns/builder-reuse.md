@@ -2,6 +2,12 @@
 
 Multi-step tests with shared state, and `.use()` / `.group()` for reusable sequences.
 
+## Why this pattern
+
+**Problem:** multi-step flows (login → act → verify → cleanup) need state passed between steps, and cleanup must run even when a step fails.
+**Alternative:** write independent `test()` calls — but there is no shared state between them, no guaranteed cleanup order, and a failure in step 2 leaves resources leaked.
+**This pattern:** builder chains `.step()` calls with typed state handoff, `.teardown()` always runs, and `.use()` / `.group()` extract reusable sequences (like login) that multiple tests share without copy-paste.
+
 ## Builder pattern (multi-step with state)
 
 ```typescript

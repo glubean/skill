@@ -2,6 +2,12 @@
 
 Test that your API rejects bad requests correctly.
 
+## Why this pattern
+
+**Problem:** happy-path tests only prove the API works when inputs are valid — they don't catch missing auth enforcement, silent 200s on bad input, or wrong error body structure.
+**Alternative:** check errors inside happy-path tests with try/catch — but this mixes concerns, makes failures ambiguous ("did the test fail or did the error test fail?"), and misses error body schema changes.
+**This pattern:** dedicated negative tests assert the exact status code and error body for each failure mode. When a 401 starts returning 403, or a validation error stops including field names, you catch it immediately.
+
 ## 404 Not Found
 
 ```typescript

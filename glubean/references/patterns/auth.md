@@ -2,6 +2,12 @@
 
 > **Requires:** `npm install @glubean/auth`
 
+## Why this pattern
+
+**Problem:** manually setting `Authorization` headers in `configure()` works for static tokens, but breaks when tokens expire, need refresh, or require a login-then-use flow.
+**Alternative:** write auth logic in a builder `.step()` or a helper function — but you end up reimplementing token caching, refresh-on-401, and expiry tracking in every project.
+**This pattern:** `@glubean/auth` provides declarative strategies (`bearer()`, `apiKey()`, `oauth2.clientCredentials()`, etc.) that handle caching, refresh, and header injection automatically. One line in `configure()` replaces pages of manual auth code. When moving between environments or auth types, only the `configure({ http })` line changes — test logic stays the same.
+
 Pre-built auth strategies. Returns `ConfigureHttpOptions` — pass directly to `configure({ http: ... })`.
 
 All values support `{{KEY}}` references (resolved from .env / .env.secrets) or literal strings.

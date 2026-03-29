@@ -31,11 +31,13 @@ Use this index after you know which mode you are in:
 | [crud.md](patterns/crud.md) | Create → Read → Update → Delete with setup/teardown cleanup |
 | [builder-reuse.md](patterns/builder-reuse.md) | Multi-step builder, `.use()` / `.group()` for reusable step sequences |
 | [data-driven.md](patterns/data-driven.md) | `test.each` (one file = one case) and `test.pick` (named cases, merged files) |
+| [assertions.md](patterns/assertions.md) | Choosing assertion depth — reachability vs shape vs value vs over-assertion |
 | [errors.md](patterns/errors.md) | Negative tests — 401, 403, 404, 422 |
 | [polling.md](patterns/polling.md) | Async jobs, `pollUntil`, eventual consistency |
 | [schema.md](patterns/schema.md) | Zod schema validation on API responses |
 | [metrics.md](patterns/metrics.md) | Custom performance metrics, duration tracking |
 | [session.md](patterns/session.md) | Cross-file shared state via `defineSession()` + `ctx.session` (auth token reuse, workflow chains) |
+| [context-setup.md](patterns/context-setup.md) | Setting up `context/` — OpenAPI spec, source code, markdown docs |
 | [browser.md](patterns/browser.md) | Browser testing — setup, navigation, forms, scraping, dynamic elements |
 
 ## Plugins
