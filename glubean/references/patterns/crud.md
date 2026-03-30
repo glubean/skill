@@ -160,3 +160,5 @@ export const deleteIssue = test("delete-issue")
 |---|---|---|
 | `explore/` | Individual exports (above) | Each operation is independently runnable for interactive exploration |
 | `tests/` | Builder lifecycle (full CRUD example above) | Single test covers the full regression path with guaranteed cleanup |
+
+For when and how to move stable flows from `explore/` into `tests/`, see [promotion.md](promotion.md).

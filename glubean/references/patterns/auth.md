@@ -140,6 +140,8 @@ When moving tests from `explore/` to `tests/`, replace `oauthCode()` with a non-
 | `oauth2.refreshToken()` | Pre-provision a refresh token, store as CI secret |
 | `bearer()` | Pre-provision an access token |
 
+For the full `explore/` → `tests/` migration checklist, see [promotion.md](promotion.md).
+
 ## OAuth2 decision tree
 
 When an API requires OAuth2, use this decision order:

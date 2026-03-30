@@ -27,16 +27,16 @@ schemas/              (optional)  — shared Zod schemas
 
 | Check | How to verify | Fix |
 |---|---|---|
-| package.json exists | File exists at project root | Prompt user to run `npx glubean@latest init` |
-| @glubean/sdk in devDependencies | Read package.json | Prompt user to run `npx glubean@latest init` |
-| .env exists with BASE_URL | File exists, contains `BASE_URL=` | Prompt user to run `npx glubean@latest init`, then set the real URL |
-| .env.secrets exists | File exists (can be empty) | Prompt user to run `npx glubean@latest init` |
-| .gitignore has Glubean entries | Contains `.env.secrets`, `.glubean/`, `*.result.json` | Prompt user to run `npx glubean@latest init --overwrite` or add entries manually |
-| tests/ or explore/ exists | Directory exists | Prompt user to run `npx glubean@latest init` |
-| types/ exists | Directory exists | Create `types/` with a README or prompt user to run `npx glubean@latest init` |
+| package.json exists | File exists at project root | See init rule below |
+| @glubean/sdk in devDependencies | Read package.json | See init rule below |
+| .env exists with BASE_URL | File exists, contains `BASE_URL=` | See init rule below, then set the real URL |
+| .env.secrets exists | File exists (can be empty) | See init rule below |
+| .gitignore has Glubean entries | Contains `.env.secrets`, `.glubean/`, `*.result.json` | See init rule below; for partially initialized repos, `--overwrite` may be appropriate |
+| tests/ or explore/ exists | Directory exists | See init rule below |
+| types/ exists | Directory exists | Create `types/` if the project is otherwise initialized; otherwise see init rule below |
 | No inline types in tests/ | Grep for `\.json<{` in tests/ files | Move inline types to `types/*.ts` |
 | No inline types in explore/ | Acceptable — explore/ allows inline types for speed | No action needed |
-| GLUBEAN.md exists | File exists at project root | Prompt user to run `npx glubean@latest init` |
+| GLUBEAN.md exists | File exists at project root | See init rule below |
 
 ### If project structure is missing
 
@@ -92,5 +92,5 @@ When entering a project for the first time:
 1. Check the project structure above.
 2. If the project is missing core structure, prompt the user to run `npx glubean@latest init` — do not create files by hand.
 3. If the project exists but has convention issues (inline types in tests/, missing tags, hardcoded secrets), fix them by refactoring.
-4. Read `GLUBEAN.md` if it exists — it overrides defaults.
+4. Read `GLUBEAN.md` if it exists — it overrides defaults. If it contains `view ./...` or `view ../...`, read those files too.
 5. Then proceed to write or fix tests per [project-workflow.md](project-workflow.md).

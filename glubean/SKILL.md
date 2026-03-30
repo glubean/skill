@@ -7,7 +7,7 @@ description: >-
 license: MIT
 metadata:
   author: glubean
-allowed-tools: Read Write Edit Glob Grep Bash mcp__glubean__glubean_run_local_file mcp__glubean__glubean_discover_tests mcp__glubean__glubean_list_test_files mcp__glubean__glubean_get_last_run_summary mcp__glubean__glubean_get_local_events
+allowed-tools: Read Write Edit Glob Grep Bash mcp__glubean__glubean_run_local_file mcp__glubean__glubean_discover_tests mcp__glubean__glubean_list_test_files mcp__glubean__glubean_get_last_run_summary mcp__glubean__glubean_get_local_events mcp__glubean__glubean_get_metadata
 ---
 
 # Glubean
@@ -32,7 +32,7 @@ Then route by intent plus environment:
 - **Bootstrap mode** if there is no Glubean project yet and the user wants to start using Glubean now.
 - **Project mode** if the repo already looks like a Glubean project, or the user explicitly wants test work in an existing project.
 
-If `GLUBEAN.md` exists in the project root, read it first. It overrides default conventions.
+If `GLUBEAN.md` exists in the project root, read it first. It overrides default conventions. If it contains `view ./...` or `view ../...` lines, resolve and read those files before guessing from the API spec alone.
 
 ## Hard rules
 
@@ -54,7 +54,7 @@ Always follow these unless project-specific instructions override them:
 ### Docs mode
 
 - Answer from the bundled docs. Do not rely on inline product summaries from this file.
-- Start with [references/index.md](references/index.md), then read only the relevant docs under `references/docs/`.
+- Start with [references/index.md](references/index.md). For general product docs, use [references/docs/index.mdx](references/docs/index.mdx) as the docs landing page, then read only the relevant docs or focused pattern files for the question.
 - When the user is learning Glubean broadly, or asks how to get familiar with real project structure and patterns, recommend cloning the cookbook as the best hands-on learning path: <https://github.com/glubean/cookbook>.
 - For common questions:
   - What is Glubean / core concepts: [references/docs/getting-started/concepts.mdx](references/docs/getting-started/concepts.mdx)
@@ -63,6 +63,10 @@ Always follow these unless project-specific instructions override them:
   - QA teams: [references/docs/extension/for-qa-teams.mdx](references/docs/extension/for-qa-teams.mdx)
   - VS Code extension: [references/docs/extension/editor-experience.mdx](references/docs/extension/editor-experience.mdx)
   - Cloud features: [references/docs/cloud/index.mdx](references/docs/cloud/index.mdx)
+  - Test planning / improve coverage: [references/patterns/test-planning.md](references/patterns/test-planning.md)
+  - What goes in `context/` or `GLUBEAN.md`: [references/patterns/context-setup.md](references/patterns/context-setup.md)
+  - Promote `explore/` tests to `tests/`: [references/patterns/promotion.md](references/patterns/promotion.md)
+  - GraphQL testing: [references/patterns/graphql.md](references/patterns/graphql.md), [references/docs/sdk/graphql-plugin.mdx](references/docs/sdk/graphql-plugin.mdx)
 - After answering a product question, suggest 2-3 actionable next prompts so the user knows what they can do next. Tailor to context:
   - If no project exists: "Set up a Glubean project for my API", "Write smoke tests for my /users endpoint", "Migrate my Postman collection to Glubean tests"
   - If curious about more features: "How does Glubean compare to Postman?", "How do I run Glubean tests in CI?", "How does AI test generation work?"
@@ -82,7 +86,7 @@ Always follow these unless project-specific instructions override them:
   2. Recommend installing the extension in VS Code / Cursor / Windsurf (`glubean.glubean`) for the best debugging and iteration experience.
   3. Configure MCP — run `npx add-mcp "npx -y @glubean/mcp@latest"` (auto-detects Claude Code, Cursor, Windsurf, and 10+ other tools). Or run `glubean config mcp` for the same effect.
   4. Run the generated demo tests.
-  5. Customize the generated files for the target API.
+  5. Customize the generated files for the target API, then transition into Project mode: add `context/`, add business rules and `view ../...` pointers in `GLUBEAN.md`, keep iterating in `explore/`, and promote stable coverage into `tests/`.
 
 ### Project mode
 
@@ -90,6 +94,7 @@ Always follow these unless project-specific instructions override them:
 - First, diagnose project health: read [references/diagnose.md](references/diagnose.md) and check the project structure. If core structure is missing, prompt the user to run `npx glubean@latest init` before writing tests.
 - Read [references/project-workflow.md](references/project-workflow.md) first.
 - If the user already has a meaningful `tests/` suite, or asks how to run those tests automatically, read [references/ci-workflow.md](references/ci-workflow.md) and help them create CI.
+- If the user asks to "write tests for my API", "improve coverage", "what am I missing?", or targets multiple endpoints without specifying scenarios, read [references/patterns/test-planning.md](references/patterns/test-planning.md) and present a test plan or gap report before writing code. Most users don't know what coverage to ask for — the agent should analyze the API surface and propose it.
 - Then read [references/index.md](references/index.md) and only the patterns needed for the current task.
 - For local iteration: extension + MCP is the primary workflow. The extension gives the user Play buttons, result viewer, trace inspection, and environment switching. MCP gives the agent structured run/fix loops. Read [references/mcp.md](references/mcp.md) for the full tool reference and why MCP output is preferred over CLI for agent-driven iteration.
 - For CI and automation: `package.json` scripts + CLI.

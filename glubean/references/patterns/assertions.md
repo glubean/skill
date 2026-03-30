@@ -113,3 +113,5 @@ When moving a test from `explore/` to `tests/`:
 2. Add value assertions for business-critical fields
 3. Keep skipping volatile fields (timestamps, auto-IDs)
 4. Add error boundary tests alongside the happy path
+
+For the full promotion checklist, including auth and CI implications, see [promotion.md](promotion.md).

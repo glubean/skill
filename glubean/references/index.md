@@ -8,7 +8,7 @@ Use this index after you know which mode you are in:
 
 | Mode | When to use | Read first |
 |------|-------------|------------|
-| Docs | The user has only the skill and is asking product or documentation questions | `references/docs/...` files listed below |
+| Docs | The user has only the skill and is asking product, documentation, or workflow questions | [docs/index.mdx](docs/index.mdx), then the relevant docs or pattern files below |
 | Bootstrap | The user has only the skill and wants a first demo, install, or setup flow | [patterns/bootstrap.md](patterns/bootstrap.md) |
 | Project | The user is already in a Glubean project and wants test work | [project-workflow.md](project-workflow.md) |
 
@@ -24,20 +24,40 @@ Use this index after you know which mode you are in:
 
 ## Patterns
 
+### Plan and Prepare
+
+| File | When to use |
+|------|------------|
+| [context-setup.md](patterns/context-setup.md) | Set up `context/` and `GLUBEAN.md` so the agent has API knowledge before writing tests |
+| [test-planning.md](patterns/test-planning.md) | Analyze API surface or existing coverage → derive a test plan or gap report |
+| [promotion.md](patterns/promotion.md) | Promote stable `explore/` tests into `tests/` — assertions, auth, types, CI readiness |
+
+### Core API Patterns
+
 | File | When to use |
 |------|------------|
 | [configure.md](patterns/configure.md) | Setting up HTTP client, env vars, secrets, plugins — **read this first for any new project** |
 | [smoke.md](patterns/smoke.md) | Simple single-endpoint health/smoke test |
 | [crud.md](patterns/crud.md) | Create → Read → Update → Delete with setup/teardown cleanup |
-| [builder-reuse.md](patterns/builder-reuse.md) | Multi-step builder, `.use()` / `.group()` for reusable step sequences |
 | [data-driven.md](patterns/data-driven.md) | `test.each` (one file = one case) and `test.pick` (named cases, merged files) |
+| [builder-reuse.md](patterns/builder-reuse.md) | Multi-step builder, `.use()` / `.group()` for reusable step sequences |
+| [session.md](patterns/session.md) | Cross-file shared state via `defineSession()` + `ctx.session` (auth token reuse, workflow chains) |
+
+### Assertions and Edge Cases
+
+| File | When to use |
+|------|------------|
 | [assertions.md](patterns/assertions.md) | Choosing assertion depth — reachability vs shape vs value vs over-assertion |
 | [errors.md](patterns/errors.md) | Negative tests — 401, 403, 404, 422 |
-| [polling.md](patterns/polling.md) | Async jobs, `pollUntil`, eventual consistency |
 | [schema.md](patterns/schema.md) | Zod schema validation on API responses |
+| [polling.md](patterns/polling.md) | Async jobs, `pollUntil`, eventual consistency |
 | [metrics.md](patterns/metrics.md) | Custom performance metrics, duration tracking |
-| [session.md](patterns/session.md) | Cross-file shared state via `defineSession()` + `ctx.session` (auth token reuse, workflow chains) |
-| [context-setup.md](patterns/context-setup.md) | Setting up `context/` — OpenAPI spec, source code, markdown docs |
+
+### Protocols and Surfaces
+
+| File | When to use |
+|------|------------|
+| [graphql.md](patterns/graphql.md) | GraphQL query/mutation tests — variables, `errors[]`, and plugin usage |
 | [browser.md](patterns/browser.md) | Browser testing — setup, navigation, forms, scraping, dynamic elements |
 
 ## Plugins
@@ -46,6 +66,7 @@ Use this index after you know which mode you are in:
 |------|------------|
 | [plugins.md](patterns/plugins.md) | Plugin index — **check here before writing auth/plugin code by hand** |
 | [auth.md](patterns/auth.md) | `@glubean/auth` — bearer, apiKey, basic, OAuth2, withLogin, combining strategies |
+| [graphql.md](patterns/graphql.md) | `@glubean/graphql` — query/mutation helpers, error handling, and variables |
 
 ## Documentation
 

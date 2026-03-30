@@ -152,6 +152,8 @@ generatedBy  optional  Override the generatedBy field
 
 Returns: `{ metadata }` — full bundle metadata including test count, file hashes, and tags.
 
+Use this for coverage audits and gap reports: inventory files and tags first, then cross-reference the result with `context/` or OpenAPI docs before opening many test files by hand.
+
 ### Cloud tools (require Glubean Cloud project)
 
 These tools call the Glubean Open Platform API. They require `apiUrl`, `token`, `projectId`, and/or `bundleId`.

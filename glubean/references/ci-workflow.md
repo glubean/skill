@@ -30,7 +30,7 @@ Prefer this shape:
 
 ### Config files
 
-`glubean init` generates these by default. If they do not exist, create them:
+`glubean init` generates these by default. In an already initialized project, add them if they do not exist. If core project structure is still missing, go back to `glubean init` first instead of hand-creating around a half-initialized repo:
 
 **ci-config/default.yaml** — local development:
 

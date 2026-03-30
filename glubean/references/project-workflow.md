@@ -6,6 +6,7 @@ Use this guide when the user is already inside a Glubean project and wants to wr
 
 - Check project health using [diagnose.md](diagnose.md). If core structure is missing, prompt the user to run `npx glubean@latest init` before writing tests.
 - Read `GLUBEAN.md` first if it exists.
+- If `GLUBEAN.md` contains `view ./...` or `view ../...` lines, resolve and read those files before guessing from the spec alone.
 - Check `package.json` for `@glubean/sdk`.
 - Read `config/`, `tests/`, and `explore/` to learn the project's conventions.
 - Check whether a `types/` directory already exists.
@@ -23,8 +24,11 @@ Common choices:
 - [patterns/smoke.md](patterns/smoke.md): single-endpoint smoke test
 - [patterns/crud.md](patterns/crud.md): create-read-update-delete flows with cleanup
 - [patterns/auth.md](patterns/auth.md): auth plugin and auth strategies
+- [patterns/test-planning.md](patterns/test-planning.md): systematic coverage analysis — use when writing tests for multiple endpoints
+- [patterns/promotion.md](patterns/promotion.md): move stable `explore/` coverage into `tests/`
 - [patterns/assertions.md](patterns/assertions.md): choosing assertion depth by directory and purpose
 - [patterns/context-setup.md](patterns/context-setup.md): setting up `context/` for AI API knowledge
+- [patterns/graphql.md](patterns/graphql.md): GraphQL query/mutation tests and `errors[]` handling
 - [patterns/data-driven.md](patterns/data-driven.md): `test.each` and `test.pick`
 - [patterns/builder-reuse.md](patterns/builder-reuse.md): multi-step builder flows and reusable step groups
 - [sdk-reference.md](sdk-reference.md): full API surface
@@ -35,6 +39,9 @@ Common choices:
 
 - Check `context/*-endpoints/_index.md` first if split endpoint docs exist.
 - If not, search `context/` for OpenAPI files such as `.json`, `.yaml`, or `.yml`.
+- If context is missing or thin, read [patterns/context-setup.md](patterns/context-setup.md) for the decision tree.
+- If there is only one large OpenAPI file and no `*-endpoints/_index.md`, suggest `glubean spec split` or `npx glubean@latest spec split` so future reads are cheaper, more targeted, and use fewer context tokens, leaving more room for business rules and existing tests.
+- If the user asks to improve coverage or find gaps, use `glubean_get_metadata` first to inventory files, tags, and test count before manually reading many test files.
 - If the codebase already has tests for the same service, read those before creating a new file.
 - If the API shape is still unclear and MCP is available, run an existing nearby test with traces to inspect the response schema.
 
@@ -69,14 +76,14 @@ Only after the user confirms, write the `configure()` auth setup and add secret 
 
 ## 5. Ensure project structure exists (CLI gate)
 
-If the project has not been initialized — no `.gitignore` with Glubean entries, no scaffolded `config/`, missing `.env` or `.env.secrets` — do not create these files manually. Instead, prompt the user to run:
+If the project has not been initialized — no `.gitignore` with Glubean entries, no scaffolded `config/`, missing `.env` or `.env.secrets` — do not create these files manually. Reuse the same init rule as [diagnose.md](diagnose.md) and [patterns/bootstrap.md](patterns/bootstrap.md):
 
 ```bash
 npx glubean@latest init            # best-practice template
 npx glubean@latest init --minimal  # quick-start template
 ```
 
-The CLI generates `package.json`, dependencies, `.env`, `.env.secrets`, `.gitignore`, `config/`, `explore/`, `tests/`, `types/`, and runs `npm install` — never recreate these by hand.
+The CLI generates the baseline structure. Use hand edits only after the project is clearly initialized.
 
 ## 6. Verify runnable credentials before writing a lot of tests
 

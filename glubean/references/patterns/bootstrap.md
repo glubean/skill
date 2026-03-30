@@ -110,7 +110,15 @@ After the demo runs successfully:
 
 Do not manually recreate files that `glubean init` already generated. Edit the generated files to match the target API instead.
 
-If the user is still learning the Glubean mental model, recommend cloning the cookbook so they can inspect a complete reference project.
+## 6. Transition into project mode
+
+Once the first real test works, explicitly move the user into the normal project workflow:
+
+1. Add `context/` with an OpenAPI spec or concise endpoint docs. If they have one large spec, suggest `glubean spec split`.
+2. Add business rules and `view ../...` pointers to `GLUBEAN.md` so future test generation has product context.
+3. Keep iterating in `explore/` while the API is still being learned.
+4. When a flow is stable, promote it into `tests/`. See [promotion.md](promotion.md).
+5. Once stable coverage lives in `tests/`, suggest CI. See [../ci-workflow.md](../ci-workflow.md).
 
 ## Optional next steps
 
