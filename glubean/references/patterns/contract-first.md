@@ -67,7 +67,9 @@ product/
     ping.md
 ```
 
-For a very small feature, one file per feature is enough.
+`product/_index.md` is not optional decoration. It is the navigation entry point the agent should read first as the feature set grows.
+
+For a very small feature, one file per feature is enough, but the feature file should still be linked from `_index.md`.
 
 Example:
 
@@ -115,7 +117,86 @@ What does **not** belong in `product/`:
 - exact auth header names
 - implementation details
 
-Those move into `contracts/` and `design/`.
+Those move into `contracts/` and into whatever implementation-side design source the project already uses.
+
+Glubean does not need to own a `design/` directory. Architecture and ADR material should usually live with the implementation codebase, and `GLUBEAN.md` should point the agent there with `view ../...` references when needed.
+
+Suggested `product/_index.md` shape:
+
+```markdown
+# Product Index
+
+## Features
+
+- [Ping Endpoint](features/ping.md)
+```
+
+Rule:
+
+- When adding a new product feature file, update `product/_index.md` in the same change
+- When reading product intent, start with `product/_index.md` when it exists
+
+As the project grows, allow nested indexes, but keep a single global entry point:
+
+```text
+product/
+  _index.md
+  modules/
+    issues/
+      _index.md
+      create.md
+      list.md
+      batch-delete.md
+    auth/
+      _index.md
+      login.md
+  shared/
+    permissions.md
+    errors.md
+```
+
+Rules for growth:
+
+- `product/_index.md` remains the only global entry point
+- module-level `_index.md` files are allowed as child navigation nodes
+- every new product document must be reachable from some `_index.md`
+- do not create orphan product files that are not linked from the index tree
+
+Suggested scaling heuristics:
+
+- small projects: `product/_index.md` + `product/features/*.md`
+- when one domain accumulates several files, split it into `product/modules/<domain>/_index.md`
+- when multiple features share the same business rule, move it into `product/shared/`
+- when a new file is added, update the nearest relevant `_index.md` and keep the global `_index.md` pointing at the top-level modules or sections
+
+## Updating an existing feature
+
+Do not treat a behavior change as "just a small code edit". If the externally visible behavior changes, follow the same contract-first discipline.
+
+Normal update sequence:
+
+1. Update the relevant file in `product/` first
+2. Update schema, types, and contract files to match the new intent
+3. Run the contract and take the red result if the implementation is now behind the contract
+4. Update the implementation
+5. Run again until green
+
+Examples that should follow the update flow:
+
+- add a field to a response
+- change an error code
+- add a new query parameter
+- tighten auth behavior
+- change a workflow step or state dependency
+
+Examples that usually do **not** require product updates:
+
+- internal refactors with no user-visible behavior change
+- storage changes
+- queue/caching changes
+- module layout changes
+
+If in doubt, ask: **would a client, PM, QA reviewer, or API consumer describe this as changed behavior?** If yes, update `product/` first.
 
 ## Writing contract-first specs
 
@@ -123,10 +204,12 @@ Examples below inline schemas for brevity. In real projects, move reusable Zod s
 
 Before writing contract files:
 
-1. Read the relevant file in `product/` if it exists.
-2. If it does not exist, create a minimal intent file first unless the user explicitly wants to skip that layer.
-3. Resolve obvious ambiguities before finalizing the contract.
-4. Then choose the right contract scope.
+1. Read `product/_index.md` first when it exists.
+2. Follow the index tree to the relevant module or feature file.
+3. If it does not exist, create a minimal intent file first unless the user explicitly wants to skip that layer.
+4. Update the relevant `_index.md` files when adding a new feature or module file.
+5. Resolve obvious ambiguities before finalizing the contract.
+6. Then choose the right contract scope.
 
 Choose the right scope:
 
@@ -305,6 +388,8 @@ When escalating:
 
 ## Agent behavior
 
+### New feature flow
+
 1. User describes intent → draft Glubean contracts in `contracts/`
 2. If the intent is ambiguous or contradictory in a way that affects externally visible behavior → **escalate immediately, do not finalize or run the contract yet** (see above)
 3. Once the contract is sufficiently aligned, finalize the contract in `contracts/`
@@ -314,6 +399,16 @@ When escalating:
 7. Start server → run contracts via MCP
 8. Red → fix the implementation first; only modify the contract if the failure reveals a self-contradiction in the spec
 9. Green → promote stable contract subset to `tests/` for regression
+
+### Existing feature update flow
+
+1. A user-visible behavior change is requested
+2. Update the relevant `product/` file first
+3. Update schemas, types, and contracts to reflect the new intent
+4. Run the contract and accept the red result if the implementation is now outdated
+5. Update the implementation
+6. Run again until green
+7. If the change is stable and belongs in regression coverage, keep `tests/` aligned with the updated contract
 
 ## What NOT to do
 

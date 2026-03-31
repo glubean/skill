@@ -72,15 +72,10 @@ data/users/
 
 ```typescript
 import { test, fromDir } from "@glubean/sdk";
+import type { UserCase } from "../../types/users.ts";
 import { api } from "../../config/api.ts";
 
-// ⚠️ Use `type`, not `interface` — fromDir generics require an index signature.
-type UserCase = {
-  username: string;
-  expectedStatus: number;
-};
-
-const users = await fromDir("data/users/");
+const users = await fromDir<UserCase>("data/users/");
 
 // Quick mode — string ID
 export const userLookup = test.each(users)(
@@ -123,9 +118,10 @@ data/search/
 
 ```typescript
 import { test, fromDir } from "@glubean/sdk";
+import type { SearchQuery } from "../../types/search.ts";
 import { api } from "../../config/api.ts";
 
-const queries = await fromDir.merge("data/search/");
+const queries = await fromDir.merge<SearchQuery>("data/search/");
 
 // String ID
 export const searchTests = test.pick(queries)(
@@ -218,8 +214,9 @@ empty-query:
 
 ```typescript
 import { fromYaml, test } from "@glubean/sdk";
+import type { SearchQueryCase } from "../../types/search.ts";
 
-const cases = await fromYaml.map("data/search-queries.yaml");
+const cases = await fromYaml.map<SearchQueryCase>("data/search-queries.yaml");
 
 export const search = test.pick(cases)(
   { id: "search-$_pick", tags: ["api"] },
@@ -247,14 +244,55 @@ export const search = test.pick(cases)(
 
 ```typescript
 // Array loaders — for test.each
-const rows = await fromCsv("data/file.csv");
-const rows = await fromYaml("data/file.yaml");
-const rows = await fromJson("data/file.json");
-const rows = await fromJsonl("data/file.jsonl");
-const items = await fromDir.concat("data/items/");
+const rows = await fromCsv<Row>("data/file.csv");
+const rows = await fromYaml<Row>("data/file.yaml");
+const rows = await fromJson<Row>("data/file.json");
+const rows = await fromJsonl<Row>("data/file.jsonl");
+const items = await fromDir.concat<Item>("data/items/");
 
 // Map loaders — for test.pick
-const cases = await fromYaml.map("data/scenarios.yaml");
-const cases = await fromJson.map("data/scenarios.json");
-const cases = await fromDir.merge("data/scenarios/");
+const cases = await fromYaml.map<Case>("data/scenarios.yaml");
+const cases = await fromJson.map<Case>("data/scenarios.json");
+const cases = await fromDir.merge<Case>("data/scenarios/");
 ```
+
+## Data loader rules
+
+These rules apply to ALL data loading in Glubean tests. Follow them strictly.
+
+1. **Always use SDK loaders (`fromJson`, `fromCsv`, `fromYaml`, etc.)** — never use `import data from "./file.json" with { type: "json" }`. Native import has limited path resolution and inconsistent behavior across runtimes.
+
+2. **Always load data into an independent `const`** — never inline `await` inside `test.each()`.
+
+```typescript
+// ✅ CORRECT: independent const
+const users = await fromJson<User>("data/users.json");
+export const tests = test.each(users)(...);
+
+// ❌ WRONG: inline await — if this fails, ALL exports in the file are blocked
+export const tests = test.each(await fromJson<User>("data/users.json"))(...);
+```
+
+3. **Always provide a type generic** — use `type` (not `interface`) for data row types. Data loaders require index signatures.
+
+4. **Keep types in `types/`** — do not declare data types inside test files. Types in `types/` are reusable across `explore/`, `contracts/`, and `tests/`.
+
+```typescript
+// types/users.ts
+export type UserCase = {
+  username: string;
+  expectedStatus: number;
+};
+
+// tests/users.test.ts
+import type { UserCase } from "../types/users.ts";
+const users = await fromDir<UserCase>("data/users/");
+```
+
+5. **Use bare paths for shared data, relative paths for colocated data.**
+
+| Path format | Resolves from |
+|-------------|---------------|
+| `data/users.json` (bare) | Project root (where `package.json` lives) |
+| `./local/data.json` | Calling file's directory |
+| `../shared/data.json` | Calling file's parent directory |

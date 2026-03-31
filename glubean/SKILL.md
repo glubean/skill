@@ -23,7 +23,7 @@ Use this skill in one of four modes:
 
 Before choosing a workflow, inspect the workspace:
 
-- Check for `package.json`, `config/`, `product/`, `contracts/`, `design/`, `tests/`, `explore/`, `.env`, `.env.secrets`, and `GLUBEAN.md`.
+- Check for `package.json`, `config/`, `product/`, `contracts/`, `tests/`, `explore/`, `.env`, `.env.secrets`, and `GLUBEAN.md`.
 - Check whether `@glubean/sdk` is already present in dependencies or devDependencies.
 - Check whether MCP tools are available.
 
@@ -95,11 +95,16 @@ Always follow these unless project-specific instructions override them:
 - Use this when the user wants to define API behavior before implementing it.
 - Read [references/patterns/contract-first.md](references/patterns/contract-first.md) first — it contains the full writing guide, escalation rules, and directory conventions.
 - Treat `product/` as the upstream intent input when it exists: PRDs, scenarios, business rules, requirement notes.
+- When `product/_index.md` exists, read it first as the navigation entry point into product intent.
 - If `product/` exists but does not yet contain a file for the current feature, start by creating or updating a small product intent file before writing contracts. Do not jump straight from a vague prompt into `contracts/` unless the user explicitly wants to skip the product layer.
+- As `product/` grows, the agent may introduce module-level `_index.md` files, but `product/_index.md` must remain the single global entry point.
+- If you add a new feature or module file under `product/`, update the relevant `_index.md` files in the same change. Do not leave orphan product files outside the index tree.
+- If the task changes an existing feature's externally visible behavior, update the relevant `product/` file first before editing contracts or implementation.
 - Write contracts in `contracts/`, not in `explore/` or `tests/`. The `contracts/` directory is the source of truth for executable contracts.
-- Treat `design/` as the place for technical decisions that should inform implementation but do not belong in the contract itself.
+- Treat architecture and implementation design as external context owned by the implementation codebase. Use `GLUBEAN.md` `view ../...` pointers to find and read those sources when they matter.
 - If the user asks for a new resource or a related API family, start with a resource contract plan before writing files. Do not default to a single endpoint if the actual request implies CRUD + list/query + errors.
-- The normal start sequence is: `product/` intent -> `contracts/` draft -> escalation/review -> implementation.
+- The normal start sequence for a new feature is: `product/` intent -> `contracts/` draft -> escalation/review -> implementation.
+- The normal start sequence for an existing feature update is: `product/` update -> `contracts/` update -> red run -> implementation update -> green run.
 - Use `ctx.validate(zodSchema)` for response schema contracts, not scattered field assertions.
 - Use `.step()` chains for workflow contracts — return state between steps defines cross-endpoint data dependencies.
 - **Escalation is mandatory.** When the user's intent is ambiguous, contradictory, or missing necessary detail, stop and ask. Do not guess. Mark unresolved parts in the draft contract and present them to the user. This is the most important behavior in contract-first mode.
@@ -111,7 +116,7 @@ Always follow these unless project-specific instructions override them:
 - Use this when working inside an existing Glubean project.
 - First, diagnose project health: read [references/diagnose.md](references/diagnose.md) and check the project structure. If core structure is missing, prompt the user to run `npx glubean@latest init` before writing tests.
 - Read [references/project-workflow.md](references/project-workflow.md) first.
-- Read `product/` and `design/` when they exist and the task depends on business intent or previously decided technical tradeoffs.
+- Read `product/` when it exists and the task depends on business intent. Read architecture / ADR / implementation context via `GLUBEAN.md` pointers or adjacent codebases when technical tradeoffs matter.
 - If the user already has a meaningful `tests/` suite, or asks how to run those tests automatically, read [references/ci-workflow.md](references/ci-workflow.md) and help them create CI.
 - If the user asks to "write tests for my API", "improve coverage", "what am I missing?", or targets multiple endpoints without specifying scenarios, read [references/patterns/test-planning.md](references/patterns/test-planning.md) and present a test plan or gap report before writing code. Most users don't know what coverage to ask for — the agent should analyze the API surface and propose it.
 - Then read [references/index.md](references/index.md) and only the patterns needed for the current task.
