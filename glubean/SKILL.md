@@ -12,17 +12,18 @@ allowed-tools: Read Write Edit Glob Grep Bash mcp__glubean__glubean_run_local_fi
 
 # Glubean
 
-Use this skill in one of three modes:
+Use this skill in one of four modes:
 
 1. **Docs mode**: the user has only the skill and is asking what Glubean is, how it works, how it compares to Postman, how to migrate, editor support, cloud features, or other product questions.
 2. **Bootstrap mode**: the user has only the skill and wants to try Glubean, generate a demo, install tools, run a scratch test, or get to a first successful run.
-3. **Project mode**: the user is already inside a Glubean project and wants to write, run, or fix tests.
+3. **Contract-first mode**: the user describes an API that does not yet exist and wants to define its behavior as executable contracts before implementing it.
+4. **Project mode**: the user is already inside a Glubean project and wants to write, run, or fix tests against an existing API.
 
 ## Route first
 
 Before choosing a workflow, inspect the workspace:
 
-- Check for `package.json`, `config/`, `tests/`, `explore/`, `.env`, `.env.secrets`, and `GLUBEAN.md`.
+- Check for `package.json`, `config/`, `product/`, `contracts/`, `design/`, `tests/`, `explore/`, `.env`, `.env.secrets`, and `GLUBEAN.md`.
 - Check whether `@glubean/sdk` is already present in dependencies or devDependencies.
 - Check whether MCP tools are available.
 
@@ -30,6 +31,7 @@ Then route by intent plus environment:
 
 - **Docs mode** if the user is asking for explanation or product guidance and there is no active project task.
 - **Bootstrap mode** if there is no Glubean project yet and the user wants to start using Glubean now.
+- **Contract-first mode** if the user describes an API, a new resource, or a related set of APIs that do not exist yet and wants to define behavior before implementing it. Signal words: "I need a XX API", "design the endpoint", "add a new resource", "write tests first", "TDD". Read [references/patterns/contract-first.md](references/patterns/contract-first.md).
 - **Project mode** if the repo already looks like a Glubean project, or the user explicitly wants test work in an existing project.
 
 If `GLUBEAN.md` exists in the project root, read it first. It overrides default conventions. If it contains `view ./...` or `view ../...` lines, resolve and read those files before guessing from the API spec alone.
@@ -88,11 +90,28 @@ Always follow these unless project-specific instructions override them:
   4. Run the generated demo tests.
   5. Customize the generated files for the target API, then transition into Project mode: add `context/`, add business rules and `view ../...` pointers in `GLUBEAN.md`, keep iterating in `explore/`, and promote stable coverage into `tests/`.
 
+### Contract-first mode
+
+- Use this when the user wants to define API behavior before implementing it.
+- Read [references/patterns/contract-first.md](references/patterns/contract-first.md) first — it contains the full writing guide, escalation rules, and directory conventions.
+- Treat `product/` as the upstream intent input when it exists: PRDs, scenarios, business rules, requirement notes.
+- If `product/` exists but does not yet contain a file for the current feature, start by creating or updating a small product intent file before writing contracts. Do not jump straight from a vague prompt into `contracts/` unless the user explicitly wants to skip the product layer.
+- Write contracts in `contracts/`, not in `explore/` or `tests/`. The `contracts/` directory is the source of truth for executable contracts.
+- Treat `design/` as the place for technical decisions that should inform implementation but do not belong in the contract itself.
+- If the user asks for a new resource or a related API family, start with a resource contract plan before writing files. Do not default to a single endpoint if the actual request implies CRUD + list/query + errors.
+- The normal start sequence is: `product/` intent -> `contracts/` draft -> escalation/review -> implementation.
+- Use `ctx.validate(zodSchema)` for response schema contracts, not scattered field assertions.
+- Use `.step()` chains for workflow contracts — return state between steps defines cross-endpoint data dependencies.
+- **Escalation is mandatory.** When the user's intent is ambiguous, contradictory, or missing necessary detail, stop and ask. Do not guess. Mark unresolved parts in the draft contract and present them to the user. This is the most important behavior in contract-first mode.
+- After the user confirms the contracts, transition to implementation: read the contracts, write the API code, run via MCP, fix implementation (not contracts) until green.
+- Once contracts are green and stable, promote a subset to `tests/` for regression.
+
 ### Project mode
 
 - Use this when working inside an existing Glubean project.
 - First, diagnose project health: read [references/diagnose.md](references/diagnose.md) and check the project structure. If core structure is missing, prompt the user to run `npx glubean@latest init` before writing tests.
 - Read [references/project-workflow.md](references/project-workflow.md) first.
+- Read `product/` and `design/` when they exist and the task depends on business intent or previously decided technical tradeoffs.
 - If the user already has a meaningful `tests/` suite, or asks how to run those tests automatically, read [references/ci-workflow.md](references/ci-workflow.md) and help them create CI.
 - If the user asks to "write tests for my API", "improve coverage", "what am I missing?", or targets multiple endpoints without specifying scenarios, read [references/patterns/test-planning.md](references/patterns/test-planning.md) and present a test plan or gap report before writing code. Most users don't know what coverage to ask for — the agent should analyze the API surface and propose it.
 - Then read [references/index.md](references/index.md) and only the patterns needed for the current task.

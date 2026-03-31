@@ -10,6 +10,7 @@ Use this index after you know which mode you are in:
 |------|-------------|------------|
 | Docs | The user has only the skill and is asking product, documentation, or workflow questions | [docs/index.mdx](docs/index.mdx), then the relevant docs or pattern files below |
 | Bootstrap | The user has only the skill and wants a first demo, install, or setup flow | [patterns/bootstrap.md](patterns/bootstrap.md) |
+| Contract-first | The user describes an API that doesn't exist yet and wants to define behavior before implementing | [patterns/contract-first.md](patterns/contract-first.md) |
 | Project | The user is already in a Glubean project and wants test work | [project-workflow.md](project-workflow.md) |
 
 ## Reference
@@ -28,9 +29,10 @@ Use this index after you know which mode you are in:
 
 | File | When to use |
 |------|------------|
+| [contract-first.md](patterns/contract-first.md) | API doesn't exist yet — define behavior as executable contracts before implementing |
 | [context-setup.md](patterns/context-setup.md) | Set up `context/` and `GLUBEAN.md` so the agent has API knowledge before writing tests |
 | [test-planning.md](patterns/test-planning.md) | Analyze API surface or existing coverage → derive a test plan or gap report |
-| [promotion.md](patterns/promotion.md) | Promote stable `explore/` tests into `tests/` — assertions, auth, types, CI readiness |
+| [promotion.md](patterns/promotion.md) | Promote stable `explore/` or `contracts/` tests into `tests/` — assertions, auth, types, CI readiness |
 
 ### Core API Patterns
 
