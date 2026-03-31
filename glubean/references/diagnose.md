@@ -13,6 +13,8 @@ package.json          (required)  — @glubean/sdk + @glubean/runner in devDepen
 .env.secrets          (required)  — gitignored, holds credentials
 .gitignore            (required)  — must ignore .env.secrets, .env.*.secrets, node_modules/, .glubean/, *.result.json, local/
 GLUBEAN.md            (recommended) — project-specific conventions for AI skill
+product/              (recommended) — product intent, scenarios, business rules
+contracts/            (recommended) — executable contract source of truth
 tests/                (recommended) — permanent regression tests, run in CI
 explore/              (recommended) — exploratory tests, interactive iteration
 types/                (recommended) — shared TypeScript response types
@@ -32,6 +34,8 @@ schemas/              (optional)  — shared Zod schemas
 | .env exists with BASE_URL | File exists, contains `BASE_URL=` | See init rule below, then set the real URL |
 | .env.secrets exists | File exists (can be empty) | See init rule below |
 | .gitignore has Glubean entries | Contains `.env.secrets`, `.glubean/`, `*.result.json` | See init rule below; for partially initialized repos, `--overwrite` may be appropriate |
+| product/ exists when using contract-first workflow | Directory exists | Create during project setup or contract-first adoption |
+| contracts/ exists when using contract-first workflow | Directory exists | Create during project setup or contract-first adoption |
 | tests/ or explore/ exists | Directory exists | See init rule below |
 | types/ exists | Directory exists | Create `types/` if the project is otherwise initialized; otherwise see init rule below |
 | No inline types in tests/ | Grep for `\.json<{` in tests/ files | Move inline types to `types/*.ts` |
@@ -76,6 +80,8 @@ The CLI handles package.json, dependencies, .env, .env.secrets, .gitignore, dire
 
 | Directory | Purpose | Style rules |
 |---|---|---|
+| `product/` | Product intent | Start from `_index.md`; all new product docs must be reachable from the index tree |
+| `contracts/` | Executable contracts | Contract-first source of truth; may be draft or expected-red before implementation catches up |
 | `tests/` | Regression, CI | Types in `types/`, builder for CRUD, full assertions |
 | `explore/` | Interactive exploration | Inline types OK, individual exports per operation, quick iteration |
 | `data/` | Test data | JSON, CSV, YAML — never hardcode payloads in test files |
@@ -91,6 +97,7 @@ When entering a project for the first time:
 
 1. Check the project structure above.
 2. If the project is missing core structure, prompt the user to run `npx glubean@latest init` — do not create files by hand.
-3. If the project exists but has convention issues (inline types in tests/, missing tags, hardcoded secrets), fix them by refactoring.
-4. Read `GLUBEAN.md` if it exists — it overrides defaults. If it contains `view ./...` or `view ../...`, read those files too.
-5. Then proceed to write or fix tests per [project-workflow.md](project-workflow.md).
+3. If the project uses contract-first workflow, confirm that `product/` and `contracts/` exist and that `product/_index.md` is present when product docs exist.
+4. If the project exists but has convention issues (inline types in tests/, missing tags, hardcoded secrets), fix them by refactoring.
+5. Read `GLUBEAN.md` if it exists — it overrides defaults. If it contains `view ./...` or `view ../...`, read those files too.
+6. Then proceed to write or fix tests per [project-workflow.md](project-workflow.md).
