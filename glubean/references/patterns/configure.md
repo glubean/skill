@@ -85,6 +85,39 @@ export const { http: api, vars } = configure({
 
 **Rule:** `{{KEY}}` = resolve from .env/.env.secrets at runtime. No `{{}}` = literal value.
 
+## Using the configured client in tests
+
+```typescript
+// tests/users.test.ts
+import { test } from "@glubean/sdk";
+import { api } from "../config/api";
+
+export const getUser = test(
+  { id: "get-user", tags: ["users"] },
+  async (ctx) => {
+    const res = await api.get("users/1");
+    ctx.expect(res.status).toBe(200);
+  },
+);
+```
+
+Import the exported client (`api`), not `ctx.http`. The configured client has base URL, auth, and timeout baked in.
+
+## With auth plugin
+
+For anything beyond static headers, use `@glubean/auth` instead of manually setting `Authorization`:
+
+```typescript
+import { configure } from "@glubean/sdk";
+import { bearer } from "@glubean/auth";
+
+export const { http: api } = configure({
+  http: bearer({ prefixUrl: "{{BASE_URL}}", token: "{{API_TOKEN}}" }),
+});
+```
+
+Available strategies: `bearer()`, `apiKey()`, `basicAuth()`, `oauth2.clientCredentials()`, `oauth2.refreshToken()`, `oauthCode()`. See [auth.md](auth.md) for the full reference and OAuth2 decision tree.
+
 ## Public + Authenticated clients (same API, different auth)
 
 ```typescript
@@ -171,6 +204,12 @@ export const { ai } = configure({
 ## Anti-patterns
 
 ```typescript
+// ❌ Using ctx.http (only for scratch demos)
+const res = await ctx.http.get("https://api.example.com/users");
+
+// ✅ Use configured client
+const res = await api.get("users").json();
+
 // ❌ Hardcoded URL
 const res = await fetch("https://api.example.com/users");
 

@@ -101,33 +101,7 @@ context/
   billing-api.md
 ```
 
-Structure each file for agent consumption — not human prose:
-
-```markdown
-# Users API
-
-Base URL: `{{BASE_URL}}`
-
-## POST /users
-Create a user.
-
-**Request:**
-- Header: `Authorization: Bearer {{API_TOKEN}}`
-- Body: `{ "email": string, "name": string, "role": "admin" | "member" }`
-
-**Response 201:**
-- `{ "id": string, "email": string, "name": string, "role": string, "createdAt": string }`
-
-**Errors:**
-- 400: missing required field
-- 409: email already exists
-- 403: caller is not admin
-
-## GET /users/:id
-...
-```
-
-Key: include request body shape, response body shape, and error codes. Skip prose descriptions the agent doesn't need.
+The format is up to the user — the key is to include request body shape, response body shape, and error codes. Skip prose descriptions the agent doesn't need.
 
 ### 4. Product / business logic in GLUBEAN.md (improves all other options)
 

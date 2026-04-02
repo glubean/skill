@@ -14,7 +14,7 @@ npx skills add glubean/skill
 npx skills update
 ```
 
-That's it. On first use, the agent can guide the user through Glubean setup, project init, and MCP configuration using the bundled bootstrap workflow. For `glubean init`, the skill expects the user to run the interactive CLI themselves.
+That's it. On first use, the skill helps the agent route into the right Glubean workflow: docs, onboarding, contract-first, or project work. For `glubean init`, the skill expects the user to run the interactive CLI themselves.
 
 Supports 40+ agents including Claude Code, Cursor, GitHub Copilot, Codex, Gemini CLI, Windsurf, and more.
 
@@ -37,7 +37,7 @@ glubean/
 
 Once installed, your AI coding agent can:
 
-- **Bootstrap** a new Glubean project (guide SDK setup, init, and MCP configuration)
+- **Onboard** a real Glubean setup (extension, MCP, cookbook, project init)
 - **Generate** test files from API specs, endpoint descriptions, or natural language
 - **Run** tests via MCP tools or CLI (`npx glubean run`)
 - **Fix** failing tests by reading structured failure output and iterating

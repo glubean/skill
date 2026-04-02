@@ -8,21 +8,9 @@
 
 **This pattern:** write Glubean tests before the API exists. The tests define the executable contract — endpoint, request shape, response schema, status codes, error cases, and cross-endpoint data dependencies. AI reads these contracts to implement the API. The contracts remain the source of truth and are continuously verified.
 
-## When to use
+## How it differs from test-after
 
-The user describes an **API that does not yet exist** and wants to define its behavior before implementing it.
-
-Signal words:
-- "I need a XX API"
-- "Design the XX endpoint"
-- "Write tests first, then implement"
-- "TDD"
-
-Do NOT use this pattern when the API already exists and the user wants to verify its behavior — use the standard project-workflow.md patterns instead.
-
-## How it differs from verification mode
-
-| | Verification mode | Contract-first mode |
+| | Test-after | Contract-first |
 |---|---|---|
 | API state | Exists, callable | Does not exist or partially implemented |
 | Information source | OpenAPI spec / context/ / traces | User intent + existing codebase conventions |

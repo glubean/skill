@@ -22,18 +22,19 @@ Prerequisites:
 - Node.js 20+
 - a writable working directory
 
-Before suggesting init, ask the user which template they want:
-
-> Do you want the **minimal** template (bare essentials — explore-only, quick start) or the **best-practice** template (full project structure with config, types, data directories, CI examples)?
-
-Then prompt the user to run:
+Prompt the user to run:
 
 ```bash
-npx glubean@latest init            # best-practice template
-npx glubean@latest init --minimal  # quick-start template
+npx glubean@latest init                  # interactive wizard (try, test, or contract-first)
+npx glubean@latest init --contract-first # skip wizard, scaffold contract-first project
 ```
 
-The CLI handles everything: `package.json`, dependencies, `.env`, `.env.secrets`, `.gitignore`, `config/`, `explore/`, `tests/`, `types/`, and runs `npm install` automatically.
+The wizard offers three paths:
+1. **Try Glubean** — clone the cookbook with 35+ runnable examples
+2. **Test an existing API** — full project scaffold (tests, explore, CI config, types)
+3. **Build contract-first** — product/, contracts/, types/, schemas/
+
+The CLI handles everything: `package.json`, dependencies, `.env`, `.env.secrets`, `.gitignore`, directories, demo tests, and runs `npm install` automatically.
 
 Do not run `npx glubean@latest init` on behalf of the user — it is an interactive wizard that requires their input.
 

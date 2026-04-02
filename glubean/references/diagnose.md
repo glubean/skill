@@ -47,8 +47,8 @@ schemas/              (optional)  — shared Zod schemas
 Do not create these files manually. Prompt the user to run:
 
 ```bash
-npx glubean@latest init            # best-practice scaffold
-npx glubean@latest init --minimal  # quick-start scaffold
+npx glubean@latest init                  # interactive wizard (try, test, or contract-first)
+npx glubean@latest init --contract-first # skip wizard, scaffold contract-first project
 ```
 
 The CLI handles package.json, dependencies, .env, .env.secrets, .gitignore, directory structure, demo tests, and runs `npm install`.
@@ -100,4 +100,4 @@ When entering a project for the first time:
 3. If the project uses contract-first workflow, confirm that `product/` and `contracts/` exist and that `product/_index.md` is present when product docs exist.
 4. If the project exists but has convention issues (inline types in tests/, missing tags, hardcoded secrets), fix them by refactoring.
 5. Read `GLUBEAN.md` if it exists — it overrides defaults. If it contains `view ./...` or `view ../...`, read those files too.
-6. Then proceed to write or fix tests per [project-workflow.md](project-workflow.md).
+6. Then proceed to write or fix tests per [test-after-workflow.md](test-after-workflow.md).
