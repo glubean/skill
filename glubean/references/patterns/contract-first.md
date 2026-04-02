@@ -44,6 +44,16 @@ When `product/` exists, the full flow is:
 
 If the project has a `product/` directory, the agent should normally start there before drafting contracts.
 
+If the user explicitly references an external intent source such as a GitHub issue, Linear ticket, Notion doc, or spec URL, read it first and sync the relevant intent into `product/` before drafting or updating contracts.
+
+Rules for external intent sources:
+
+- Sync only when the user explicitly points to the source.
+- Treat `product/` as the local working snapshot after sync.
+- Include the source link and sync time in the product file.
+- Do not auto-sync or watch external systems for changes.
+- If the source cannot be accessed because of permissions or network limits, ask the user to paste the content.
+
 The goal is not to write a giant PRD. The goal is to capture the minimum intent that lets contracts be written without guesswork.
 
 Recommended minimal structure:
