@@ -178,6 +178,46 @@ The standard MCP-powered write/run/fix loop:
 
 Prefer `filter` to run only the test you are working on — it is faster and keeps the result set small.
 
+## Trace header filtering
+
+By default, MCP traces strip most headers to save context tokens. Only these are kept:
+
+| Direction | Default kept headers |
+|---|---|
+| Request | `content-type`, `authorization` |
+| Response | `content-type`, `set-cookie`, `location` |
+
+All other headers are discarded before the trace reaches the agent.
+
+**This means the agent cannot see headers like `x-processing-duration`, `x-request-id`, `x-ratelimit-remaining`, or `server-timing` unless the user configures them.**
+
+### Configuring additional headers
+
+Add to `package.json`:
+
+```json
+{
+  "glubean": {
+    "mcp": {
+      "trace": {
+        "keepResponseHeaders": [
+          "content-type", "set-cookie", "location",
+          "x-processing-duration", "x-request-id", "server-timing"
+        ]
+      }
+    }
+  }
+}
+```
+
+The list replaces the default — include the defaults if you still want them.
+
+### Agent behavior
+
+- When the agent needs header data it cannot see in traces (e.g. for metrics, debugging, rate limit tracking), ask the user: "Does your API return useful headers like `x-processing-duration` or `server-timing`?"
+- If yes, suggest adding them to `keepResponseHeaders` in `package.json` so future traces include them.
+- **Test code always has full access to `res.headers`** regardless of this config. The filtering only affects what the agent sees via MCP traces.
+
 ## When CLI is appropriate
 
 | Situation | Use |
