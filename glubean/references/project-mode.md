@@ -24,6 +24,7 @@ Define behavior as executable contracts before the API exists.
 1. Read [contract-first.md](contract-first.md) for the entry workflow, then [patterns/contract-first.md](patterns/contract-first.md) for the full writing guide.
 2. Write contracts in `contracts/`, not in `explore/` or `tests/`.
 3. After implementation, promote stable contracts into `tests/`.
+4. If the user asks about coverage status, or `contracts/` has 5+ files, suggest a projection report. Read [patterns/projection.md](patterns/projection.md).
 
 Rules:
 

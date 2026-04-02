@@ -27,6 +27,7 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 |------|------------------|
 | [patterns/configure.md](patterns/configure.md) | Shared client, env, secrets, plugins |
 | [patterns/contract-first.md](patterns/contract-first.md) | Full contract authoring workflow |
+| [patterns/projection.md](patterns/projection.md) | Contract coverage report: product → contract → test alignment |
 | [patterns/test-planning.md](patterns/test-planning.md) | Coverage planning and gap reports |
 | [patterns/promotion.md](patterns/promotion.md) | Promote `explore/` or `contracts/` work into `tests/` |
 | [patterns/context-setup.md](patterns/context-setup.md) | Set up `context/` and `GLUBEAN.md` for better generation |

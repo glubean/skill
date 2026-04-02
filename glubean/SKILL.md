@@ -56,6 +56,8 @@ Then route by intent plus environment:
   - "I need a users API with CRUD"
   - "Design the billing endpoint before I implement it"
   - "Write tests first, then I'll build the API"
+  - "What's my contract coverage?"
+  - "Generate a projection report"
 
 ## Global rules
 
