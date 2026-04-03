@@ -8,8 +8,7 @@
 
 ## When to use
 
-- Migrate from Postman, Apifox, OpenAPI/Swagger, `.http`/`.rest`, cURL, or legacy test code
-- Bulk-convert existing endpoint definitions instead of writing from scratch
+Any source that contains API request information can be migrated — the agent reads the source, extracts request intent, and writes Glubean tests. There is no format or language whitelist. Glubean supports HTTP, GraphQL (`@glubean/graphql`), and gRPC (`@glubean/grpc`). Common sources include Postman, Apifox, OpenAPI, `.http`/`.rest`, cURL, proto files, GraphQL schemas, and legacy test code in any language (Jest, pytest, Rust, Go, etc.).
 
 Do not use for single endpoint smoke tests, small manual fixes, or contract-first work.
 
@@ -44,7 +43,9 @@ See [auth.md](auth.md) and [configure.md](configure.md) for implementation patte
 | Apifox export | paths, schemas, example payloads, tags | runtime auth, script intent |
 | OpenAPI / Swagger | operation grouping, request/response shape, status codes | real examples, undocumented business rules |
 | `.http` / `.rest` / cURL | executable request examples | project-wide grouping, negative coverage |
-| Legacy test code | workflow intent, custom assertions, setup semantics | direct portability |
+| Proto files / gRPC stubs | service definitions, RPC methods, message shapes | runtime behavior, auth |
+| GraphQL schemas / queries | type system, operation names, field structure | resolver behavior, auth |
+| Legacy test code (any language) | workflow intent, custom assertions, setup semantics | direct portability |
 
 ## Workflow (5 phases)
 
