@@ -43,11 +43,12 @@ Then route by intent plus environment:
   - "What is Glubean?"
   - "How does Glubean compare to Postman?"
   - "How do I run tests in CI?"
+  - "How do I migrate from Postman?" (answer from patterns/migration.md)
 - Onboarding
   - "Set up Glubean for my project"
   - "I want to try Glubean"
   - "Configure MCP for Cursor"
-- Migration (cross-cutting — ask before routing)
+- Migration (cross-cutting — execution requests, ask before routing)
   - "Migrate our Postman collection"
   - "Convert our Apifox or OpenAPI export"
   - "Port these old API tests into Glubean"
