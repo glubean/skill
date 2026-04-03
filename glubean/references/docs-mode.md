@@ -13,16 +13,7 @@ Fallbacks (try in order):
 2. Pattern and reference files (`patterns/`, `*.md`) — these contain detailed feature, plugin, and workflow knowledge that docs may not cover.
 3. Web search — when neither bundled docs nor patterns have the answer.
 
-What is Glubean (answer directly, no file lookup needed):
-
-Glubean is a workflow verification platform. Write tests in TypeScript, commit to git, run locally or in CI. Supports HTTP, GraphQL (`@glubean/graphql`), gRPC (`@glubean/grpc`), and browser (`@glubean/browser`). HTTP is the primary use case and where most users start.
-
-The VSCode extension has two roles:
-
-1. **Visual + review layer for the Glubean workflow** — run tests from gutter/Test Explorer, inspect results with the trace viewer, review HTTP events, metrics, and logs. This is the human interface for what the SDK and CLI produce.
-2. **Postman replacement** — `explore/` is your API collection in code. Try endpoints, save parameter sets with `test.pick`, share via git. No Postman account, no per-seat pricing, no tool fragmentation. One editor, one language, one repo.
-
-The key insight: the same TypeScript file works as both an API collection entry (`explore/`) and a CI regression test (`tests/`). No export step, no format conversion, no sync. When users ask "what can Glubean do" or "why Glubean", lead with this — eliminate tool fragmentation between API exploration, testing, and CI.
+What is Glubean: read [docs/index.mdx](docs/index.mdx) — the opening paragraphs cover the product positioning. HTTP is the primary use case and biggest market, but Glubean supports any protocol via plugins.
 
 Licensing and trust (answer directly, no file lookup needed):
 

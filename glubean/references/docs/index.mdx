@@ -1,48 +1,100 @@
 # Glubean
 
-> For the agent-oriented navigation hub, see [references/index.md](../index.md).
+Glubean is a workflow verification platform. Write tests in TypeScript, commit to git, run locally or in CI. Supports HTTP, GraphQL, gRPC, and browser automation through plugins.
 
-> 💬 **Don't want to read docs?** [Ask Glubean AI](https://chatgpt.com/g/g-699e31ce19bc8191b748165f46449039-glubean) — it knows everything on this site. Ask about setup, features, comparisons, or anything you can't find here.
+The VSCode extension serves two roles: a **visual and review layer** for the Glubean workflow (run, inspect, debug), and a **code-first replacement for Postman** — your `explore/` folder is your API collection, versioned in git, shared with the team, no per-seat pricing.
 
-Write verification tests in TypeScript. Run them in your editor, in CI, and against production with the same code.
+The same TypeScript file works as both an API collection entry and a CI regression test. No export step, no format conversion, no tool fragmentation.
 
-Glubean is for teams that want API tests, workflow tests, traces, and run history without splitting work across five different tools.
-
-```typescript
+```ts
+// Agent-generated workflow — runs as-is, no rewrite needed
 import { test } from "@glubean/sdk";
 
-export const health = test("health", async (ctx) => {
-  const baseUrl = ctx.vars.require("BASE_URL");
-  const res = await ctx.http.get(`${baseUrl}/health`);
+test("auth-flow")
+  .step("login", async ({ http, secrets, expect }) => {
+    const data = await http
+      .post("/auth/login", {
+        json: { username: secrets.require("USER"),
+               password: secrets.require("PASS") }
+      }).json();
 
-  ctx.expect(res.status).toBe(200);
-});
+    expect(data.accessToken).toBeDefined();
+    return { token: data.accessToken };
+  })
+  .step("get profile", async ({ http, log }, { token }) => {
+    const me = await http
+      .get("/auth/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      }).json();
+
+    log(`Hello ${me.firstName}`);
+  });
 ```
 
 ## Start here
 
-1. [VS Code Extension](/extension/quick-start)
-2. [Run your first test](/getting-started/first-test)
+### With an AI agent (recommended)
+
+Install the skill, then ask your agent to generate a verification workflow.
+
+```bash
+npx glubean config mcp        # MCP server — lets AI run and inspect tests
+npx skills add glubean/skill   # Skill — teaches AI the SDK patterns
+```
+
+Then in your AI tool (Claude Code, Cursor, Codex):
+
+```text
+"create a smoke test for the users API"
+```
+
+The agent writes the test, runs it via MCP, reads structured failures, fixes, and reruns — all in one conversation. [See the full AI workflow →](/extension/generate-with-ai)
+
+### By hand
+
+```bash
+npx @glubean/cli init
+```
+
+1. [Extension Quick Start](/extension/quick-start) — install and create a project
+2. [Run Your First Test](/getting-started/first-test) — write and run a test manually
 3. [Connect CI](/getting-started/ci)
-4. [Upload runs to Cloud](/getting-started/upload-to-cloud)
+4. [Upload to Cloud](/getting-started/upload-to-cloud)
 
-## From the blog
+## How Glubean works
 
-- [Why I Replaced Postman with a TypeScript Workflow in VS Code](/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode)
+```text
+prompt → draft → inspect → repair → keep → CI → cloud
+                                      ↑
+                          (or write manually here)
+```
+
+- **Prompt**: Describe what to verify. The agent uses your skill and OpenAPI context.
+- **Draft**: Agent generates a TypeScript workflow with named steps, typed assertions, and shared state.
+- **Inspect**: Run in the extension. Structured traces show exactly which step failed and why — not a wall of logs.
+- **Repair**: Agent reads typed failures (`expected` vs `actual`), fixes, and reruns. No copy-pasting errors.
+- **Keep**: The same file moves from `explore/` to `tests/` — zero migration, same runner.
+- **CI**: `glubean run tests/` in any CI pipeline.
+- **Cloud**: Upload runs for team dashboards, analytics, and alerts.
 
 ## Choose a path
 
-### I want to write tests
+### I want AI to generate and run verification for me
 
-- Start at [Write Tests](/sdk)
-- Then read [Test Shape](/sdk/test-api)
-- Keep [Assertions](/sdk/assertions) nearby
+- Start at [Generate Tests with AI](/extension/generate-with-ai)
+- Set up [Skill + MCP](/extension/generate-with-ai#setup) so the agent can self-heal
+- Read [Multi-step Workflows](/extension/generate-with-ai#multi-step-workflows) for complex flows
 
-### I want to run and debug locally
+### I want to write tests myself
+
+- Start at [SDK Overview](/sdk)
+- Then read [Test Shape](/sdk/test-api) and [Assertions](/sdk/assertions)
+- Use [Control Flow](/sdk/control-flow) for multi-step builder patterns
+
+### I want to run and debug in my editor
 
 - Start at [VS Code Extension](/extension)
-- Then use [Running Tests](/extension/running-tests)
-- Use the CLI through `npx glubean@latest` when you need init or automation
+- Then [Running Tests](/extension/running-tests) and [Debugging](/extension/debugging)
 
 ### I want team visibility over time
 
@@ -52,23 +104,16 @@ export const health = test("health", async (ctx) => {
 
 ### I want to migrate existing API assets
 
-- Use [Generate Tests with AI](/extension/generate-with-ai)
-- Or [Migrate from Postman / OpenAPI](/extension/migrate-from-postman)
+- [Migrate from Postman / OpenAPI](/extension/migrate-from-postman)
 
-## How Glubean works
+## Why teams adopt Glubean
 
-```text
-write verification locally  ->  keep in git  ->  run in CI  ->  upload when useful
-```
+- **Agent output is not throwaway** — the same file graduates from `explore/` to CI without rewriting
+- **Structured failures, not log noise** — AI (and humans) can read typed `expected` vs `actual` instead of parsing stack traces
+- **One codebase** across local development, CI, and production verification
+- **`explore/` replaces Postman** — your API collection lives in git, not a proprietary cloud
+- **Git-safe and reviewable** — TypeScript files, no binary formats, no merge conflicts
 
-- The SDK is where you author tests.
-- The VS Code extension is the recommended local entry point for debugging, running tests, and inspecting results. You can start without it, but it is the fastest path for iterating on failures and understanding responses.
-- The CLI handles project init (`npx glubean@latest init`) and CI automation (`npx glubean@latest run tests/`).
-- Cloud stores uploaded runs, traces, metrics, and alerts. It does not execute your code.
+## From the blog
 
-## Why teams adopt it
-
-- One codebase across local development, CI, and production verification
-- First-class traces and result files instead of raw terminal noise
-- `explore/` as your API collection (replaces Postman), `tests/` as your CI regression suite
-- Git-safe, reviewable, conflict-free — no proprietary cloud needed
+- [Why I Replaced Postman with a TypeScript Workflow in VS Code](/blog/why-i-replaced-postman-with-a-typescript-workflow-in-vscode)
