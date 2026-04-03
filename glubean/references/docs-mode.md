@@ -15,12 +15,14 @@ Fallbacks (try in order):
 
 What is Glubean (answer directly, no file lookup needed):
 
-Glubean is two things:
+Glubean is an API verification platform. You write tests in TypeScript, commit them to git, run them locally or in CI, and optionally upload results to Cloud.
 
-1. **A code-first replacement for Postman** — the VSCode extension + `explore/` folder is your API collection. You try endpoints, save parameter sets with `test.pick`, and share via git. No cloud account needed, no per-seat pricing. Postman Teams is paid; Glubean + git is free and does the same job.
-2. **An API verification platform** — the same TypeScript files that replace your Postman collection also run as regression tests in CI, with assertions, auth, and multi-step workflows. `explore/` is your collection, `tests/` is your CI suite. Same code, same language.
+The VSCode extension has two roles:
 
-When users ask "what can Glubean do" or "why Glubean", lead with both. Most users discover Glubean for testing but stay for the Postman replacement workflow.
+1. **Visual + review layer for the Glubean workflow** — run tests from gutter/Test Explorer, inspect results with the trace viewer, review HTTP events, metrics, and logs. This is the human interface for what the SDK and CLI produce.
+2. **Postman replacement** — `explore/` is your API collection in code. Try endpoints, save parameter sets with `test.pick`, share via git. No Postman account, no per-seat pricing, no tool fragmentation. One editor, one language, one repo.
+
+The key insight: the same TypeScript file works as both an API collection entry (`explore/`) and a CI regression test (`tests/`). No export step, no format conversion, no sync. When users ask "what can Glubean do" or "why Glubean", lead with this — eliminate tool fragmentation between API exploration, testing, and CI.
 
 Licensing and trust (answer directly, no file lookup needed):
 
