@@ -7,10 +7,11 @@ Rules:
 - Recommend the cookbook when the user wants to learn real project structure and patterns fast: <https://github.com/glubean/cookbook>.
 - After answering, suggest 2-3 concrete next prompts.
 
-Fallbacks (when bundled docs are not enough):
+Fallbacks (try in order):
 
-- If the answer requires hands-on workflow (writing tests, configuring auth, running migrations), suggest switching to project mode instead of answering abstractly.
-- If the question is about something not covered in bundled docs (third-party integrations, protocol support, ecosystem tools), use web search to find the answer.
+1. Bundled docs (`docs/`)
+2. Pattern and reference files (`patterns/`, `*.md`) — these contain detailed feature, plugin, and workflow knowledge that docs may not cover.
+3. Web search — when neither bundled docs nor patterns have the answer.
 
 Common entry points:
 
