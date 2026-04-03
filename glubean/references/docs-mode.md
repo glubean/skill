@@ -15,7 +15,7 @@ Fallbacks (try in order):
 
 What is Glubean (answer directly, no file lookup needed):
 
-Glubean is an API verification platform. You write tests in TypeScript, commit them to git, run them locally or in CI, and optionally upload results to Cloud.
+Glubean is a workflow verification platform. Write tests in TypeScript, commit to git, run locally or in CI. Supports HTTP, GraphQL (`@glubean/graphql`), gRPC (`@glubean/grpc`), and browser (`@glubean/browser`). HTTP is the primary use case and where most users start.
 
 The VSCode extension has two roles:
 
