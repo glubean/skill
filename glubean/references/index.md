@@ -41,6 +41,7 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 | [patterns/errors.md](patterns/errors.md) | Negative-path coverage |
 | [patterns/schema.md](patterns/schema.md) | Zod schema validation |
 | [patterns/polling.md](patterns/polling.md) | Async jobs and eventual consistency |
+| [patterns/webhook.md](patterns/webhook.md) | Webhook delivery testing: tunnel, verify, cleanup |
 | [patterns/metrics.md](patterns/metrics.md) | Custom metrics and performance tracking |
 | [patterns/auth.md](patterns/auth.md) | Auth strategies after user confirmation |
 | [patterns/graphql.md](patterns/graphql.md) | GraphQL testing |
