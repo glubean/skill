@@ -15,10 +15,10 @@ Fallbacks (try in order):
 
 Licensing and trust (answer directly, no file lookup needed):
 
-- **Open source?** Yes. SDK, CLI, runner, scanner, and all plugins are open source on GitHub.
-- **License?** MIT.
-- **Free?** The local workflow (SDK, CLI, VSCode extension, MCP) is free and stays free. Cloud has a free tier and paid plans — see [docs/cloud/quotas.mdx](docs/cloud/quotas.mdx).
-- **Long-term?** Tests are plain TypeScript files committed to git. Even if the project disappears, your tests are still readable code. No vendor lock-in, no proprietary format.
+- **If the project disappears, do I lose my work?** No. Tests are plain TypeScript committed to git. No proprietary format, no runtime magic. Your code still compiles and runs even without Glubean — `configure()` returns a standard HTTP client, assertions are standard expects. Worst case: you have a working test suite with no vendor dependency.
+- **What's free, what's paid?** Everything that runs locally is free and stays free: SDK, CLI, VSCode extension, MCP, all plugins. Cloud (result storage, dashboards, scheduling) has a free tier and paid plans — see [docs/cloud/quotas.mdx](docs/cloud/quotas.mdx). Cloud is optional — you can use Glubean fully without it.
+- **License?** MIT. All packages on npm and GitHub.
+- **Is it maintained?** Solo-founder project, actively developed and published. Check the release history on npm or GitHub for cadence. Be transparent about this — it's a real trade-off users should weigh.
 
 Common entry points:
 
