@@ -7,7 +7,7 @@ description: >-
 license: MIT
 metadata:
   author: glubean
-allowed-tools: Read Write Edit Glob Grep Bash mcp__glubean__glubean_run_local_file mcp__glubean__glubean_discover_tests mcp__glubean__glubean_list_test_files mcp__glubean__glubean_get_last_run_summary mcp__glubean__glubean_get_local_events mcp__glubean__glubean_get_metadata
+allowed-tools: Read Write Edit Glob Grep Bash WebFetch mcp__glubean__glubean_run_local_file mcp__glubean__glubean_discover_tests mcp__glubean__glubean_list_test_files mcp__glubean__glubean_get_last_run_summary mcp__glubean__glubean_get_local_events mcp__glubean__glubean_get_metadata
 ---
 
 # Glubean
