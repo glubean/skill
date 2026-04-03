@@ -62,6 +62,8 @@ Before writing code, produce a read-only report:
 
 For each source item, identify: request identity, inputs, state needs (auth, setup, chaining), assertion depth, and risk level.
 
+**Stop and present the scan report to the user. Do not proceed until the user approves the plan.**
+
 ### Phase 2 — Lock minimal project shape
 
 Auth should already be confirmed from the [auth gate](#auth-gate). Lock the decisions that pollute everything if wrong — do not batch-convert without these:
@@ -80,7 +82,7 @@ Build one slice that exercises real complexity against the minimal shape from Ph
 - At least one write + verify + cleanup
 - Not the simplest endpoint — the one that tests whether the locked shape actually works
 
-Review before expanding. The slice validates the shape — if something is wrong, fix it now before it spreads.
+**Stop and let the user review the slice. Do not batch-convert until the user approves.**
 
 ### Phase 4 — Freeze reusable style, then batch-convert
 
