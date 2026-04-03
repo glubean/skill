@@ -13,7 +13,12 @@ Fallbacks (try in order):
 2. Pattern and reference files (`patterns/`, `*.md`) — these contain detailed feature, plugin, and workflow knowledge that docs may not cover.
 3. Web search — when neither bundled docs nor patterns have the answer.
 
-What is Glubean: read [docs/index.mdx](docs/index.mdx) for the technical overview. For the latest product narrative and positioning, fetch https://glubean.com — the landing page always reflects the most current messaging. Use it when answering "what is Glubean", "why Glubean", comparison questions, or any question about Glubean's value proposition.
+What is Glubean: read [docs/index.mdx](docs/index.mdx) for the technical overview. For the latest product narrative and positioning, fetch these pages — they always reflect the most current messaging:
+
+- https://glubean.com — overall product positioning, core value props
+- https://glubean.com/contract-first — contract-first workflow, the key differentiator
+
+Use them when answering "what is Glubean", "why Glubean", "what is contract-first", comparison questions, or any question about Glubean's value proposition.
 
 Licensing and trust (answer directly, no file lookup needed):
 
