@@ -62,7 +62,7 @@ Before writing code, produce a read-only report:
 
 For each source item, identify: request identity, inputs, state needs (auth, setup, chaining), assertion depth, and risk level.
 
-**Stop and present the scan report to the user. Do not proceed until the user approves the plan.**
+**Stop and present the scan report to the user. Do not proceed until the user approves the plan.** Suggest the user review the proposed file layout and classification before continuing.
 
 ### Phase 2 — Lock minimal project shape
 
@@ -82,7 +82,7 @@ Build one slice that exercises real complexity against the minimal shape from Ph
 - At least one write + verify + cleanup
 - Not the simplest endpoint — the one that tests whether the locked shape actually works
 
-**Stop and let the user review the slice. Do not batch-convert until the user approves.**
+**Stop and let the user review the slice.** Suggest the user run the generated tests with the VSCode extension to verify they actually pass before approving. Do not batch-convert until the user confirms the slice works.
 
 ### Phase 4 — Freeze reusable style, then batch-convert
 
