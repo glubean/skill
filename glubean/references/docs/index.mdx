@@ -2,9 +2,12 @@
 
 Glubean is a workflow verification platform. Write tests in TypeScript, commit to git, run locally or in CI. Supports HTTP, GraphQL, gRPC, and browser automation through plugins.
 
-The VSCode extension serves two roles: a **visual and review layer** for the Glubean workflow (run, inspect, debug), and a **code-first replacement for Postman** — your `explore/` folder is your API collection, versioned in git, shared with the team, no per-seat pricing.
+The VSCode extension serves two roles:
 
-The same TypeScript file works as both an API collection entry and a CI regression test. No export step, no format conversion, no tool fragmentation.
+1. **API explorer that replaces Postman** — write a request in `explore/`, click the gutter play button to send it, see the full response (status, headers, body, timing) in the result viewer panel. Save multiple parameter sets with `test.pick` and switch between them — like Postman's Collections + Examples, but in TypeScript, versioned in git, shared with the team. No Postman account, no per-seat pricing.
+2. **Visual layer for test results** — run tests from the gutter or Test Explorer, inspect structured traces (HTTP events, metrics, logs, step-by-step state), debug failures with typed `expected` vs `actual`. This is the human review interface for what the SDK and CLI produce.
+
+The same TypeScript file works as both an API collection entry (`explore/`) and a CI regression test (`tests/`). No export step, no format conversion, no tool fragmentation.
 
 ```ts
 // Agent-generated workflow — runs as-is, no rewrite needed
