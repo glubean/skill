@@ -80,7 +80,7 @@ Apply these unless project-specific instructions override them:
 7. In real projects, keep reusable response types in `types/`. Inline them only for tiny throwaway examples the user explicitly asked for.
 8. Do not use `.json<any>()`. If response shape is still unknown, start with `.json<unknown>()`. Use `Record<string, unknown>` only when you already know the top-level value is an object. Then narrow to a real type or Zod as soon as fields are known.
 9. In real projects, keep reusable Zod schemas in `schemas/`. Inline them only for tiny throwaway examples the user explicitly asked for.
-10. Use `test.each` and `test.pick` only when every case exercises the same endpoint or the same operation pattern. If endpoints are unrelated, write separate exported tests.
+10. Use `test.each` and `test.pick` only when every case exercises the same endpoint or the same operation pattern. If endpoints are unrelated, write separate exported tests. **Test IDs must include a `$field` or `$_pick` placeholder** so each case gets a unique ID at runtime (e.g. `"search-$q"`, `"user-$_pick"`).
 11. Auth configuration requires explicit user confirmation. Before writing any auth code, present your reasoning (strategy, header names, secret names, source of evidence) and wait for the user to confirm or correct. Do not silently configure auth.
 12. If core project structure is missing, do not hand-create the scaffold. Prompt the user to run `npx glubean@latest init`.
 13. When the user confirms a project-level decision (auth strategy, context location, naming convention, business rule), suggest adding it to `GLUBEAN.md` so future sessions pick it up.
