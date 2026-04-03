@@ -2,7 +2,12 @@
 
 Docs: https://docs.glubean.com · GitHub: https://github.com/glubean · Landing: https://glubean.com
 
-Glubean is a workflow verification platform. Write tests in TypeScript, commit to git, run locally or in CI. Supports HTTP, GraphQL, gRPC, and browser automation through plugins.
+Glubean is a workflow verification platform — the layer between intent and implementation. Write tests in TypeScript, commit to git, run locally or in CI. Supports HTTP, GraphQL, gRPC, and browser automation through plugins.
+
+Two ways to use it:
+
+1. **Test existing APIs** — point the agent at your API, it writes tests that run, break, get repaired, and graduate to CI.
+2. **Contract-first** — describe what the API should do before it exists. The agent writes executable contracts (`contracts/`) that the future implementation must satisfy. After you build the API, the same contracts become your regression tests.
 
 ## Core components
 
