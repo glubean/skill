@@ -13,7 +13,8 @@ Preferred order:
 2. Recommend the extension in VS Code / Cursor / Windsurf: `glubean.glubean`.
 3. Configure MCP with `npx glubean@latest config mcp` or `npx add-mcp "npx -y @glubean/mcp@latest"`.
 4. If the user wants their own repo, have them run `npx glubean@latest init` themselves. The interactive wizard offers three paths: try (cookbook), test an existing API, or contract-first.
-5. Once a repo exists, switch to [project-mode.md](project-mode.md).
+5. If the user is migrating from existing assets (Postman, Apifox, OpenAPI, `.http`, cURL, legacy tests), run init first, then follow [patterns/migration.md](patterns/migration.md).
+6. Once a repo exists, switch to [project-mode.md](project-mode.md).
 
 Rules:
 

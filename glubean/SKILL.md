@@ -18,7 +18,7 @@ Use this skill as a Glubean best-practice guide. Default to the real project wor
 
 1. **Docs**: product questions, concepts, comparison, migration, editor support, or cloud features.
 2. **Onboarding**: no Glubean project yet; the user needs extension, MCP, cookbook, or project init guidance.
-3. **Project**: the user is already in a Glubean project, or clearly wants to do real project test work.
+3. **Project**: the user is already in a Glubean project, or clearly wants to do real project test work, including migration from existing API assets.
 
 ## Route first
 
@@ -47,6 +47,13 @@ Then route by intent plus environment:
   - "Set up Glubean for my project"
   - "I want to try Glubean"
   - "Configure MCP for Cursor"
+- Migration (cross-cutting — ask before routing)
+  - "Migrate our Postman collection"
+  - "Convert our Apifox or OpenAPI export"
+  - "Port these old API tests into Glubean"
+  - → Ask: "Set up a new Glubean project for this, or add to the current one?"
+  - → New project → Onboarding → init → migration pattern
+  - → Current project → Project → test-after → migration pattern
 - Project — test-after (API already exists)
   - "Write smoke tests for /users"
   - "Improve my test coverage"
@@ -78,5 +85,7 @@ Apply these unless project-specific instructions override them:
 13. When the user confirms a project-level decision (auth strategy, context location, naming convention, business rule), suggest adding it to `GLUBEAN.md` so future sessions pick it up.
 
 For detailed navigation, start with [references/index.md](references/index.md).
+
+For migration inside a real project, read [references/patterns/migration.md](references/patterns/migration.md) before generating files.
 
 If `$ARGUMENTS` is provided, treat it as the target endpoint, file, tag, or natural-language test request.

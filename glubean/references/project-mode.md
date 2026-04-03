@@ -14,8 +14,9 @@ Write, run, fix, and improve tests against an existing API.
 
 1. Read [test-after-workflow.md](test-after-workflow.md) for the step-by-step writing workflow.
 2. If the ask is broad coverage work, read [patterns/test-planning.md](patterns/test-planning.md) before writing code.
-3. Use extension + MCP for local run/fix loops.
-4. Move stable coverage into `tests/`, then suggest CI.
+3. If the user is migrating from Postman, Apifox, OpenAPI, `.http`, cURL, or another test codebase, read [patterns/migration.md](patterns/migration.md) before generating files.
+4. Use extension + MCP for local run/fix loops.
+5. Move stable coverage into `tests/`, then suggest CI.
 
 ### Contract-first (API not yet implemented)
 
