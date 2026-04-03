@@ -2,43 +2,44 @@
 
 Glubean is a workflow verification platform. Write tests in TypeScript, commit to git, run locally or in CI. Supports HTTP, GraphQL, gRPC, and browser automation through plugins.
 
-The VSCode extension serves two roles:
+## Core components
 
-1. **API explorer that replaces Postman** — write a request in `explore/`, click the gutter play button to send it, see the full response (status, headers, body, timing) in the result viewer panel. Save multiple parameter sets with `test.pick` and switch between them — like Postman's Collections + Examples, but in TypeScript, versioned in git, shared with the team. No Postman account, no per-seat pricing.
-2. **Visual layer for test results** — run tests from the gutter or Test Explorer, inspect structured traces (HTTP events, metrics, logs, step-by-step state), debug failures with typed `expected` vs `actual`. This is the human review interface for what the SDK and CLI produce.
+| Component | What it does | Get started |
+|-----------|-------------|-------------|
+| **SDK** (`@glubean/sdk`) | Author tests — `test()`, `configure()`, assertions, builder flows, data-driven patterns. Tests are plain TypeScript, no proprietary format. | [SDK overview →](/sdk) |
+| **CLI** (`@glubean/cli`) | Run tests, emit traces, manage environments, initialize projects. Same runner in local dev and CI. | [CLI reference →](/cli) |
+| **MCP server** (`@glubean/mcp`) | Lets AI agents run tests, read structured results, and self-repair — the bridge between agent and runner. | [MCP setup →](/extension/generate-with-ai#setup) |
+| **Skill** (`glubean/skill`) | Teaches AI agents SDK patterns, project conventions, and migration workflows. Agents write better tests with it. | [Skill setup →](/extension/generate-with-ai#setup) |
 
-The same TypeScript file works as both an API collection entry (`explore/`) and a CI regression test (`tests/`). No export step, no format conversion, no tool fragmentation.
+These four are the foundation. Everything below builds on them.
 
-```ts
-// Agent-generated workflow — runs as-is, no rewrite needed
-import { test } from "@glubean/sdk";
+## Surfaces
 
-test("auth-flow")
-  .step("login", async ({ http, secrets, expect }) => {
-    const data = await http
-      .post("/auth/login", {
-        json: { username: secrets.require("USER"),
-               password: secrets.require("PASS") }
-      }).json();
+### [VS Code Extension](/extension)
 
-    expect(data.accessToken).toBeDefined();
-    return { token: data.accessToken };
-  })
-  .step("get profile", async ({ http, log }, { token }) => {
-    const me = await http
-      .get("/auth/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      }).json();
+The extension serves two roles:
 
-    log(`Hello ${me.firstName}`);
-  });
-```
+1. **Postman replacement** — `explore/` is your API collection in code. Click the gutter play button to send a request, see full response (status, headers, body, timing) in the result viewer. Save parameter sets with `test.pick`, share via git. No Postman account, no per-seat pricing, no tool fragmentation.
+2. **Visual layer for test results** — run tests from gutter or Test Explorer, inspect structured traces (HTTP events, metrics, logs, step-by-step state), debug failures with typed `expected` vs `actual`.
+
+The same TypeScript file works as both an API collection entry (`explore/`) and a CI regression test (`tests/`). No export step, no format conversion.
+
+### [Cloud](/cloud)
+
+Upload runs for team dashboards, analytics, alerts, and scheduled verification. Cloud is optional — the local workflow is fully functional without it.
+
+### Plugins
+
+| Plugin | Protocol | Package |
+|--------|----------|---------|
+| GraphQL | GraphQL queries and mutations | `@glubean/graphql` |
+| Browser | Puppeteer-based browser automation | `@glubean/browser` |
+| Auth | Token management and refresh strategies | `@glubean/auth` |
+| gRPC | gRPC client with proto loading | `@glubean/grpc` (coming soon) |
 
 ## Start here
 
 ### With an AI agent (recommended)
-
-Install the skill, then ask your agent to generate a verification workflow.
 
 ```bash
 npx glubean config mcp        # MCP server — lets AI run and inspect tests
@@ -64,7 +65,7 @@ npx @glubean/cli init
 3. [Connect CI](/getting-started/ci)
 4. [Upload to Cloud](/getting-started/upload-to-cloud)
 
-## How Glubean works
+## How it works
 
 ```text
 prompt → draft → inspect → repair → keep → CI → cloud
@@ -72,50 +73,33 @@ prompt → draft → inspect → repair → keep → CI → cloud
                           (or write manually here)
 ```
 
-- **Prompt**: Describe what to verify. The agent uses your skill and OpenAPI context.
+- **Prompt**: Describe what to verify. The agent uses your skill and project context.
 - **Draft**: Agent generates a TypeScript workflow with named steps, typed assertions, and shared state.
-- **Inspect**: Run in the extension. Structured traces show exactly which step failed and why — not a wall of logs.
-- **Repair**: Agent reads typed failures (`expected` vs `actual`), fixes, and reruns. No copy-pasting errors.
+- **Inspect**: Run in the extension. Structured traces show exactly which step failed and why.
+- **Repair**: Agent reads typed failures (`expected` vs `actual`), fixes, and reruns.
 - **Keep**: The same file moves from `explore/` to `tests/` — zero migration, same runner.
 - **CI**: `glubean run tests/` in any CI pipeline.
 - **Cloud**: Upload runs for team dashboards, analytics, and alerts.
 
 ## Choose a path
 
-### I want AI to generate and run verification for me
-
-- Start at [Generate Tests with AI](/extension/generate-with-ai)
-- Set up [Skill + MCP](/extension/generate-with-ai#setup) so the agent can self-heal
-- Read [Multi-step Workflows](/extension/generate-with-ai#multi-step-workflows) for complex flows
-
-### I want to write tests myself
-
-- Start at [SDK Overview](/sdk)
-- Then read [Test Shape](/sdk/test-api) and [Assertions](/sdk/assertions)
-- Use [Control Flow](/sdk/control-flow) for multi-step builder patterns
-
-### I want to run and debug in my editor
-
-- Start at [VS Code Extension](/extension)
-- Then [Running Tests](/extension/running-tests) and [Debugging](/extension/debugging)
-
-### I want team visibility over time
-
-- Start at [Use In Cloud](/cloud)
-- Set up [Upload Your First Run](/getting-started/upload-to-cloud)
-- Then read [Dashboard](/cloud/dashboard) and [Analytics](/cloud/analytics)
-
-### I want to migrate existing API assets
-
-- [Migrate from Postman / OpenAPI](/extension/migrate-from-postman)
+| I want to... | Start here |
+|-------------|------------|
+| Generate and run tests with AI | [Generate with AI](/extension/generate-with-ai) |
+| Write tests myself | [SDK overview](/sdk) → [Test shape](/sdk/test-api) → [Assertions](/sdk/assertions) |
+| Explore APIs in my editor | [Extension](/extension) → [Running tests](/extension/running-tests) |
+| Get team visibility | [Cloud](/cloud) → [Upload first run](/getting-started/upload-to-cloud) |
+| Migrate from Postman / OpenAPI / legacy tests | [Migration guide](/extension/migrate-from-postman) |
+| Define API contracts before implementation | [Contract-first](/extension/writing-tests#contract-first) |
 
 ## Why teams adopt Glubean
 
+- **`explore/` replaces Postman** — your API collection lives in git, not a proprietary cloud. No per-seat pricing.
 - **Agent output is not throwaway** — the same file graduates from `explore/` to CI without rewriting
-- **Structured failures, not log noise** — AI (and humans) can read typed `expected` vs `actual` instead of parsing stack traces
+- **Structured failures** — AI and humans read typed `expected` vs `actual`, not terminal noise
 - **One codebase** across local development, CI, and production verification
-- **`explore/` replaces Postman** — your API collection lives in git, not a proprietary cloud
-- **Git-safe and reviewable** — TypeScript files, no binary formats, no merge conflicts
+- **Git-safe** — TypeScript files, no binary formats, no merge conflicts
+- **No vendor lock-in** — tests are plain TypeScript. If Glubean disappears, your code still runs.
 
 ## From the blog
 
