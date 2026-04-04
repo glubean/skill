@@ -1,6 +1,37 @@
 # Glubean Agent Skill
 
-[Agent Skill](https://agentskills.io) for [Glubean](https://glubean.com) — generate, run, and fix API tests with any AI coding agent.
+Teach your coding agent to write, run, and fix API verification — instead of guessing.
+
+```bash
+npx glubean config mcp        # agent can run and inspect tests
+npx skills add glubean/skill   # agent learns Glubean patterns
+```
+
+Then ask your agent:
+
+```text
+"write a smoke test for /users"
+"migrate our Postman collection into Glubean"
+"design the billing API contracts before I implement it"
+```
+
+The agent writes the test, runs it via MCP, reads the structured failure, fixes it, and reruns — in one conversation. The same file graduates from draft to CI without rewriting.
+
+## What changes
+
+| Without skill | With skill |
+|---|---|
+| Agent guesses auth, schemas, response shapes | Reads your project context, asks when unclear |
+| Generates one file and moves on | Runs → fails → reads structured output → fixes → reruns |
+| Tests die after the chat ends | Same file works in explore/, tests/, and CI |
+| No migration path from existing tools | Phased migration from Postman, Apifox, OpenAPI, any language |
+| Invents behavior nobody asked for | Routes to contract-first when the API doesn't exist yet |
+
+## Two starting points
+
+**API already exists?** The agent reads your API surface, configures auth (with your confirmation), writes tests, and iterates until green.
+
+**API doesn't exist yet?** Describe what it should do. The agent writes executable contracts in `contracts/` — the future implementation must satisfy them. After you build the API, the same contracts become your regression tests.
 
 ## Install
 
@@ -8,73 +39,54 @@
 npx skills add glubean/skill
 ```
 
-### Update
+Update:
 
 ```bash
 npx skills update
 ```
 
-That's it. The skill routes the agent into the right workflow automatically. For `glubean init`, the skill expects the user to run the interactive CLI themselves.
+Supports 40+ agents: Claude Code, Cursor, GitHub Copilot, Codex, Gemini CLI, Windsurf, and more.
 
-Supports 40+ agents including Claude Code, Cursor, GitHub Copilot, Codex, Gemini CLI, Windsurf, and more.
+## How it works
 
-## Modes
+The skill routes automatically — you don't pick a mode.
 
-The skill operates in three modes. You don't need to pick one — the agent routes based on your intent and project state.
-
-| Mode | When it activates | What the agent does |
-|------|------------------|---------------------|
-| **Docs** | You ask a question, no active task | Answers from bundled docs — concepts, comparison, migration, extension, cloud |
-| **Onboarding** | No Glubean project yet | Guides extension install, MCP config, `glubean init`, cookbook |
-| **Project** | You're in a Glubean project | Writes, runs, fixes, and improves tests |
-
-### Project sub-routes
-
-Inside Project mode, the agent picks one of two paths based on whether the API already exists:
-
-| Sub-route | When | What the agent does |
-|-----------|------|---------------------|
-| **Test-after** | API is already running and callable | Read API surface, configure auth, write tests, run via MCP, iterate until green, suggest CI |
-| **Contract-first** | API doesn't exist yet | Capture intent in `product/`, write executable contracts in `contracts/`, implement, promote to `tests/` |
+| Intent | What happens |
+|--------|-------------|
+| Ask a question about Glubean | **Docs** — answers from bundled docs + fetches [glubean.com](https://glubean.com) for latest positioning |
+| No Glubean project yet | **Onboarding** — extension install, MCP config, `glubean init` |
+| In a Glubean project | **Project** — write, run, fix, improve tests |
+| Migrate from existing tools | Asks "new project or current?" then phases: scan → confirm auth → slice → batch |
 
 ## What's included
 
-```
-glubean/
-├── SKILL.md                        # Thin router: mode selection, intent examples, global rules
-└── references/
-    ├── docs-mode.md                # Docs mode entry
-    ├── onboarding.md               # Onboarding mode entry
-    ├── project-mode.md             # Project mode entry (test-after / contract-first)
-    ├── contract-first.md           # Contract-first sub-route entry
-    ├── test-after-workflow.md      # Step-by-step test-after workflow
-    ├── diagnose.md                 # Project health checklist
-    ├── index.md                    # Pattern & capability index
-    ├── mcp.md                      # MCP tools reference & agent run loop
-    ├── ci-workflow.md              # CI setup guide
-    ├── sdk-reference.md            # Full SDK API reference
-    ├── cli-reference.md            # CLI command reference
-    ├── docs/                       # Full product documentation
-    └── patterns/                   # 21 per-topic guides
-        ├── configure.md            # Shared clients, env, secrets, plugins
-        ├── auth.md                 # Auth strategies (bearer, OAuth2, apiKey...)
-        ├── multi-env.md            # Multi-environment setup & ${HOST_VAR} passthrough
-        ├── smoke.md, crud.md, data-driven.md, builder-reuse.md
-        ├── contract-first.md, test-planning.md, promotion.md
-        └── ...
-```
+21 patterns, full SDK/CLI reference, product docs, and mode-specific workflows:
 
-## What it does
+- **Auth** — bearer, OAuth2, API key, with explicit user confirmation before any auth code
+- **Migration** — from Postman, Apifox, OpenAPI, .http, cURL, legacy tests in any language
+- **Contract-first** — executable contracts, status state machine, projection reports
+- **Data-driven** — `test.each`, `test.pick`, YAML/JSON/CSV loaders
+- **Builder flows** — multi-step with state passing, setup, teardown, retry with backoff
+- **Webhook** — tunnel proxy (smee.io), delivery verification, signature checking
+- **CI** — GitHub Actions, GitLab, Bitbucket, with environment and secret mapping
+- **And more** — configure, smoke, CRUD, assertions, schemas, metrics, polling, session, GraphQL, browser, plugins
 
-Once installed, your AI coding agent can:
+## What the agent can do
 
-- **Onboard** a real Glubean setup (extension, MCP, cookbook, project init)
-- **Generate** test files from API specs, endpoint descriptions, or natural language
-- **Run** tests via MCP tools or CLI (`npx glubean run`)
-- **Fix** failing tests by reading structured failure output and iterating
-- **Plan** test coverage systematically across your API surface
+- **Generate** tests from API specs, endpoint descriptions, or natural language
+- **Run** tests via MCP tools and read structured results
+- **Fix** failures by reading typed `expected` vs `actual` — not terminal noise
+- **Plan** coverage across your API surface with gap reports
+- **Migrate** existing API assets through a phased workflow with auth confirmation
 - **Define** API behavior as executable contracts before implementation
-- **Learn** SDK patterns on demand from bundled reference docs
+- **Promote** stable tests from `explore/` → `tests/` → CI
+
+## Links
+
+- [Glubean](https://glubean.com) — product
+- [Docs](https://docs.glubean.com) — full documentation
+- [Cookbook](https://github.com/glubean/cookbook) — working examples
+- [GitHub](https://github.com/glubean) — source
 
 ## License
 
