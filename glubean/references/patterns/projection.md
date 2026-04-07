@@ -2,156 +2,140 @@
 
 ## Why this pattern
 
-**Problem:** contract-first projects accumulate contracts, product intents, and regression tests across three directories. Nobody knows which features have contracts, which contracts are stable enough to promote, or whether the implementation has drifted from the contract.
-**Alternative:** manually read every file and compare — but this doesn't scale past 10 contracts and the assessment is lost when the conversation ends.
-**This pattern:** the agent reads all three layers, aligns them, and generates a persisted markdown report. PMs see feature-level progress and open decisions. Engineers see file-level status and action items.
+**Problem:** contract-first projects accumulate contracts across multiple files. Nobody knows which endpoints have contracts, which cases are deferred, or which status codes are covered across the API surface.
+
+**This pattern:** the agent reads all `contract.http()` declarations, extracts case-level metadata (endpoint, status codes, deferred reasons, descriptions), and generates a persisted markdown report. Engineers see API surface coverage at a glance. PMs see which cases are done, deferred, or missing.
 
 ## When to trigger
 
-- The user asks: "what's my coverage", "which features are done", "show me contract status", "generate projection"
+- The user asks: "what's my coverage", "show me contract status", "generate projection", "which endpoints are covered"
 - **Proactively:** when `contracts/` has 5+ files, suggest a projection report
 
 ## Prerequisites
 
-- `contracts/` exists with `.test.ts` files
-- Optional: `product/` (enables product → contract alignment)
-- Optional: `tests/` (enables contract → tests promotion tracking)
+- `contracts/` exists with `.contract.ts` files using `contract.http()` or `contract.flow()`
+- Optional: `tests/` (additional coverage layer for cases contract can't express)
 
-If `contracts/` does not exist, this pattern does not apply.
+If `contracts/` does not exist or has no `contract.http()` files, this pattern does not apply.
 
 ## Analysis steps
 
-### Step 1: Collect inventory
+### Step 1: Collect contract inventory
 
-1. Use `glubean_get_metadata` for project-wide inventory (files, test IDs, tags, counts)
-2. If MCP is unavailable, use Glob + Read
-3. Scan scope:
-   - `product/` — start from `product/_index.md`, expand along the index tree
-   - `contracts/` — all `.test.ts` files
-   - `tests/` — all `.test.ts` files
+1. Use `glubean_get_metadata` for project-wide inventory
+2. If MCP is unavailable, use Glob + Read on `contracts/**/*.contract.ts`
+3. For each file, extract:
+   - Contract ID (from `contract.http("id", ...)`)
+   - Endpoint (method + path)
+   - Top-level `description`
+   - Each case: key, `description`, `expect.status`, `deferred` reason if present
+   - Tags at contract and case level
 
-### Step 2: Read product intent
+### Step 2: Build API surface map
 
-If `product/` exists:
-1. Read `product/_index.md` as entry point
-2. Follow the index tree to each module
-3. Extract intent summary per feature: name, key behaviors, acceptance criteria
+Group by endpoint. For each endpoint, list:
+- All declared cases with status codes
+- Deferred cases with reason
+- Whether schema validation is present (`expect.schema` defined)
 
-If `product/` does not exist, skip product → contract alignment and note it in the report.
+Example:
+```
+POST /users
+  ├─ success (201) ✅ with schema
+  ├─ invalidBody (400) ✅
+  ├─ duplicate (409) ✅ with schema
+  └─ viewerBlocked (403) ⏸ deferred: needs VIEWER_API_KEY
 
-### Step 3: Read contracts
+GET /users/:id
+  ├─ success (200) ✅ with schema
+  └─ notFound (404) ✅
+```
 
-For each contract file:
-1. Read test metadata: id, name, tags
-2. Check `traceTo` field — if present, record the explicit traceability link
-3. Check `status` field — draft / unresolved / stable / promoted
-4. If `status` is missing, treat as `draft` and flag in the report
-5. Scan for `// UNRESOLVED` markers
-6. Note assertion type: `ctx.validate` (schema) vs `ctx.expect` (value) vs `.step()` (workflow)
+### Step 3: Flow coverage
 
-### Step 4: Read tests
+For each `contract.flow()`:
+1. Read the step chain (name, endpoint, expected status)
+2. Verify each flow step's endpoint has a corresponding `contract.http()` spec
+3. Flag flows whose steps don't have matching endpoint contracts
 
-For each test file:
-1. Read test metadata: id, name, tags
-2. Match to contracts — prefer test ID prefix/suffix match, then endpoint path match
+### Step 4: Gap analysis
 
-### Step 5: Alignment analysis
-
-#### Product → Contract
-
-For each product intent:
-- Has `traceTo` pointing to it → `traced` (fact)
-- No `traceTo` but semantic match → `inferred` (guess)
-- No matching contract → `missing`
-
-#### Contract → Tests
-
-For each contract, check `status`:
-- `promoted` → find corresponding test in `tests/`
-- `stable` → "Ready to promote"
-- `unresolved` or has `// UNRESOLVED` → "Not ready"
-- `draft` → "Not ready — draft"
-
-### Step 6: Schema drift detection (optional)
-
-Only run when MCP is available AND the user explicitly asks or the agent detects drift signals.
-
-**Observed drift** — run contract with `glubean_run_local_file` + `includeTraces: true`, compare `responseSchema` to contract schema. Label: `Source: observed (trace)`. This is fact.
-
-**Inferred drift** — read codebase (route handlers, DB schema, types) and infer response shape. Label: `Source: inferred (code)`. This is a guess.
-
-**Rule: never disguise inferred as observed.**
+Look for common gaps:
+- Endpoints with only one case (likely missing boundary coverage)
+- Cases missing `expect.schema` (no shape validation)
+- Deferred cases sharing the same reason (potential single-fix unblock)
+- Flow steps without corresponding endpoint specs
+- Flows that don't verify the uploaded artifact (weak lifecycle assertions)
 
 ## Report format
 
 The report has two sections separated by a horizontal rule. Top half for PMs, bottom half for engineers.
 
-### Top half: Feature progress
+### Top half: API surface status
 
-1. **Status line** — one sentence: "{n} contracts, {x} in regression, {y} ready to promote, {z} missing"
+1. **Status line** — one sentence: "{n} endpoints, {x} cases, {y} deferred, {z} missing schemas"
 2. **Delta** — if a previous projection exists in `projections/`, show what changed
-3. **Features table** — grouped by domain, each row is a feature (not a file) with status icon and blocker
-4. **Decisions needed** — blockers that require a human (PM/tech lead) decision, written in business language
-5. **Progress bar** — visual regression/stable/coverage percentages
+3. **Endpoint table** — grouped by resource, each row an endpoint with case count and coverage status
+4. **Deferred summary** — group deferred cases by reason (often reveals a single missing credential blocks many cases)
+5. **Progress bar** — visual case coverage percentage
 
 ### Bottom half: Technical details
 
-1. **Product → Contract alignment table** — file paths, traced/inferred, gaps
-2. **Contract status table** — file paths, status, regression test, action
-3. **Schema drift table** — expected vs actual, source label
+1. **Endpoint detail table** — endpoint, case name, status code, schema presence, deferred reason
+2. **Flow coverage table** — flow name, step count, gaps
+3. **Gap analysis** — specific cases flagged by Step 4
 4. **Action items** — numbered, concrete, executable
 
 ### Status icons
 
 | Icon | Meaning |
 |---|---|
-| ✅ | In regression (promoted) |
-| 🟡 | Contract stable, not yet in regression |
-| 📝 | Draft — needs review |
-| ⚠️ | Unresolved — has open questions |
-| 🔴 | Missing — no contract exists |
+| ✅ | Case executable with full validation |
+| ⚠️ | Case missing schema or weak assertion |
+| ⏸ | Deferred — has reason, not yet runnable |
+| 🔴 | Missing — endpoint has no contract at all |
 
 ## Output location
 
-Write to `projections/{date}.md` (e.g. `projections/2026-04-02.md`).
+Write to `projections/{date}.md` (e.g. `projections/2026-04-07.md`).
 
 These are committed artifacts — they track progress over time.
 
 When generating, check `projections/` for the most recent previous report to compute the delta section.
 
-## Traceability
+## What to extract from contracts
 
-### `traceTo` — contract to product anchor
+### Required fields (from `contract.http()`)
 
-```typescript
-export const createUser = test({
-  id: "create-user",
-  tags: ["spec", "users"],
-  traceTo: "product/modules/users/create.md",
-}, async (ctx) => { ... });
-```
+- `id` — contract identifier
+- `endpoint` — HTTP method + path
+- `description` — contract-level intent
+- Each case in `cases`:
+  - `description` — case intent (required)
+  - `expect.status` — expected status code
+  - `expect.schema` — whether schema validation is present
+  - `deferred` — reason if case is not executable
 
-### `## Related contracts` — product to contract reverse link
+### Optional fields
 
-```markdown
-## Related contracts
+- `tags` — for filtering/grouping
+- `request` — endpoint-level request schema (if defined)
 
-- `contracts/users/create-user.contract.test.ts`
-```
+### Flow contracts (from `contract.flow()`)
 
-### Agent behavior
+- Flow ID
+- Each `.http()` step: name, endpoint, expected status
+- Setup/teardown presence
 
-- Prefer `traceTo` for alignment; fall back to semantic match only when missing
-- Semantic fallback must be labeled `(inferred)` in the report
-- If contracts lack `traceTo`, recommend adding it in action items
+## Agent behavior
 
-## Promotion status
+- Prefer scanner output (`glubean_get_metadata`) when MCP is available — it reads the registry directly
+- Fall back to Glob + Read parsing if MCP unavailable
+- Never generate the report if `contracts/` has no `contract.http()` files — suggest writing contracts first
+- When a case is `deferred`, include the reason verbatim in the report
+- When multiple deferred cases share a reason, group them to suggest single-fix unblocks
 
-| Status | Meaning | Agent behavior |
-|---|---|---|
-| `draft` | Just written, not reviewed | Do not suggest promote |
-| `unresolved` | Has `// UNRESOLVED` or open questions | Do not suggest promote, list in report |
-| `stable` | Reviewed and confirmed | Suggest promote |
-| `promoted` | Has corresponding test in `tests/` | Mark as covered |
+## Notes
 
-If `status` is missing, treat as `draft` and flag.
+- `contract.http()` produces `Test[]` directly — no promotion step. Contracts ARE the regression tests. The projection report is about spec coverage, not "stable vs draft" lifecycle.
+- If the project has both `contracts/` and `tests/`, the report focuses on `contracts/`. `tests/` content is treated as supplementary coverage for browser/polling/complex state scenarios.

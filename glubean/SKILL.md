@@ -55,17 +55,20 @@ Then route by intent plus environment:
   - → Ask: "Set up a new Glubean project for this, or add to the current one?"
   - → New project → Onboarding → init → migration pattern
   - → Current project → Project → test-after → migration pattern
-- Project — test-after (API already exists)
+- Project — simple mode (default, test-after)
   - "Write smoke tests for /users"
   - "Improve my test coverage"
   - "Fix this failing test"
   - "Add auth boundary tests"
-- Project — contract-first (API not yet implemented, or structured spec needed)
+  - → Use `test()` in `explore/` or `tests/`
+- Project — contract-first mode (advanced, structured spec)
   - "I need a users API with CRUD"
   - "Design the billing endpoint before I implement it"
-  - "Write contracts for my API" (uses `contract.http()` in `contracts/`)
+  - "Write contracts for my API"
   - "What's my contract coverage?"
   - "Generate a projection report"
+  - → Use `contract.http()` / `contract.flow()` in `contracts/`
+  - → Only if user explicitly asks for contracts, or project already has `contracts/`
 
 ## Global rules
 

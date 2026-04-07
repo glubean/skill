@@ -32,7 +32,7 @@ npx glubean@latest init --contract-first # skip wizard, scaffold contract-first 
 The wizard offers three paths:
 1. **Try Glubean** — clone the cookbook with 35+ runnable examples
 2. **Test an existing API** — full project scaffold (tests, explore, CI config, types)
-3. **Build contract-first** — product/, contracts/, types/, schemas/
+3. **Build contract-first** — contracts/, schemas/, types/
 
 The CLI handles everything: `package.json`, dependencies, `.env`, `.env.secrets`, `.gitignore`, directories, demo tests, and runs `npm install` automatically.
 

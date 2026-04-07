@@ -27,10 +27,10 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 |------|------------------|
 | [patterns/configure.md](patterns/configure.md) | Shared client, env, secrets, plugins |
 | [patterns/contract-first.md](patterns/contract-first.md) | Full contract authoring workflow |
-| [patterns/projection.md](patterns/projection.md) | Contract coverage report: product → contract → test alignment |
+| [patterns/projection.md](patterns/projection.md) | Contract coverage report: API surface, deferred cases, gap analysis |
 | [patterns/test-planning.md](patterns/test-planning.md) | Coverage planning and gap reports |
 | [patterns/migration.md](patterns/migration.md) | Migrate from Postman, Apifox, OpenAPI, `.http`, cURL, or legacy test code |
-| [patterns/promotion.md](patterns/promotion.md) | Promote `explore/` or `contracts/` work into `tests/` |
+| [patterns/promotion.md](patterns/promotion.md) | Promote `explore/` work into `tests/` (contracts don't need promotion) |
 | [patterns/context-setup.md](patterns/context-setup.md) | Set up `context/` and `GLUBEAN.md` for better generation |
 | [patterns/smoke.md](patterns/smoke.md) | Single-endpoint smoke coverage |
 | [patterns/crud.md](patterns/crud.md) | CRUD lifecycle coverage |

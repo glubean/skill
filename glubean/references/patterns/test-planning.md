@@ -55,7 +55,7 @@ If the agent only has an API spec but no product context, proactively suggest:
 > - Free-tier users are limited to 5 projects. 6th create returns 402.
 >
 > ## Product References
-> - view ../product/requirements.md
+> - view ../docs/requirements.md
 > - view ../api/src/routes/users.ts
 > ```
 >

@@ -83,7 +83,7 @@ Route handlers are in `src/routes/`. Read the handler file before writing a test
 Auth middleware is in `src/middleware/auth.ts`.
 
 ## Product References
-- view ../product/requirements.md
+- view ../docs/requirements.md
 - view ../backend/src/routes/users.ts
 - view ../backend/src/middleware/auth.ts
 ```
@@ -135,7 +135,7 @@ draft → active → archived
 | viewer | no | yes | no | no |
 
 ## Product References
-- view ../product/requirements.md
+- view ../docs/requirements.md
 - view ../backend/src/routes/projects.ts
 ```
 
