@@ -23,6 +23,7 @@ Rules:
 - Use `contract.flow()` for stateful endpoint chains (upload → read → delete).
 - Use `test()` only for scenarios contract can't express (browser, polling, complex state machines).
 - Keep Zod schemas in `schemas/`. Use `expect.schema` for response validation, not scattered assertions.
+- Put project-level biz logic in `GLUBEAN.md` when needed (roles, state machines, domain rules). Do not hand-write endpoint/status/schema/case inventories in prose; keep those in `contracts/`.
 - Read project context files and any user-specified context locations before making technical decisions.
 
 Deep ref:

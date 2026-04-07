@@ -139,3 +139,4 @@ When generating, check `projections/` for the most recent previous report to com
 
 - `contract.http()` produces `Test[]` directly — no promotion step. Contracts ARE the regression tests. The projection report is about spec coverage, not "stable vs draft" lifecycle.
 - If the project has both `contracts/` and `tests/`, the report focuses on `contracts/`. `tests/` content is treated as supplementary coverage for browser/polling/complex state scenarios.
+- Endpoint lists, case inventories, deferred coverage, and similar interface-layer views should be generated from `contracts/`, not maintained as separate prose docs.

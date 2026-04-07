@@ -87,6 +87,7 @@ Apply these unless project-specific instructions override them:
 11. Auth configuration requires explicit user confirmation. Before writing any auth code, present your reasoning (strategy, header names, secret names, source of evidence) and wait for the user to confirm or correct. Do not silently configure auth.
 12. If core project structure is missing, do not hand-create the scaffold. Prompt the user to run `npx glubean@latest init`.
 13. When the user confirms a project-level decision (auth strategy, context location, naming convention, business rule), suggest adding it to `GLUBEAN.md` so future sessions pick it up.
+14. Use `GLUBEAN.md` for project-level business rules, role/state semantics, and naming decisions. Do not hand-maintain endpoint matrices, status tables, request/response shapes, or case inventories there; those belong in `contracts/` and should be surfaced via projection or Cloud.
 
 For detailed navigation, start with [references/index.md](references/index.md).
 
