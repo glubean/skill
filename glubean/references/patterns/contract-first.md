@@ -43,10 +43,51 @@ Before writing contract files:
 
 1. Read `GLUBEAN.md` when it exists.
 2. Read any user-provided context (OpenAPI specs, docs, issue URLs) before making technical decisions.
-3. Resolve obvious ambiguities before finalizing the contract.
+3. **Pass the intent gate** (see below) — do not skip this step.
 4. Choose the right contract scope.
 
-Choose the right scope:
+### Intent gate — ask before you write
+
+**Before writing a single line of contract code**, state explicitly what you understood, and verify each item is clear. If any item is unclear, STOP and ask the user — do not guess.
+
+The intent gate checklist:
+
+1. **Endpoints** — which HTTP method + path(s)?
+2. **Auth** — which client (API key? public? specific role?)? Is the answer "I don't know" acceptable or blocking?
+3. **Success response shape** — what fields are in the happy path response? If unclear, which fields are contractually required vs optional?
+4. **Status codes** — what's the success code (200/201/204)? What error codes should exist (400, 401, 403, 404, 409, 422)?
+5. **Request body** (for POST/PUT/PATCH) — what fields are required? Which are optional?
+6. **Business rules** — any state-based restrictions (e.g. "cannot cancel completed run", "viewer role cannot delete")?
+7. **State flow** (for `contract.flow()` only) — what state does each step pass to the next? What's the lifecycle order?
+
+**How to use the gate:**
+
+- For each item, write what you understood in one sentence
+- Mark any item you're guessing with ❓
+- If ANY item is marked ❓, stop and present the summary to the user
+- Only after the user confirms or corrects each ❓ item, proceed to write the contract
+
+**Example:**
+
+```
+Intent gate for "create-user":
+
+1. Endpoint: POST /users ✓
+2. Auth: API key with admin role ❓  (user said "authenticated" — not clear which role)
+3. Response shape: { id, name, email, createdAt } ✓
+4. Status codes: 201 success, 400 validation, 409 duplicate email ✓
+5. Request body: { name: string, email: string } — both required ❓ (is phone optional?)
+6. Business rules: email must be unique (409 on duplicate) ✓
+7. State flow: N/A (single endpoint)
+
+Two ❓ items — stopping to ask:
+- What role is required? admin, or any authenticated user?
+- Are there optional fields like phone or avatar?
+```
+
+**Never skip this gate.** Writing a contract based on assumptions produces wrong contracts that mislead both human reviewers and future agents. A 30-second clarification question is always cheaper than a wrong contract.
+
+### Choose the right scope
 
 - **Single-endpoint contract**: one endpoint with clear behavior cases
 - **Resource contract set**: a new resource or a related group of endpoints such as CRUD + list/query

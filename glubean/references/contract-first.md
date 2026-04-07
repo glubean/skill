@@ -10,9 +10,9 @@ Workflow:
 
 1. If the user explicitly points to an external intent source such as an issue or doc URL, read it before writing contracts.
 2. Start with a resource-level plan when the request implies an API family, not a single endpoint.
-3. Write or update contracts in `contracts/` using `contract.http()` for endpoint specs.
-4. Use `contract.flow()` for cross-endpoint lifecycle verification.
-5. Stop and ask whenever intent is ambiguous or contradictory. Escalation is mandatory here.
+3. **Pass the intent gate** — before writing any contract code, state what you understood (endpoints, auth, response shape, status codes, request body, business rules) and mark anything unclear with ❓. If ANY item is ❓, stop and ask the user. **Do not guess.** See [patterns/contract-first.md#intent-gate--ask-before-you-write](patterns/contract-first.md).
+4. Write or update contracts in `contracts/` using `contract.http()` for endpoint specs.
+5. Use `contract.flow()` for cross-endpoint lifecycle verification.
 6. After contract review, implement and run until green. Fix implementation, not the confirmed contracts.
 7. `contract.http()` produces `Test[]` directly — no need to "promote" to `tests/`.
 
