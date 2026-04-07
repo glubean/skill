@@ -2,26 +2,27 @@
 
 Core logic:
 
-- `product/` is intent.
 - `contracts/` is the executable contract source of truth.
-- `tests/` is the stable regression subset after behavior is implemented and proven.
+- `schemas/` holds reusable Zod schemas for response validation.
+- `tests/` is for cases that `contract.http()` can't express (browser, polling, complex state).
 
 Workflow:
 
-1. If the user explicitly points to an external intent source such as an issue or doc URL, sync it into `product/` before writing contracts. Include the source link and sync time. If the source is inaccessible, ask the user to paste the content.
-2. Read `product/_index.md` first when it exists.
-3. If the feature intent is missing or outdated, update `product/` before writing contracts.
-4. Start with a resource-level plan when the request implies an API family, not a single endpoint.
-5. Write or update contracts in `contracts/`.
-6. Stop and ask whenever intent is ambiguous or contradictory. Escalation is mandatory here.
-7. After contract review, implement and run until green. Fix implementation, not the confirmed contracts.
-8. Promote a stable subset into `tests/` when it becomes regression coverage.
+1. If the user explicitly points to an external intent source such as an issue or doc URL, read it before writing contracts.
+2. Start with a resource-level plan when the request implies an API family, not a single endpoint.
+3. Write or update contracts in `contracts/` using `contract.http()` for endpoint specs.
+4. Use `contract.flow()` for cross-endpoint lifecycle verification.
+5. Stop and ask whenever intent is ambiguous or contradictory. Escalation is mandatory here.
+6. After contract review, implement and run until green. Fix implementation, not the confirmed contracts.
+7. `contract.http()` produces `Test[]` directly — no need to "promote" to `tests/`.
 
 Rules:
 
-- Do not write new contracts in `explore/` or `tests/`.
-- Use `ctx.validate(zodSchema)` for schema contracts.
-- Use `.step()` chains for workflow contracts.
+- Do not write contracts in `explore/` or `tests/`.
+- Use `contract.http()` with `cases` for structured API spec. Each case must have a `description`.
+- Use `contract.flow()` for stateful endpoint chains (upload → read → delete).
+- Use `test()` only for scenarios contract can't express (browser, polling, complex state machines).
+- Keep Zod schemas in `schemas/`. Use `expect.schema` for response validation, not scattered assertions.
 - Read project context files and any user-specified context locations before making technical decisions.
 
 Deep ref:

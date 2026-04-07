@@ -24,7 +24,7 @@ Use this skill as a Glubean best-practice guide. Default to the real project wor
 
 Before choosing a mode:
 
-- Check for `package.json`, `config/`, `product/`, `contracts/`, `tests/`, `explore/`, `.env`, `.env.secrets`, and `GLUBEAN.md`.
+- Check for `package.json`, `config/`, `schemas/`, `contracts/`, `tests/`, `explore/`, `.env`, `.env.secrets`, and `GLUBEAN.md`.
 - Check whether `@glubean/sdk` is already present in dependencies or devDependencies.
 - Check whether MCP tools are available.
 - If `GLUBEAN.md` exists, read it first as the project's context file.
@@ -60,10 +60,10 @@ Then route by intent plus environment:
   - "Improve my test coverage"
   - "Fix this failing test"
   - "Add auth boundary tests"
-- Project — contract-first (API not yet implemented)
+- Project — contract-first (API not yet implemented, or structured spec needed)
   - "I need a users API with CRUD"
   - "Design the billing endpoint before I implement it"
-  - "Write tests first, then I'll build the API"
+  - "Write contracts for my API" (uses `contract.http()` in `contracts/`)
   - "What's my contract coverage?"
   - "Generate a projection report"
 
