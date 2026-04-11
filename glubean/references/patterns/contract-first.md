@@ -53,7 +53,7 @@ Before writing contract files:
 The intent gate checklist:
 
 1. **Endpoints** — which HTTP method + path(s)?
-2. **Auth** — which client (API key? public? specific role?)? Is the answer "I don't know" acceptable or blocking?
+2. **Auth** — which client (API key? public? specific role?)? Is the answer "I don't know" acceptable or blocking? **If auth involves OAuth, social login, magic link, or any interactive ceremony**: ask the user *"Does your backend have a way for contracts to get a test token programmatically? If not, I can show a common approach."* Then read [patterns/session-auth.md](session-auth.md) before writing any auth-dependent contract. Do not write `requires: "browser"` on business contracts — those need session auth, not interactive marking.
 3. **Success response shape** — what fields are in the happy path response? If unclear, which fields are contractually required vs optional?
 4. **Status codes** — what's the success code (200/201/204)? What error codes should exist (400, 401, 403, 404, 409, 422)?
 5. **Request body** (for POST/PUT/PATCH) — what fields are required? Which are optional?
@@ -247,6 +247,7 @@ Examples of when to escalate:
 - Auth strategy is mentioned but not specified (Bearer? API key? OAuth?)
 - Error behavior is not described (what happens on duplicate? on not found?)
 - The requirement mentions a workflow but doesn't specify the order of operations
+- The project uses OAuth / social login / magic link but there is no `session.ts` and no clear plan for how contracts will get test tokens — escalate and suggest [session-auth pattern](session-auth.md) before writing any auth-dependent contract
 
 When escalating:
 1. Write what you understood as a draft contract
