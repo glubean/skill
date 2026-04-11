@@ -14,9 +14,18 @@ Keywords: OAuth, Google login, GitHub login, Apple Sign In, magic link, Resend, 
 
 `{{KEY}}` template resolution only applies inside `configure({ http: { ... } })` — specifically in `prefixUrl`, `headers`, and `searchParams`. It does **not** interpolate contract case `body` fields (those are static objects serialized as-is).
 
-This means: you cannot inject a session token into a contract body via `body: { token: "{{AUTH_TOKEN}}" }` — the literal string `"{{AUTH_TOKEN}}"` would be sent to the server.
+This means: `body: { token: "{{AUTH_TOKEN}}" }` sends the literal string `"{{AUTH_TOKEN}}"` to the server — not the session value.
 
-The session pattern works around this by putting the token into a configured client's auth header (`bearer()` or `Authorization: "Bearer {{AUTH_TOKEN}}"`), not into the body. The token flows through the HTTP client layer, invisible to contracts.
+**Two ways to get a dynamic value into a contract request:**
+
+1. **Via client headers** (preferred for auth tokens) — put the token in a configured client's auth header (`bearer()` or `Authorization: "Bearer {{AUTH_TOKEN}}"`). The token flows through the HTTP client layer, invisible to contracts.
+
+2. **Via `setup` + `body` function** (when the token must be in the body) — `body` accepts `(state: S) => unknown`, symmetric with `params`/`query`/`headers`:
+
+```typescript
+setup: async (ctx) => ({ token: ctx.session.get("AUTH_TOKEN") as string }),
+body: (state) => ({ token: state.token }),
+```
 
 ## Three-layer separation
 
@@ -160,10 +169,10 @@ export const googleCallback = contract.http("google-callback", {
     success: {
       description: "Valid Google token returns app JWT.",
       requires: "browser",
-      // Contract body is static — {{KEY}} does not interpolate here.
-      // The access_token from the OAuth flow cannot be injected into body today.
-      // Use session.ts bypass path to verify authenticated behavior end-to-end.
-      deferred: "contract body cannot carry dynamic OAuth token; verify via session.ts bypass",
+      // setup runs after session.ts acquires the token via acquireOAuthToken.
+      // body receives setup state so the dynamic token reaches the request body.
+      setup: async (ctx) => ({ token: ctx.session.get("GOOGLE_ACCESS_TOKEN") as string }),
+      body: (state) => ({ token: state.token }),
       expect: { status: 200 },
     },
     invalidToken: {
