@@ -142,16 +142,34 @@ When moving tests from `explore/` to `tests/`, replace `oauthCode()` with a non-
 
 For the full `explore/` → `tests/` migration checklist, see [promotion.md](promotion.md).
 
+## Contract auth decision tree
+
+When writing contracts that need an authenticated user, check this **first**:
+
+```
+Are you writing contracts that need an authenticated user (not the auth flow itself)?
+├─ YES (most cases: /me, /projects, CRUD endpoints, etc.)
+│   → Use session auth pattern: session.ts acquires token, {{AUTH_TOKEN}} in configure()
+│   → See patterns/session-auth.md for complete setup + examples
+│   → DO NOT mark these contracts as requires: "browser"
+│
+└─ NO — you're testing the auth flow itself (OAuth callback, magic link verification)
+    → Mark those specific cases with requires: "browser" or requires: "out-of-band"
+    → See patterns/case-execution.md for requires/defaultRun reference
+```
+
 ## OAuth2 decision tree
 
 When an API requires OAuth2, use this decision order:
 
 ```
 API requires OAuth2?
+├─ Writing contracts? → read session-auth.md first (bypass + real auth dual path)
 ├─ Supports client_credentials? → use oauth2.clientCredentials() (works everywhere)
 ├─ Has pre-existing refresh_token? → use oauth2.refreshToken() (works everywhere)
 ├─ Only authorization code flow?
 │  ├─ Writing to explore/? → suggest oauthCode() + explain browser interaction
+│  ├─ Writing to contracts/? → use session-auth.md pattern (session.ts + bypass + acquireOAuthToken)
 │  └─ Writing to tests/? → warn: needs non-interactive alternative for CI
 │     Options: get refresh_token locally → store as CI secret → use oauth2.refreshToken()
 └─ No OAuth2? → check other auth types (bearer, apiKey, basic)

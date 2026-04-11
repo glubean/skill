@@ -98,7 +98,7 @@ export const userLookupTagged = test.each(users)(
 // Builder mode (omit callback)
 export const userFlow = test.each(users)("user-flow-$username")
   .step("fetch", async (ctx, _state, row) => {
-    const res = await ctx.http.get(`/users/${row.username}`).json<{ id: string }>();
+    const res = await api.get(`users/${row.username}`).json<{ id: string }>();
     return { id: res.id };
   })
   .step("verify", async (ctx, state) => {

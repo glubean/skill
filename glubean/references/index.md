@@ -43,6 +43,8 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 | [patterns/polling.md](patterns/polling.md) | Async jobs and eventual consistency |
 | [patterns/webhook.md](patterns/webhook.md) | Webhook delivery testing: tunnel, verify, cleanup |
 | [patterns/metrics.md](patterns/metrics.md) | Custom metrics and performance tracking |
+| [patterns/session-auth.md](patterns/session-auth.md) | Dynamic token for contracts: session bypass + real OAuth dual path |
+| [patterns/case-execution.md](patterns/case-execution.md) | `requires` / `defaultRun` — mark cases that need browser, OOB, or opt-in |
 | [patterns/auth.md](patterns/auth.md) | Auth strategies after user confirmation |
 | [patterns/graphql.md](patterns/graphql.md) | GraphQL testing |
 | [patterns/browser.md](patterns/browser.md) | Browser testing |
