@@ -10,6 +10,14 @@
 
 Keywords: OAuth, Google login, GitHub login, Apple Sign In, magic link, Resend, SMS OTP, Twilio, social login, dev-bypass, test-login endpoint, session setup.
 
+## Important: where {{KEY}} works
+
+`{{KEY}}` template resolution only applies inside `configure({ http: { ... } })` — specifically in `prefixUrl`, `headers`, and `searchParams`. It does **not** interpolate contract case `body` fields (those are static objects serialized as-is).
+
+This means: you cannot inject a session token into a contract body via `body: { token: "{{AUTH_TOKEN}}" }` — the literal string `"{{AUTH_TOKEN}}"` would be sent to the server.
+
+The session pattern works around this by putting the token into a configured client's auth header (`bearer()` or `Authorization: "Bearer {{AUTH_TOKEN}}"`), not into the body. The token flows through the HTTP client layer, invisible to contracts.
+
 ## Three-layer separation
 
 ```
@@ -152,6 +160,10 @@ export const googleCallback = contract.http("google-callback", {
     success: {
       description: "Valid Google token returns app JWT.",
       requires: "browser",
+      // Contract body is static — {{KEY}} does not interpolate here.
+      // The access_token from the OAuth flow cannot be injected into body today.
+      // Use session.ts bypass path to verify authenticated behavior end-to-end.
+      deferred: "contract body cannot carry dynamic OAuth token; verify via session.ts bypass",
       expect: { status: 200 },
     },
     invalidToken: {
@@ -208,6 +220,8 @@ GLUBEAN_TEST_AUTH_TOKEN=<your-secret-here>
 GOOGLE_CLIENT_ID=<from-google-console>
 GOOGLE_CLIENT_SECRET=<from-google-console>
 ```
+
+**GitHub OAuth note:** GitHub does exact host matching on redirect URIs. `localhost` and `127.0.0.1` are different hosts — registering `localhost` when `acquireOAuthToken` binds to `127.0.0.1` causes a `redirect_uri_mismatch` error. Always register `http://127.0.0.1` (no port) in your OAuth app settings. GitHub follows RFC 8252 loopback exemption: it accepts any port on `127.0.0.1` at runtime.
 
 ## Backend: test-login endpoint (example)
 
@@ -280,6 +294,33 @@ export const { http: api } = configure({
   http: apiKey({ prefixUrl: "{{BASE_URL}}", param: "X-Api-Key", value: "{{API_KEY}}" }),
 });
 ```
+
+## Session setup: handling HTTP errors
+
+The default configured client inherits `throwHttpErrors: false` — this is intentional for test assertions (`expect(res).toHaveStatus(401)` must work). But in session setup, a failed auth request (e.g. test-login returns 404) won't throw — `AUTH_TOKEN` gets set to `undefined`, and subsequent tests run with a broken token, producing misleading failures.
+
+If your session setup should hard-fail on any HTTP error, use a dedicated client with `throwHttpErrors: true`:
+
+```typescript
+// config/client.ts
+export const { http: sessionHttp } = configure({
+  http: { prefixUrl: "{{BASE_URL}}", throwHttpErrors: true },
+});
+
+export const { http: publicHttp } = configure({
+  http: { prefixUrl: "{{BASE_URL}}" },
+});
+```
+
+```typescript
+// session.ts
+import { sessionHttp } from "../config/client.js";
+
+// Now a 404 or 500 from test-login throws immediately — session setup fails loudly
+const res = await sessionHttp.post("auth/test-login", { ... });
+```
+
+Use `sessionHttp` only in `session.ts`. Tests continue to use `api` and `publicHttp`.
 
 ## MCP and CI
 

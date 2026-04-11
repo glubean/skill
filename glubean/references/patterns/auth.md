@@ -124,11 +124,12 @@ Some providers (e.g. Twitter/X, Slack) don't support `localhost` redirect URIs. 
 oauthCode({
   // ...
   redirectUri: "https://xxx.ngrok-free.app/callback",
-  port: 9876,
 })
 ```
 
-The user needs to run an HTTPS tunnel (e.g. `ngrok http 9876`) and register the tunnel URL as a redirect URI with the provider.
+The user needs to run an HTTPS tunnel (e.g. `ngrok http 3000`) and register the tunnel URL as a redirect URI with the provider.
+
+**Note on loopback providers (GitHub, Google, etc.):** `acquireOAuthToken` binds to `127.0.0.1` on a random port. Register `http://127.0.0.1` (no port) — not `http://localhost` — in your OAuth app. These providers follow RFC 8252 loopback exemption: they accept any port on `127.0.0.1` at runtime. `localhost` and `127.0.0.1` are different hosts; registering the wrong one causes `redirect_uri_mismatch`.
 
 ### Explore → CI promotion
 
