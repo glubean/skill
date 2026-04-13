@@ -151,6 +151,25 @@ Rules:
 - `client` per case allows testing different auth contexts
 - In real projects, move Zod schemas to `schemas/`
 
+### Description writing rules
+
+Descriptions appear in `glubean contracts` projection output — they are the primary way PMs and non-developers understand what the API does. Write them in **business language**, not HTTP terminology.
+
+| Bad | Good |
+|-----|------|
+| POST creates a user | Valid registration creates user and returns profile |
+| Returns 409 on duplicate | Already registered email is rejected |
+| Validates request body | Missing required field returns validation error |
+| GET endpoint returns 200 | Existing product returns full details |
+
+`glubean contracts` runs 4 lint rules on descriptions and emits warnings:
+1. Description starts with HTTP method (GET, POST, PUT, PATCH, DELETE)
+2. Description contains a status code (e.g. "returns 201")
+3. Description contains "status code"
+4. Description contains technical jargon: "endpoint", "request body", "response body", "payload"
+
+If you write a description that triggers a lint warning, **rewrite it immediately** — don't wait for the user to notice. The goal is that a PM can read the projection output and understand what each case tests without any HTTP knowledge.
+
 ### Resource contract set
 
 When the user asks for a new resource, plan the full surface first:
