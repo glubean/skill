@@ -173,8 +173,9 @@ The standard MCP-powered write/run/fix loop:
 1. **Write** the test file.
 2. **Run** with `glubean_run_local_file` — `includeLogs: true`, `includeTraces: false`.
 3. If a test fails with a field name error, re-run with `includeTraces: true` and read `responseSchema` to find the correct field.
-4. **Fix** the assertion or test code.
-5. **Re-run** until `summary.failed === 0`.
+4. If the failure is unclear, read [patterns/repair.md](patterns/repair.md) and classify it before editing.
+5. **Fix** the assertion, auth config, context, or implementation.
+6. **Re-run** until `summary.failed === 0`.
 
 Prefer `filter` to run only the test you are working on — it is faster and keeps the result set small.
 

@@ -8,6 +8,11 @@ Glubean has two modes. **Simple mode is the default.** Contract-first is an adva
 2. If `@glubean/sdk` is missing from dependencies, stop and have the user run `npx glubean@latest init`. Other missing pieces (directories, env files) are not blocking — note them and continue.
 3. Read `GLUBEAN.md` when it exists. Read any user-specified context locations before guessing.
 
+Design-first override:
+
+- If the user is asking to define behavior before implementation, do **not** default to simple mode.
+- Read [contract-first.md](contract-first.md) first, then [patterns/contract-first.md](patterns/contract-first.md) when you are actually writing the contracts.
+
 Then pick a mode based on intent and project structure.
 
 ## Simple mode (default — test-after)

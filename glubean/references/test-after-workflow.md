@@ -79,7 +79,9 @@ For CI, use `package.json` scripts calling `glubean run tests/`. See [ci-workflo
 ## 8. Fix failures iteratively
 
 - Read structured failures carefully.
+- Classify the failure first. If it smells like repair drift, auth entropy, spec amnesia, or terminal fog, read [patterns/repair.md](patterns/repair.md) before changing assertions.
 - Fix the test, not just the symptom.
+- Do not weaken assertions unless you have confirmed the behavior actually changed.
 - Rerun after each meaningful change.
 - Continue until the target test is green or you are blocked by missing credentials, broken environment setup, or unclear API requirements.
 

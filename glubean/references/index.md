@@ -39,6 +39,7 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 | [patterns/session.md](patterns/session.md) | Cross-file shared state and workflow reuse |
 | [patterns/assertions.md](patterns/assertions.md) | Assertion depth |
 | [patterns/errors.md](patterns/errors.md) | Negative-path coverage |
+| [patterns/repair.md](patterns/repair.md) | Structured failure repair without weakening assertions |
 | [patterns/schema.md](patterns/schema.md) | Zod schema validation |
 | [patterns/polling.md](patterns/polling.md) | Async jobs and eventual consistency |
 | [patterns/webhook.md](patterns/webhook.md) | Webhook delivery testing: tunnel, verify, cleanup |

@@ -6,6 +6,8 @@ Core logic:
 - `schemas/` holds reusable Zod schemas for response validation.
 - `tests/` is for cases that `contract.http()` can't express (browser, polling, complex state).
 
+Fast entry: if the user is clearly asking to define the API before implementation, this is the first project-mode file to read after [SKILL.md](../SKILL.md). Do not let simple-mode defaults delay the contract-first route.
+
 Workflow:
 
 1. If the user explicitly points to an external intent source such as an issue or doc URL, read it before writing contracts.

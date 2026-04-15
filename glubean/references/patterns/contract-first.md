@@ -6,7 +6,7 @@
 
 **Alternative:** write an OpenAPI spec first — but OpenAPI cannot express workflow contracts (data flowing between endpoints), and the spec-to-implementation gap still requires manual codegen or translation.
 
-**This pattern:** write `contract.http()` declarations before the API exists. Each contract defines endpoint, request shape, response schema, status codes, error cases, and auth boundaries as structured, executable cases. AI reads these contracts to implement the API. The contracts remain the source of truth and are continuously verified.
+**This pattern:** write `contract.http.with()` scoped instances and then declare contracts before the API exists. Each contract defines endpoint, request shape, response schema, status codes, error cases, and auth boundaries as structured, executable cases. AI reads these contracts to implement the API. The contracts remain the source of truth and are continuously verified.
 
 ## How it differs from test-after
 
@@ -14,7 +14,7 @@
 |---|---|---|
 | API state | Exists, callable | Does not exist or partially implemented |
 | Information source | OpenAPI spec / context/ / traces | User intent + existing codebase conventions |
-| API | `test()` — imperative, free-form | `contract.http()` — declarative, structured |
+| API | `test()` — imperative, free-form | `contract.http.with()` — declarative, structured |
 | Response contract | Inferred from traces or existing schema | Defined from intent, prefer Zod schema |
 | Auth | Requires real credentials | Can use placeholders, but auth semantics still need user confirmation |
 | Failure is normal? | No — fix needed | Yes — server not implemented yet |
@@ -23,19 +23,20 @@
 
 ```
 schemas/     ← Zod response schemas
-contracts/   ← contract.http() specs + contract.flow() verification
+contracts/   ← contract.http.with() instances + specs + contract.flow() verification
 tests/       ← test() for cases contract can't express (browser, polling)
 explore/     ← free exploration, ad-hoc verification
 ```
 
 Why separate:
 - `contracts/` failure means "intent not aligned" or "implementation not done" — `tests/` failure means "stable behavior regressed"
-- `contract.http()` produces `Test[]` directly — runner executes them without promotion
+- `contract.http.with()` produces `Test[]` directly — runner executes them without promotion
 - mixing contract specs and ad-hoc tests makes it impossible to generate projection/coverage reports
+- contracts sharing a client should use one `.with()` instance — keep the instance declaration in a shared file or at the top of the contract file
 
 Lifecycle: `contracts/` (define) → implementation → run contracts until green
 
-`contract.http()` produces standard `Test[]`, so `glubean run contracts` works out of the box.
+`contract.http.with()` produces standard `Test[]`, so `glubean run contracts` works out of the box.
 
 ## Writing contracts
 
@@ -93,9 +94,37 @@ Two ❓ items — stopping to ask:
 - **Resource contract set**: a new resource or a related group of endpoints such as CRUD + list/query
 - **Flow contract**: multi-step behavior spanning multiple endpoints (verification)
 
+### Scoped instances — `contract.http.with()`
+
+Before writing any contract, create a scoped instance. This binds a protocol name, client, and optional security/tags to a reusable factory:
+
+```typescript
+import { contract } from "@glubean/sdk";
+
+const userApi = contract.http.with("user", {
+  client: api,
+  security: "bearer",
+  tags: ["users"],
+});
+```
+
+`contract.http.with(name, defaults)` parameters:
+- **`name`** (required) — instance identity used for projection grouping and OpenAPI output
+- **`client`** (required) — the HTTP client all contracts from this instance inherit
+- **`security`** — auth declaration: `"bearer"` | `"basic"` | `{ type: "apiKey", name, in }` | `{ type: "oauth2", flows }` | `null`
+- **`tags`** — string array. Tags merge additively: instance tags + contract tags + case tags
+
+Multiple instances per project are common — one per auth boundary:
+
+```typescript
+const publicApi = contract.http.with("public", { client: publicHttp, security: null });
+const userApi   = contract.http.with("user",   { client: api, security: "bearer" });
+const adminApi  = contract.http.with("admin",  { client: adminHttp, security: "bearer" });
+```
+
 ### Single-endpoint contract
 
-Use `contract.http()` with `cases`. Each case must have a `description` explaining why it exists:
+Use a scoped instance with `cases`. Each case must have a `description` explaining why it exists. Every exported contract must be preceded by `// @contract` on the line above.
 
 ```typescript
 import { contract } from "@glubean/sdk";
@@ -108,10 +137,13 @@ const UserSchema = z.object({
   createdAt: z.string().datetime(),
 });
 
-export const createUser = contract.http("create-user", {
+const userApi   = contract.http.with("user",   { client: api, security: "bearer" });
+const publicApi = contract.http.with("public", { client: publicHttp, security: null });
+
+// @contract
+export const createUser = userApi("create-user", {
   endpoint: "POST /users",
   description: "Create a new user account.",
-  client: api,
   request: UserSchema, // endpoint-level schema for scanner/docs
   cases: {
     success: {
@@ -129,7 +161,7 @@ export const createUser = contract.http("create-user", {
     },
     noAuth: {
       description: "Unauthenticated request returns 401.",
-      client: publicHttp,
+      client: publicHttp,  // per-case client override still works
       body: { name: "Alice", email: "alice@example.com" },
       expect: { status: 401 },
     },
@@ -143,12 +175,19 @@ export const createUser = contract.http("create-user", {
 });
 ```
 
+**`// @contract` marker:** Every `export const` that is a contract must be preceded by `// @contract` on the line above. This is a marker for VSCode CodeLens — it tells the editor where contracts are. It carries no semantic information; it is purely a UI hint.
+
+**`noAuth` pattern:** In the old `contract.http()` syntax, unauthenticated cases used `client: publicHttp` inline. In the new syntax you have two options:
+1. Per-case `client` override (shown above) — the case overrides the instance's client
+2. Separate public instance — create a `publicApi` instance and write the noAuth case as a separate contract under that instance
+
 Rules:
 - Each case has a required `description` — explains the business logic or boundary
 - `expect.schema` validates response shape via Zod (or any SchemaLike)
 - `verify` callback runs after schema validation for business-logic assertions
 - `deferred` marks cases that can't run yet (missing credentials, infrastructure)
-- `client` per case allows testing different auth contexts
+- `client` per case still works — overrides the instance's client for that case
+- `client` is never set at the spec level — it is inherited from the `.with()` instance
 - In real projects, move Zod schemas to `schemas/`
 
 ### Description writing rules
@@ -177,6 +216,7 @@ When the user asks for a new resource, plan the full surface first:
 ```text
 contracts/
   users/
+    _instance.ts                 ← shared contract.http.with() instance(s)
     create-user.contract.ts
     get-user.contract.ts
     list-users.contract.ts
@@ -188,6 +228,7 @@ contracts/
 Rules:
 - Plan the full resource surface first, even if you only implement part now
 - Keep one primary behavior per file
+- Contracts sharing a client should import from a shared instance file (e.g. `_instance.ts`)
 - Use `contract.flow()` for lifecycle verification (create → read → update → delete)
 
 ### Flow contract (cross-endpoint verification)
@@ -225,17 +266,19 @@ Key points:
 - `returns(res, state)` extracts state for the next step (replace semantics)
 - `params(state)` derives URL params from previous step's state
 - Flow is **verification** — it proves endpoints work together, not a spec definition
-- Each endpoint should also have its own `contract.http()` for spec cases
+- Each endpoint should also have its own `contract.http.with()` spec for case coverage
 
 ### Error contract
 
 Define expected error responses explicitly:
 
 ```typescript
-export const createUserDuplicate = contract.http("create-user-errors", {
+const userApi = contract.http.with("user", { client: api, security: "bearer" });
+
+// @contract
+export const createUserDuplicate = userApi("create-user-errors", {
   endpoint: "POST /users",
   description: "Error cases for user creation.",
-  client: api,
   cases: {
     duplicate: {
       description: "Duplicate email returns 409 with EMAIL_EXISTS error code.",
@@ -276,9 +319,18 @@ When escalating:
 
 ## Agent behavior
 
+### Writing contracts
+
+When writing contracts, follow this order:
+
+1. **Create the scoped instance first:** `const api = contract.http.with("name", { client, security })`
+2. **Write each contract with the `// @contract` marker** on the line above the export
+3. **Never write bare `contract.http("id", spec)`** — it will throw at runtime. Always use a `.with()` instance.
+4. **`client` belongs in `.with()`, not in the spec** — per-case `client` overrides are still allowed
+
 ### New feature flow
 
-1. User describes intent → draft `contract.http()` in `contracts/`
+1. User describes intent → create `.with()` instance + draft contracts in `contracts/`
 2. If the intent is ambiguous → **escalate immediately** (see above)
 3. Once the contract is sufficiently aligned, finalize
 4. If the server can be started, run immediately to get an explicit red
@@ -298,6 +350,9 @@ When escalating:
 
 ## What NOT to do
 
+- Do not write bare `contract.http("id", spec)` — always use `contract.http.with()` to create an instance first. Bare calls throw at runtime.
+- Do not put `client` in the spec object — it belongs in `.with()`. Per-case `client` overrides are the only exception.
+- Do not forget the `// @contract` marker above each exported contract
 - Do not let an existing OpenAPI spec override the user's intent when defining a new contract
 - Do read nearby OpenAPI/context/codebase conventions when they help align auth, error envelopes, naming patterns
 - Do not use scattered `ctx.expect()` assertions — use `expect.schema` with Zod for response contracts
@@ -305,3 +360,4 @@ When escalating:
 - Do not treat `ECONNREFUSED` as a bug in contract-first mode — the server may not exist yet
 - Do not invent auth, error codes, or business rules the user didn't describe — escalate instead
 - Do not put contract-first artifacts in `explore/` or `tests/`
+- Do not change `contract.flow()` syntax — flow contracts are not affected by the `.with()` API change

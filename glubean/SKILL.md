@@ -36,6 +36,7 @@ Then route by intent plus environment:
 - **Docs**: explanation only, with no active project task. Read [references/docs-mode.md](references/docs-mode.md).
 - **Onboarding**: no Glubean project yet, and the user wants to get set up properly. Read [references/onboarding.md](references/onboarding.md).
 - **Project**: the repo already looks like a Glubean project, or the user wants real test work in one. Read [references/project-mode.md](references/project-mode.md).
+- **Design-first / contract-first**: the user wants to define behavior before implementation, write contracts, or plan an API surface. Route to [references/contract-first.md](references/contract-first.md) immediately, then read [references/patterns/contract-first.md](references/patterns/contract-first.md) when writing the actual contracts.
 
 ## Intent examples
 
@@ -67,6 +68,7 @@ Then route by intent plus environment:
   - "Write contracts for my API"
   - "What's my contract coverage?"
   - "Generate a projection report"
+  - → Treat this as design-first, not simple mode; read `contract-first.md` before simple-mode defaults
   - → Use `contract.http()` / `contract.flow()` in `contracts/`
   - → Only if user explicitly asks for contracts, or project already has `contracts/`
 
