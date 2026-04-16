@@ -169,6 +169,7 @@ export const createUser = userApi("create-user", {
       description: "Viewer role cannot create users. Requires admin.",
       client: viewerApi,
       expect: { status: 403 },
+      severity: "critical",
       deferred: "needs VIEWER_API_KEY credential",
     },
   },
@@ -186,6 +187,8 @@ Rules:
 - `expect.schema` validates response shape via Zod (or any SchemaLike)
 - `verify` callback runs after schema validation for business-logic assertions
 - `deferred` marks cases that can't run yet (missing credentials, infrastructure)
+- `deprecated` marks cases that are retained for history but no longer executed (e.g. `deprecated: "replaced by v2 endpoint"`)
+- `severity` controls alert routing: `"critical"` (immediate alert), `"warning"` (default), `"info"` (no alert). Only set explicitly when the default `"warning"` is wrong — auth/permission cases are typically `"critical"`, informational checks are `"info"`
 - `client` per case still works — overrides the instance's client for that case
 - `client` is never set at the spec level — it is inherited from the `.with()` instance
 - In real projects, move Zod schemas to `schemas/`
@@ -313,7 +316,7 @@ Examples of when to escalate:
 
 When escalating:
 1. Write what you understood as a draft contract
-2. Mark unresolved parts with `deferred` or comments
+2. Mark unresolved parts with `deferred` or comments. Use `deprecated` for cases that existed but are no longer relevant.
 3. Present the conflict or ambiguity to the user
 4. Wait for confirmation before finalizing
 

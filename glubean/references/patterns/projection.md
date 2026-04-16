@@ -41,9 +41,10 @@ The `md-outline` format outputs:
 - Feature as h2 heading
 - Contract description as intro line
 - Each case as a bullet: **key** — description
-- Deferred/requires cases marked with ⊘
+- Deferred/deprecated/requires cases marked with ⊘
+- Critical cases marked with 🔴, info cases marked with ℹ️ (warning is default, not marked)
 - No status codes, HTTP methods, or endpoint paths in case lines
-- Summary line at top: total cases, active, deferred, gated
+- Summary line at top: total cases, active, deferred, deprecated, gated
 
 This is deterministic output — no agent involvement.
 
@@ -53,9 +54,10 @@ When the user asks for a full coverage report, generate a two-section document:
 
 ### Top half: API surface status (for PMs)
 
-1. **Status line** — one sentence: "{n} endpoints, {x} cases, {y} deferred, {z} missing schemas"
-2. **Feature index** — table of features with case counts and status
+1. **Status line** — one sentence: "{n} endpoints, {x} cases, {y} deferred, {z} deprecated, {w} missing schemas"
+2. **Feature index** — table of features with case counts, lifecycle status, and severity distribution
 3. **Deferred summary** — group deferred cases by reason (often reveals a single missing credential blocks many cases)
+4. **Deprecated summary** — list deprecated cases with reasons (helps track API evolution)
 
 ### Bottom half: Technical details (for engineers)
 
@@ -65,6 +67,7 @@ When the user asks for a full coverage report, generate a two-section document:
    - Endpoints with only one case (likely missing boundary coverage)
    - Cases missing `expect.schema` (no shape validation)
    - Deferred cases sharing the same reason (potential single-fix unblock)
+   - Critical cases that are deferred (high-severity blockers)
    - Flow steps without corresponding endpoint specs
 4. **Action items** — numbered, concrete, executable
 
@@ -75,6 +78,9 @@ When the user asks for a full coverage report, generate a two-section document:
 | ✅ | Case executable with full validation |
 | ⚠️ | Case missing schema or weak assertion |
 | ⏸ | Deferred — has reason, not yet runnable |
+| 🚫 | Deprecated — retained for history, no longer executed |
+| 🔴 | Critical severity — failure triggers immediate alert |
+| ℹ️ | Info severity — informational check, no alert on failure |
 
 ## Instance-aware projection
 
@@ -106,32 +112,37 @@ OpenAPI generation via `glubean_openapi` produces per-instance specs, each with 
 - Fall back to `glubean_project_contracts` or `glubean contracts --format json` when extract/openapi tools are unavailable
 - Never parse contract files manually
 - Never generate the report if `contracts/` has no `contract.http.with()` files — suggest writing contracts first
-- When a case is `deferred`, include the reason verbatim in the report
+- When a case is `deferred` or `deprecated`, include the reason verbatim in the report
 - When multiple deferred cases share a reason, group them to suggest single-fix unblocks
+- When a case has `severity: "critical"` and is deferred, flag it as a high-priority blocker
 
 ## MCP tools reference
 
 ### `glubean_extract_contracts`
 
-Runtime extraction tool that dynamically imports contract modules. Returns full metadata including:
+Runtime extraction tool that dynamically imports contract modules. Returns protocol-agnostic `NormalizedContractMeta` including:
+- `protocol`, `target` (protocol-agnostic endpoint identifier)
+- `lifecycle` (`"active"` | `"deferred"` | `"deprecated"`) and `severity` (`"critical"` | `"warning"` | `"info"`)
 - Zod schemas converted to JSON Schema (request body, response body, query params)
 - `instanceName` from `.with("name", ...)` declarations
 - Security declarations from instance configuration
-- All standard fields: cases, descriptions, deferred reasons, requires, defaultRun
+- All standard fields: cases, descriptions, deferred/deprecated reasons, requires, defaultRun
+- `protocolExpect` for protocol-specific expectations (e.g. HTTP status code)
 
-Works for both legacy `contract.http()` and current `.with()` syntax.
+Works for `.with()` syntax and plugin protocol contracts (`contract.register()` with adapter v2).
 
 ### `glubean_openapi`
 
-Generates an OpenAPI 3.1 spec from contract definitions. Features:
+Generates an OpenAPI 3.1 spec from contract definitions. Only processes `protocol: "http"` contracts; non-HTTP protocols are skipped. Features:
 - `securitySchemes` derived from instance security declarations
+- HTTP status codes read from `protocolExpect.status`
 - `oneOf` discriminator from `z.discriminatedUnion()` schemas
 - Per-instance spec generation when contracts use `.with()`
 - Can generate a spec without running tests — useful for documentation and client codegen
 
 ### `glubean_project_contracts`
 
-Lightweight runtime extraction grouped by feature. Returns contracts, cases, descriptions, deferred reasons, requires, defaultRun, and summary stats. Does not include schemas or security metadata.
+Lightweight runtime extraction grouped by feature. Returns contracts, cases, descriptions, lifecycle, severity, deferred/deprecated reasons, requires, defaultRun, and summary stats (including deprecated count and severity distribution). Does not include schemas or security metadata.
 
 ## Notes
 
