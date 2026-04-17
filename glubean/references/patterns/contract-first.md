@@ -193,6 +193,190 @@ Rules:
 - `client` is never set at the spec level — it is inherited from the `.with()` instance
 - In real projects, move Zod schemas to `schemas/`
 
+### Response header validation
+
+Use `expect.headers` to validate response headers. Headers are normalized to lowercase keys before validation (HTTP spec: header names are case-insensitive), so your schema uses lowercase keys. Multi-value headers (like `Set-Cookie`) come through as `string[]`.
+
+```typescript
+success: {
+  description: "Successful request returns content-type and request id.",
+  expect: {
+    status: 200,
+    schema: UserSchema,
+    headers: z.object({
+      "content-type": z.string().regex(/^application\/json/),
+      "x-request-id": z.string().uuid(),
+      "set-cookie": z.array(z.string()).optional(),  // multi-value
+    }),
+  },
+},
+```
+
+The headers schema also surfaces in the generated OpenAPI spec under `responses[status].headers`. Failed header validation emits a `contract:failure` event with `kind: "schema"`.
+
+### Response examples for OpenAPI docs
+
+`expect.example` (single) and `expect.examples` (named) power the OpenAPI `content.examples` section. Examples do NOT run at test time — they're purely for documentation.
+
+```typescript
+success: {
+  description: "Returns user profile.",
+  expect: {
+    status: 200,
+    schema: UserSchema,
+    // Single example — shorthand for examples: { default: { value: {...} } }
+    example: { id: "u_1", name: "Alice", email: "alice@example.com" },
+  },
+},
+multiRole: {
+  description: "Role dictates returned profile shape.",
+  expect: {
+    status: 200,
+    schema: UserSchema,
+    examples: {
+      admin:  { value: { id: "u_1", name: "Admin",  role: "admin"  }, summary: "Admin user" },
+      viewer: { value: { id: "u_2", name: "Viewer", role: "viewer" } },
+    },
+  },
+},
+```
+
+When multiple cases share a status code, all their examples merge into the OpenAPI response under unique keys (case name prefix), so `200 { default }` from case `success` + `200 { default }` from case `multiRole_admin` produce separate documented examples.
+
+### Contract-level `deprecated`
+
+If an entire endpoint is deprecated (not just one case), set `deprecated` on the contract spec — it propagates to every case's lifecycle:
+
+```typescript
+// @contract
+export const legacyLookup = userApi("legacy-lookup", {
+  endpoint: "GET /v1/users",
+  description: "Legacy user listing endpoint.",
+  deprecated: "replaced by GET /v2/users — will be removed Q3 2026",
+  cases: {
+    paged:  { description: "Paged listing still works.",     expect: { status: 200 } },
+    search: { description: "Search still works via ?q=.",    expect: { status: 200 } },
+  },
+});
+```
+
+At runtime every case is skipped with the deprecation reason. In OpenAPI output the operation has `deprecated: true` + `x-deprecated-reason`. A case can override the propagated value with its own more specific `deprecated` string.
+
+### Parameter schemas (OpenAPI parameter types)
+
+By default `params` and `query` accept `Record<string, string>` — simple key/value. When you need the OpenAPI spec to show the parameter's type, use `ParamValue` object form:
+
+```typescript
+success: {
+  description: "Fetches user by UUID.",
+  params: {
+    // String shorthand — no schema in OpenAPI output (defaults to string)
+    tenantId: "t_42",
+    // Object form — schema, description, required, deprecated flow to OpenAPI
+    id: {
+      value: "550e8400-e29b-41d4-a716-446655440000",
+      schema: z.string().uuid(),
+      description: "User unique identifier",
+    },
+  },
+  query: {
+    include: {
+      value: "profile,settings",
+      description: "Comma-separated fields to include",
+      required: false,
+    },
+    legacy: {
+      value: "false",
+      deprecated: true,
+    },
+  },
+  expect: { status: 200, schema: UserSchema },
+},
+```
+
+The runtime only reads `value` for URL/query construction. `schema`/`description`/`required`/`deprecated` are docs-only. Field values merge across all cases — one case supplying `description` and another supplying `schema` both contribute.
+
+### Request content type (multipart / form-urlencoded / text)
+
+By default `body` is serialized as JSON. Use `contentType` on the case (or at the contract level via structured `request`) to dispatch serialization:
+
+```typescript
+// Multipart form upload
+avatarUpload: {
+  description: "User uploads avatar image.",
+  contentType: "multipart/form-data",
+  body: { file: blob, caption: "Profile pic" },   // object → FormData
+  // Or pass a native FormData directly
+  expect: { status: 200, schema: AvatarSchema },
+},
+
+// URL-encoded form post (legacy OAuth-style endpoints)
+tokenExchange: {
+  description: "Exchange code for access token.",
+  contentType: "application/x-www-form-urlencoded",
+  body: { grant_type: "authorization_code", code: "abc" },
+  expect: { status: 200 },
+},
+```
+
+Supported content types:
+- `"application/json"` (default) — `body` serialized as JSON
+- `"multipart/form-data"` — `FormData` or `Record<string, string | Blob | File>`
+- `"application/x-www-form-urlencoded"` — `URLSearchParams` or plain object
+- `"text/plain"` / `"application/octet-stream"` — raw body passthrough
+
+If the whole contract uses a non-JSON content type, set it once at the contract level and cases inherit:
+
+```typescript
+export const uploadApi = userApi("upload-avatar", {
+  endpoint: "POST /users/:id/avatar",
+  request: {
+    contentType: "multipart/form-data",
+    body: AvatarRequestSchema,
+    example: { file: "(binary)", caption: "Team pic" },
+  },
+  cases: {
+    success: { description: "Upload succeeds.", body: { ... }, expect: { status: 200 } },
+    oversized: { description: "File over 5MB rejected.", body: { ... }, expect: { status: 413 } },
+  },
+});
+```
+
+### OpenAPI extensions (`x-*`)
+
+For tool-interop metadata that doesn't fit a standard OpenAPI field, use `extensions`. Keys **must start with `x-`** (TypeScript enforces this via template literal type):
+
+```typescript
+const adminApi = contract.http.with("admin", {
+  client: admin,
+  security: "bearer",
+  extensions: {
+    "x-owner": "platform-team",
+    "x-tier": "internal",
+  },
+});
+
+// @contract
+export const listUsers = adminApi("admin-list", {
+  endpoint: "GET /admin/users",
+  description: "List all users (admin only).",
+  extensions: {
+    "x-rate-limit": "100/hour",
+  },
+  cases: {
+    success: {
+      description: "Paged response.",
+      expect: { status: 200, schema: UserListSchema },
+      extensions: {
+        "x-example-org": "acme-corp",
+      },
+    },
+  },
+});
+```
+
+Merge precedence: `instance defaults < contract < case`. The final merged view appears in the OpenAPI operation as `x-*` fields. Internal-only metadata can use namespaced keys (e.g. `x-glubean-internal-*`) — it's still just data, you decide your naming convention.
+
 ### Description writing rules
 
 Descriptions appear in `glubean contracts` projection output — they are the primary way PMs and non-developers understand what the API does. Write them in **business language**, not HTTP terminology.
@@ -363,4 +547,9 @@ When writing contracts, follow this order:
 - Do not treat `ECONNREFUSED` as a bug in contract-first mode — the server may not exist yet
 - Do not invent auth, error codes, or business rules the user didn't describe — escalate instead
 - Do not put contract-first artifacts in `explore/` or `tests/`
+- Do not invent `expect.examples` values — if the user doesn't provide concrete sample data, omit examples rather than fabricate. Examples appear in public OpenAPI docs.
+- Do not use `ParamValue` object form unless the parameter genuinely has a constrained schema — `{ value: "42" }` with no other fields is noise compared to the `"42"` shorthand.
+- Do not use `extensions` to smuggle user business state — it's for tool-interop metadata only (owner, tier, rate-limit hints). Business state belongs in `description` or the schemas themselves.
+- Do not write `extensions: { owner: "team-a" }` — TypeScript will reject it. Keys must start with `x-`: `{ "x-owner": "team-a" }`.
+- Do not set `contentType` on a case unless you actually need non-JSON serialization. It adds cognitive load for readers.
 - Do not change `contract.flow()` syntax — flow contracts are not affected by the `.with()` API change

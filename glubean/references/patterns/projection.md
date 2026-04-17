@@ -140,6 +140,18 @@ Generates an OpenAPI 3.1 spec from contract definitions. Only processes `protoco
 - Per-instance spec generation when contracts use `.with()`
 - Can generate a spec without running tests — useful for documentation and client codegen
 
+**OpenAPI field coverage (Phase 1 + Phase 2):**
+- `expect.schema` → `responses[status].content[contentType].schema`
+- `expect.example` / `expect.examples` → `responses[status].content[contentType].examples` (merged across all cases sharing a status/content-type; keyed by case name to avoid collision)
+- `expect.headers` → `responses[status].headers` (merged across cases; first case wins on header name conflicts)
+- `expect.contentType` → per-case content type dispatch in responses (the same status with different content types produces multiple `content[]` entries)
+- Contract-level `deprecated` → operation `deprecated: true` + `x-deprecated-reason`
+- `ParamValue` fields (`schema`, `description`, `required`, `deprecated`) → `parameters[].schema/.description/.required/.deprecated`; merged at FIELD level across cases so each case can contribute different metadata for the same param
+- `request.headers` (JSON Schema with `properties` + `required`) → `parameters[in=header]` entries
+- `request.example` / `request.examples` → `requestBody.content[contentType].examples`
+- `request.contentType` → `requestBody.content[contentType]` (default `application/json`)
+- `extensions` (merged `defaults < contract < case`) → `x-*` fields on the operation
+
 ### `glubean_project_contracts`
 
 Lightweight runtime extraction grouped by feature. Returns contracts, cases, descriptions, lifecycle, severity, deferred/deprecated reasons, requires, defaultRun, and summary stats (including deprecated count and severity distribution). Does not include schemas or security metadata.
