@@ -59,9 +59,11 @@ Green never hides a skip.
 ### OAuth callback — requires: "browser"
 
 ```typescript
-export const googleCallback = contract.http("google-callback", {
+// Setup (once per file): create the scoped instance.
+const oauthApi = contract.http.with("oauth", { client: oauthClient });
+
+export const googleCallback = oauthApi("google-callback", {
   endpoint: "POST /auth/google/callback",
-  client: oauthClient,
   cases: {
     success: {
       description: "Valid Google token returns app JWT.",
@@ -82,9 +84,10 @@ export const googleCallback = contract.http("google-callback", {
 ### Real Twilio SMS — headless but opt-in
 
 ```typescript
-export const sendSms = contract.http("send-sms", {
+const notificationsApi = contract.http.with("notifications", { client: api });
+
+export const sendSms = notificationsApi("send-sms", {
   endpoint: "POST /notifications/sms",
-  client: api,
   cases: {
     realSend: {
       description: "Real Twilio SMS delivery.",
@@ -101,9 +104,10 @@ Run with: `glubean run --include-opt-in`
 ### Webhook with ngrok — requires: "out-of-band"
 
 ```typescript
-export const stripeWebhook = contract.http("stripe-webhook", {
+const webhookApi = contract.http.with("webhook", { client: api });
+
+export const stripeWebhook = webhookApi("stripe-webhook", {
   endpoint: "POST /webhooks/stripe",
-  client: api,
   cases: {
     paymentSuccess: {
       description: "Stripe payment_intent.succeeded webhook.",
@@ -117,14 +121,24 @@ export const stripeWebhook = contract.http("stripe-webhook", {
 
 ### Flow-level (entire flow is interactive)
 
+Flows compose existing cases via `.step(ref, bindings)`. Set `requires` on the flow's `.meta()` to mark the entire chain as needing the capability.
+
 ```typescript
-export const oauthFlow = contract.flow("oauth-flow", {
-  requires: "browser",  // entire flow needs browser
-})
-  .http("authorize", { ... })
-  .http("callback", { ... })
-  .http("verify-session", { ... })
-  .build();
+// Assumes authorize / callback / verifySession contracts are defined elsewhere.
+export const oauthFlow = contract.flow("oauth-flow")
+  .meta({ requires: "browser" })  // entire flow needs browser
+  .step(authorize.case("success"), {
+    out: (_s, res) => ({ code: res.body.code as string }),
+  })
+  .step(callback.case("success"), {
+    in: (s) => ({ body: { code: s.code } }),
+    out: (_s, res) => ({ sessionToken: res.body.token as string }),
+  })
+  // Template literals violate lens purity — build the header in .compute().
+  .compute((s) => ({ ...s, authHeader: `Bearer ${s.sessionToken}` }))
+  .step(verifySession.case("success"), {
+    in: (s) => ({ headers: { Authorization: s.authHeader } }),
+  });
 ```
 
 ## Auto-tags

@@ -420,40 +420,34 @@ Rules:
 
 ### Flow contract (cross-endpoint verification)
 
-Use `contract.flow()` to verify that endpoints work together:
+Use `contract.flow()` to verify that endpoints work together. A flow composes **existing contract cases** — don't redeclare endpoints inside the flow. Reference cases by `contractVar.case("key")` and wire them with pure lens functions.
 
 ```typescript
+import { contract } from "@glubean/sdk";
+import { createUser, getUser, deleteUser } from "./user.contract.ts";
+
+// @flow
 export const userLifecycle = contract.flow("user-lifecycle")
-  .http("create", {
-    endpoint: "POST /users",
-    client: api,
-    body: { name: "Alice", email: "alice@example.com" },
-    expect: { status: 201, schema: UserSchema },
-    returns: (res) => ({ userId: res.id }),
+  .meta({ description: "Create, read back, then delete a user", tags: ["e2e"] })
+  .step(createUser.case("success"), {
+    // out reads the response and produces the next step's state.
+    out: (_s, res) => ({ userId: res.body.id as string }),
   })
-  .http("read back", {
-    endpoint: "GET /users/:id",
-    client: api,
-    params: (state: { userId: string }) => ({ id: state.userId }),
-    expect: { status: 200, schema: UserSchema },
-    verify: async (ctx, user) => {
-      ctx.expect(user.name).toBe("Alice");
-    },
+  .step(getUser.case("success"), {
+    // in reads flow state and produces inputs for the referenced case.
+    in: (s) => ({ params: { id: s.userId } }),
   })
-  .http("delete", {
-    endpoint: "DELETE /users/:id",
-    client: api,
-    params: (state: { userId: string }) => ({ id: state.userId }),
-    expect: { status: 200 },
-  })
-  .build();
+  .step(deleteUser.case("success"), {
+    in: (s) => ({ params: { id: s.userId } }),
+  });
 ```
 
 Key points:
-- `returns(res, state)` extracts state for the next step (replace semantics)
-- `params(state)` derives URL params from previous step's state
-- Flow is **verification** — it proves endpoints work together, not a spec definition
-- Each endpoint should also have its own `contract.http.with()` spec for case coverage
+- `.step(ref, { in, out })` invokes one case already defined by a `contract.http.with()(...)` contract. The case carries its own body / headers / expectations; the flow only wires state.
+- `in` / `out` MUST be **pure lenses**: field select / repack only. No I/O, no method calls, no branching. Violations throw `LensPurityError` at projection time.
+- Anything a lens can't express (string concatenation, `.map()`, template literals) goes in `.compute((s) => ...)`.
+- `.setup(async (ctx) => ...)` is the only I/O-capable callback and runs once before steps; `.teardown(async (ctx, s) => ...)` runs in the outer finally.
+- Flow is **verification** — it proves endpoints work together, not a spec definition. Each endpoint should still have its own `contract.http.with()` spec for case coverage.
 
 ### Error contract
 

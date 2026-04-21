@@ -130,10 +130,13 @@ import { contract } from "@glubean/sdk";
 import { api, publicHttp } from "../../config/client.js";
 import { ProjectSchema } from "../../schemas/Project.js";
 
-export const createProject = contract.http("create-project", {
+// Scoped instance lives in a shared file (e.g. contracts/_instance.ts)
+// and is imported here. Inlined for clarity in this snippet.
+const projectApi = contract.http.with("project", { client: api });
+
+export const createProject = projectApi("create-project", {
   endpoint: "POST /projects",
   description: "Create a new project.",
-  client: api,
   cases: {
     success: {
       description: "Valid input returns 201 with project object.",
@@ -142,7 +145,7 @@ export const createProject = contract.http("create-project", {
     },
     noAuth: {
       description: "Unauthenticated request returns 401.",
-      client: publicHttp,
+      client: publicHttp,  // per-case override — uses the public (no-auth) client
       expect: { status: 401 },
     },
   },
@@ -161,10 +164,11 @@ This is the **one** contract that tests the real OAuth callback itself. It uses 
 import { contract } from "@glubean/sdk";
 import { oauthClient } from "../../config/oauth-client.js";
 
-export const googleCallback = contract.http("google-callback", {
+const oauthApi = contract.http.with("oauth", { client: oauthClient });
+
+export const googleCallback = oauthApi("google-callback", {
   endpoint: "POST /auth/google/callback",
   description: "Exchange Google ID token for app session JWT.",
-  client: oauthClient,
   cases: {
     success: {
       description: "Valid Google token returns app JWT.",

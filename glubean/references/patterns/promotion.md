@@ -103,10 +103,11 @@ export const getUser = test("get-user", async (ctx) => {
 });
 
 // Consider writing this in contracts/:
-export const getUser = contract.http("get-user", {
+const userApi = contract.http.with("user", { client: api });
+
+export const getUser = userApi("get-user", {
   endpoint: "GET /users/:id",
   description: "Get user by ID.",
-  client: api,
   cases: {
     success: {
       description: "Returns user with full profile.",

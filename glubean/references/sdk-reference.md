@@ -198,8 +198,18 @@ If `schemas/` does not exist yet, create it before adding more Zod-schema-based 
   timeout: 5000,                       // ms (default 10000, false = no timeout)
   retry: 3,                            // Retry count (or { limit, statusCodes, methods })
   throwHttpErrors: false,               // Throw on 4xx/5xx (default false)
+  schema: {                             // Per-call Zod validation (any safeParse/parse schema)
+    request: BodySchema,                // validates options.json before sending
+    response: ResponseSchema,           // validates parsed body on .json()
+    query: QuerySchema,                 // validates options.searchParams
+    requestHeaders: HeadersSchema,      // validates per-call options.headers
+    responseHeaders: HeadersSchema,     // validates final response headers
+    // any field also accepts { schema, severity: "error" | "warn" | "fatal" }
+  },
 }
 ```
+
+Use `schema:` for inline per-call validation. For file-level endpoint specs covering every case, use `contract.http.with()(id, { cases })` — see [patterns/contract-first.md](patterns/contract-first.md).
 
 ### Extend
 

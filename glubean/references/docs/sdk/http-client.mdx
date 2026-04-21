@@ -56,6 +56,52 @@ export const userFlow = test("user-flow", async (ctx) => {
 | `timeout` | `number \| false` | Timeout in ms (default 10000, `false` to disable) |
 | `retry` | `number \| object` | Retry count or `{ limit, statusCodes, methods }` |
 | `throwHttpErrors` | `boolean` | Throw on 4xx/5xx (default `false`) |
+| `schema` | `HttpSchemaOptions` | Per-call Zod validation for request/response body, query, and headers. See [Inline schema validation](#inline-schema-validation) below. |
+
+## Inline schema validation
+
+Pass `schema` on any call to validate request and response payloads against Zod (or any `safeParse` / `parse`-compatible) schemas. Violations are recorded as assertion failures without disrupting the rest of the test.
+
+```typescript
+import { z } from "zod";
+
+const BodySchema = z.object({ name: z.string(), email: z.string().email() });
+const ResponseSchema = z.object({ id: z.string(), createdAt: z.string() });
+
+await ctx.http.post(url, {
+  json: { name: "Alice", email: "alice@example.com" },
+  headers: { "X-Tenant-Id": "t1" },
+  schema: {
+    request: BodySchema,
+    response: ResponseSchema,
+    query: z.object({ version: z.string() }),
+    requestHeaders: z.object({ "X-Tenant-Id": z.string() }),
+    responseHeaders: z.object({ "content-type": z.string() }),
+  },
+}).json();
+```
+
+Per-entry options:
+
+| Key | Validates |
+|-----|-----------|
+| `request` | The `json` body before sending |
+| `response` | The parsed body when `.json()` is called |
+| `query` | The `searchParams` before sending |
+| `requestHeaders` | The per-call `headers` (not merged client-level defaults) |
+| `responseHeaders` | The response headers on the final attempt |
+
+Every entry accepts either a bare schema or `{ schema, severity: "error" | "warn" | "fatal" }`. Default severity is `"error"`.
+
+```typescript
+schema: {
+  query: { schema: QuerySchema, severity: "warn" }, // logs but doesn't fail
+}
+```
+
+Headers are normalized to `Record<string, string>` before validation — `Headers` instances and `string[][]` forms both work.
+
+For structured, file-level API specifications covering every case of an endpoint (instead of inline per-call validation), use [contract.http()](/sdk/contract-http) instead.
 
 ## Response methods
 

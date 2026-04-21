@@ -53,27 +53,6 @@ Plugin factories receive a `GlubeanRuntime` object with:
 | `runtime.event(ev)` | Emit a custom event |
 | `runtime.log(msg, data?)` | Log from plugin context |
 
-## Plugin activation
-
-Plugins can be conditionally activated based on test tags or request patterns:
-
-```typescript
-const { api } = configure({
-  plugins: {
-    api: {
-      factory: myClient({ endpointKey: "API_URL" }),
-      activation: {
-        tags: { enable: ["api"], disable: ["browser-only"] },
-        requests: {
-          include: [{ path: "/api/" }],
-          exclude: [{ method: "DELETE", path: "/admin/" }],
-        },
-      },
-    },
-  },
-});
-```
-
 ## First-party plugins
 
 - [Auth (`@glubean/auth`)](/sdk/auth-plugin) — OAuth, API key, and custom auth flows
