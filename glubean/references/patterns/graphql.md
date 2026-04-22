@@ -16,6 +16,20 @@
 
 For REST endpoints, use the normal HTTP patterns instead.
 
+## Project setup — install the plugin manifest
+
+`@glubean/graphql` ships two things: a **plugin manifest** (registers the `graphql` contract protocol and `toHaveGraphql*` matchers) and a **client factory** (`graphql(options)` for `configure({ plugins })`). The client factory on its own does not activate matchers or contracts — you must install the manifest from `glubean.setup.ts` at the project root:
+
+```typescript
+// glubean.setup.ts
+import { installPlugin } from "@glubean/sdk";
+import graphqlPlugin from "@glubean/graphql";
+
+await installPlugin(graphqlPlugin);
+```
+
+Without this file (or if it doesn't install `graphqlPlugin`), `contract.graphql(...)` and `ctx.expect(result).toHaveGraphqlData(...)` will throw "unknown protocol" / missing-matcher errors at runtime. The per-file `configure({ plugins: { gql: graphql(...) } })` call below is a separate concern (it creates a lazy client) — both are needed together for the plugin mode below.
+
 ## Configure plugin mode (preferred for projects)
 
 ```typescript

@@ -305,20 +305,50 @@ const { http, chrome } = configure({
 });
 ```
 
-### definePlugin()
+### defineClientFactory() — per-file client
+
+For sharing a client across tests in one file via `configure({ plugins })`:
 
 ```typescript
-const myPlugin = definePlugin((runtime) => {
+import { configure, defineClientFactory } from "@glubean/sdk";
+
+const myClient = defineClientFactory((runtime) => {
   const apiKey = runtime.requireSecret("MY_KEY");
   return {
     doSomething: () => { ... },
   };
 });
 
-const { myPlugin: instance } = configure({
-  plugins: { myPlugin },
+const { myClient: instance } = configure({
+  plugins: { myClient },
 });
 ```
+
+### definePlugin() + installPlugin() — global matchers / protocols
+
+For shipping an npm plugin that registers matchers, protocol adapters, or one-time setup:
+
+```typescript
+// my-plugin/src/index.ts
+import { definePlugin } from "@glubean/sdk";
+export default definePlugin({
+  name: "@me/my-plugin",
+  matchers: { toBeMyThing(actual) { return { pass: ..., message: () => "..." }; } },
+  contracts: { myproto: myprotoAdapter },
+  setup() { /* optional one-time hook */ },
+});
+```
+
+Consumers must install it in `glubean.setup.ts` at the project root:
+
+```typescript
+// glubean.setup.ts
+import { installPlugin } from "@glubean/sdk";
+import myPlugin from "@me/my-plugin";
+await installPlugin(myPlugin);
+```
+
+The manifest has no effect until `installPlugin` runs. `glubean.setup.ts` is discovered and run exactly once per process by CLI / MCP / VSCode before any test file or `.contract.ts` loads.
 
 ---
 

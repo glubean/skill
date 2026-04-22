@@ -181,14 +181,14 @@ export const browserTest = test.extend({
 
 ```typescript
 // config/ai.ts
-import { configure, definePlugin } from "@glubean/sdk";
+import { configure, defineClientFactory } from "@glubean/sdk";
 import { generateObject } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { ZodType } from "zod";
 
 export const { ai } = configure({
   plugins: {
-    ai: definePlugin((rt) => {
+    ai: defineClientFactory((rt) => {
       const openai = createOpenAI({
         apiKey: rt.requireSecret("OPENAI_API_KEY"),
       });
@@ -200,6 +200,8 @@ export const { ai } = configure({
   },
 });
 ```
+
+> Use `defineClientFactory` for per-file clients. `definePlugin` is reserved for plugin manifests (global matchers / protocols) installed via `installPlugin` in `glubean.setup.ts` — see [plugins.mdx](../docs/sdk/plugins.mdx).
 
 ## Anti-patterns
 

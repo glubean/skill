@@ -1,24 +1,35 @@
 # Plugins
 
-Plugins let you package reusable runtime behavior without changing the core SDK.
+Glubean has **two distinct plugin concepts**. Which one you use depends on what you're extending.
 
-Use them when multiple files need the same client, auth helper, or domain-specific utility.
+| Concept | API | Scope | Consumed by |
+|---|---|---|---|
+| **Plugin manifest** (global) | `definePlugin(manifest)` + `installPlugin(manifest)` | Process-wide matchers, protocol adapters, one-time setup | `glubean.setup.ts` |
+| **Client factory** (per file) | `defineClientFactory((runtime) => client)` | Per-test lazy client instance (shared auth, HTTP, domain helpers) | `configure({ plugins })` |
 
-## Basic pattern
+The legacy `definePlugin((runtime) => T)` overload was removed in favor of `defineClientFactory`. Use whichever matches your intent below.
 
-1. Define a plugin with `definePlugin(...)`
+---
+
+## 1. Client factory — per-file shared client
+
+Use this when multiple tests in the same file need the same client (e.g. an internal API wrapper that reads a base URL from vars).
+
+### Basic pattern
+
+1. Define a factory with `defineClientFactory(...)`
 2. Register it in `configure({ plugins })`
 3. Use the shared instance in tests
 
-The plugin is created lazily on first access during test execution.
+The client is created lazily on first access during test execution.
 
-## Example
+### Example
 
 ```typescript
-import { configure, definePlugin, test } from "@glubean/sdk";
+import { configure, defineClientFactory, test } from "@glubean/sdk";
 
 const myClient = (opts: { endpointKey: string }) =>
-  definePlugin((runtime) => {
+  defineClientFactory((runtime) => {
     const baseUrl = runtime.requireVar(opts.endpointKey);
     return {
       getStatus: async () => runtime.http.get(`${baseUrl}/status`).json(),
@@ -37,9 +48,7 @@ export const health = test("internal-health", async (ctx) => {
 });
 ```
 
-## Plugin runtime
-
-Plugin factories receive a `GlubeanRuntime` object with:
+### Runtime object passed to the factory
 
 | Property | Description |
 |----------|-------------|
@@ -53,13 +62,72 @@ Plugin factories receive a `GlubeanRuntime` object with:
 | `runtime.event(ev)` | Emit a custom event |
 | `runtime.log(msg, data?)` | Log from plugin context |
 
-## First-party plugins
+### Notes
+
+- Reserved keys (`vars`, `secrets`, `http`) cannot be used as plugin names in `configure({ plugins })`.
+- Clients are cached per test execution and recreated for each new test.
+
+---
+
+## 2. Plugin manifest — global matchers / protocol adapters
+
+Use this when you want to publish an npm package that adds process-wide behavior: custom `ctx.expect(...)` matchers, a new contract protocol (e.g. `contract.graphql`), or a one-time `setup()` hook that runs before any tests load.
+
+This is what `@glubean/graphql`, `@glubean/grpc`, `@glubean/auth`, and `@glubean/browser` are.
+
+### Authoring a manifest
+
+```typescript
+// packages/my-plugin/src/index.ts
+import { contract, definePlugin } from "@glubean/sdk";
+import type { PluginManifest } from "@glubean/sdk";
+
+const myPlugin: PluginManifest = definePlugin({
+  name: "@my-scope/my-plugin",
+  matchers: {
+    toBeMyThing(actual) {
+      return { pass: actual === "thing", message: () => "..." };
+    },
+  },
+  contracts: {
+    myproto: myprotoAdapter,
+  },
+  setup() {
+    // Optional. Runs once after matchers/contracts are registered.
+  },
+});
+
+export default myPlugin;
+```
+
+### Installing it in a project — required
+
+A plugin manifest has **no effect** until `installPlugin(manifest)` runs. The canonical place to call it is `glubean.setup.ts` at the project root:
+
+```typescript
+// glubean.setup.ts  (project root, alongside ci-config/ and tests/)
+import { installPlugin } from "@glubean/sdk";
+import graphqlPlugin from "@glubean/graphql";
+import grpcPlugin from "@glubean/grpc";
+
+await installPlugin(graphqlPlugin, grpcPlugin);
+```
+
+`glubean.setup.ts` runs exactly once per process (CLI `run`, CLI `contracts`, MCP tool calls, VSCode scan) before any test file or `.contract.ts` module is imported. Matchers and protocol adapters are only available after this file executes.
+
+A top-level `import "@glubean/graphql"` is **not** a side-effect registration anymore — you must explicitly `installPlugin`.
+
+### Install-time guarantees
+
+- Installing the same plugin twice (same `name`) is a no-op.
+- Duplicate matcher or protocol names across plugins throw at install time.
+- If `setup()` throws, the plugin is marked failed and retrying in the same process throws with a clear error — restart to recover.
+
+## First-party plugin manifests
 
 - [Auth (`@glubean/auth`)](/sdk/auth-plugin) — OAuth, API key, and custom auth flows
 - [Browser (`@glubean/browser`)](/sdk/browser-plugin) — Puppeteer-powered browser automation
-- [GraphQL (`@glubean/graphql`)](/sdk/graphql-plugin) — Typed GraphQL queries and mutations
+- [GraphQL (`@glubean/graphql`)](/sdk/graphql-plugin) — Typed GraphQL queries, mutations, and contract protocol
+- [gRPC (`@glubean/grpc`)](/sdk/grpc-plugin) — gRPC status matchers and contract protocol
 
-## Notes
-
-- Reserved keys (`vars`, `secrets`, `http`) cannot be used as plugin names in `configure({ plugins })`.
-- Plugins are cached per test execution and recreated for each new test.
+All of these require `await installPlugin(...)` in `glubean.setup.ts`.

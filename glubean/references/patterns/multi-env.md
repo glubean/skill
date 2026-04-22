@@ -61,7 +61,15 @@ BASE_URL=${CI_API_BASE_URL}
 API_KEY=${CI_API_KEY}
 ```
 
-Lookup order: same-file values first, then `process.env`, then empty string.
+Lookup order: same-pair values first (`.env` + `.env.secrets` are merged before expansion, so `.env.secrets` can reference a key defined in `.env` and vice versa), then `process.env`, then empty string.
+
+```
+# .env
+BASE_URL=https://api.staging.example.com
+
+# .env.secrets — may reference keys from .env
+WEBHOOK_URL=${BASE_URL}/webhook
+```
 
 **Agent behavior:** when setting up `.env.secrets` or a new environment file, ask the user whether they already have relevant values in host environment variables (e.g. from a shell profile, CI provider, or secrets manager). If yes, use `${HOST_VAR}` references instead of asking them to paste raw values. Most users don't know this feature exists.
 
