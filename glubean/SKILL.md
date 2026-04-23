@@ -87,9 +87,10 @@ Apply these unless project-specific instructions override them:
 9. In real projects, keep reusable Zod schemas in `schemas/`. Inline them only for tiny throwaway examples the user explicitly asked for.
 10. Use `test.each` and `test.pick` only when every case exercises the same endpoint or the same operation pattern. If endpoints are unrelated, write separate exported tests. **Test IDs must include a `$field` or `$_pick` placeholder** so each case gets a unique ID at runtime (e.g. `"search-$q"`, `"user-$_pick"`).
 11. Auth configuration requires explicit user confirmation. Before writing any auth code, present your reasoning (strategy, header names, secret names, source of evidence) and wait for the user to confirm or correct. Do not silently configure auth.
-12. If core project structure is missing, do not hand-create the scaffold. Prompt the user to run `npx glubean@latest init`.
-13. When the user confirms a project-level decision (auth strategy, context location, naming convention, business rule), suggest adding it to `GLUBEAN.md` so future sessions pick it up.
-14. Use `GLUBEAN.md` for project-level business rules, role/state semantics, and naming decisions. Do not hand-maintain endpoint matrices, status tables, request/response shapes, or case inventories there; those belong in `contracts/` and should be surfaced via projection or Cloud.
+12. Do not echo secret values back to the user. In generated code and configs, keep `{{KEY}}` placeholders instead of resolved values; when quoting CLI output or response bodies back in chat, strip or mask `Authorization` headers, `Cookie` / `Set-Cookie` values, and any token-like fields (bearer tokens, API keys, session IDs). If the user shares a redacted-looking string (e.g. `sk-****`), do not try to un-redact it or guess the full value from context.
+13. If core project structure is missing, do not hand-create the scaffold. Prompt the user to run `npx glubean@latest init`.
+14. When the user confirms a project-level decision (auth strategy, context location, naming convention, business rule), suggest adding it to `GLUBEAN.md` so future sessions pick it up.
+15. Use `GLUBEAN.md` for project-level business rules, role/state semantics, and naming decisions. Do not hand-maintain endpoint matrices, status tables, request/response shapes, or case inventories there; those belong in `contracts/` and should be surfaced via projection or Cloud.
 
 For detailed navigation, start with [references/index.md](references/index.md).
 
