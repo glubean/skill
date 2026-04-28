@@ -510,6 +510,10 @@ export const userLifecycle = contract.flow("user-lifecycle")
 
 Key points:
 - `.step(ref, { in, out })` invokes one case already defined by a `contract.http.with()(...)` contract. The case carries its own body / headers / expectations; the flow only wires state.
+- Flows can mix first-party protocols. A single flow may step from HTTP to
+  gRPC to GraphQL as long as each referenced case declares the logical
+  `needs` shape consumed by its `in` lens. Keep protocol-specific transport
+  details inside the case; flow state should stay business-shaped.
 - `in` / `out` MUST be **pure lenses**: field select / repack only. No I/O, no method calls, no branching. Violations throw `LensPurityError` at projection time.
 - Anything a lens can't express (string concatenation, `.map()`, template literals) goes in `.compute((s) => ...)`.
 - `.setup(async (ctx) => ...)` is the only I/O-capable callback and runs once before steps; `.teardown(async (ctx, s) => ...)` runs in the outer finally.
