@@ -247,6 +247,11 @@ Rules:
 - Each case has a required `description` — explains the business logic or boundary
 - `expect.schema` validates response shape via Zod (or any SchemaLike)
 - `verify` callback runs after schema validation for business-logic assertions
+- `given` describes the world-state precondition that must already be true for
+  the case to make sense. Use it for stateful cases such as duplicates,
+  ownership, role membership, existing inventory, or expired sessions. It is
+  projected into `glubean contracts` Markdown/JSON, OpenAPI
+  `x-glubean-cases`, scanner metadata, and MCP project-contract output.
 - `deferred` marks cases that can't run yet (missing credentials, infrastructure)
 - `deprecated` marks cases that are retained for history but no longer executed (e.g. `deprecated: "replaced by v2 endpoint"`)
 - `severity` controls alert routing: `"critical"` (immediate alert), `"warning"` (default), `"info"` (no alert). Only set explicitly when the default `"warning"` is wrong — auth/permission cases are typically `"critical"`, informational checks are `"info"`
