@@ -44,7 +44,7 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 | [patterns/polling.md](patterns/polling.md) | Async jobs and eventual consistency |
 | [patterns/webhook.md](patterns/webhook.md) | Webhook delivery testing: tunnel, verify, cleanup |
 | [patterns/metrics.md](patterns/metrics.md) | Custom metrics and performance tracking |
-| [patterns/attachment-model.md](patterns/attachment-model.md) | v10 attachment model: `defineHttpCase<Needs>`, `contract.bootstrap()` overlays, `*.bootstrap.ts` files, `runnability.requireAttachment`, §6.3 dispatch table |
+| [patterns/attachment-model.md](patterns/attachment-model.md) | v10 attachment model: protocol `defineXCase<Needs>` factories, `contract.bootstrap()` overlays, `*.bootstrap.ts` files, `runnability.requireAttachment`, §6.3 dispatch table |
 | [patterns/runner-input.md](patterns/runner-input.md) | CLI bypass channels: `--input-json`, `--bootstrap-json`, `--force-standalone`; `runCase()` programmatic equivalents |
 | [patterns/session-auth.md](patterns/session-auth.md) | Dynamic token for contracts: session bypass + real OAuth dual path (alternative to attachment-model overlays for single-token projects) |
 | [patterns/case-execution.md](patterns/case-execution.md) | `requires` / `defaultRun` / `runnability` — mark cases that need browser, OOB, opt-in, or attachment |

@@ -124,12 +124,12 @@ const adminApi  = contract.http.with("admin",  { client: adminHttp, security: "b
 
 ### Two ways to define cases
 
-The contract literal supports two case styles. Use `defineHttpCase<Needs>` whenever the case has dynamic input (auth tokens, seeded IDs, feature flags) — it locks the input shape across `needs` schema and the function-valued action fields. Use the inline literal for simple cases without runtime input.
+The contract literal supports two case styles. Use the protocol-specific `defineXCase<Needs>` factory whenever the case has dynamic input (auth tokens, seeded IDs, feature flags) — it locks the input shape across `needs` schema and the function-valued action fields. Use the inline literal for simple cases without runtime input.
 
 | Pattern | Use when | Type-locks `needs` ↔ action fields |
 |---|---|---|
 | **Inline literal** `cases: { key: { ... } }` | Static body / params; no runtime input | No (TypeScript can't correlate sibling fields) |
-| **`defineHttpCase<Needs>(...)` + shorthand** `cases: { key }` | Case has `needs` and function-valued `headers` / `body` / etc. | Yes (`<Needs>` generic flows through) |
+| **`defineHttpCase` / `defineGrpcCase` / `defineGraphqlCase` + shorthand** `cases: { key }` | Case has `needs` and function-valued action fields | Yes (`<Needs>` generic flows through) |
 
 For the canonical v10 pattern (per-case Needs + overlay), see [attachment-model.md](attachment-model.md). This section shows both styles for reference.
 

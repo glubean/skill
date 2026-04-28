@@ -531,9 +531,9 @@ contract.flow("user-lifecycle")
 
 Full reference in [patterns/contract-first.md](patterns/contract-first.md) "Flow contract" section.
 
-### `defineHttpCase<Needs>(spec)` — case at its own const site
+### `defineHttpCase<Needs>(spec)` / `defineGrpcCase<Needs>(spec)` / `defineGraphqlCase<Needs>(spec)` — case at its own const site
 
-Type-locks the `Needs` generic across the case's `needs` schema and its function-valued action fields (`headers`, `body`, `params`, `query`). Use this when the case has runtime input.
+Type-locks the `Needs` generic across the case's `needs` schema and its function-valued action fields. Use this when the case has runtime input.
 
 ```typescript
 const authorized = defineHttpCase<{ token: string }>({
@@ -550,7 +550,22 @@ export const getMe = userApi("get-me", {
 });
 ```
 
-**HTTP only.** No `defineGrpcCase` / `defineGraphqlCase` shipped today — gRPC and GraphQL contracts declare `needs` directly on their case literal. See [patterns/attachment-model.md](patterns/attachment-model.md).
+Use the protocol-specific factory for non-HTTP contracts:
+
+```typescript
+import { defineGraphqlCase } from "@glubean/graphql";
+
+const byId = defineGraphqlCase<{ token: string; userId: string }>({
+  description: "Fetches a user by authenticated id",
+  needs: z.object({ token: z.string(), userId: z.string() }),
+  query: "query User($id: ID!) { user(id: $id) { id name } }",
+  variables: ({ userId }) => ({ id: userId }),
+  headers: ({ token }) => ({ Authorization: `Bearer ${token}` }),
+  expect: { httpStatus: 200, errors: "absent" },
+});
+```
+
+See [patterns/attachment-model.md](patterns/attachment-model.md) for the overlay and runner input flow.
 
 ### `contract.bootstrap(caseRef, attachment)` — overlay registration
 

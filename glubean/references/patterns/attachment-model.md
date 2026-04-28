@@ -12,7 +12,7 @@ The v10 way to write a contract case that depends on dynamic setup state (a toke
 
 ## Three building blocks
 
-### 1. `defineHttpCase<Needs>` — declare Needs at the case site
+### 1. `defineXCase<Needs>` — declare Needs at the case site
 
 Inside a contract literal, TypeScript can't correlate `needs: SchemaLike<X>` and `body: (input: Y) => ...` from sibling fields. The factory captures `Needs` once via the explicit generic, so all action fields are checked against `(input: Needs) => ...`:
 
@@ -41,7 +41,28 @@ Key points:
 - Function-valued action fields (`headers`, `body`, `params`, `query`) take `Needs` as their parameter and produce the wire shape.
 - `defineHttpCase` returns a normal case object — assign it to a `const` and reference it in the contract.
 
-**HTTP only.** `defineHttpCase` is the only `defineXCase<Needs>` factory shipped today — gRPC and GraphQL contracts can declare `needs` directly on their case literal, and rely on per-protocol type inference. The factory pattern may extend to gRPC / GraphQL in a future release.
+gRPC and GraphQL use the same pattern through their protocol packages:
+
+```typescript
+import { defineGrpcCase } from "@glubean/grpc";
+import { defineGraphqlCase } from "@glubean/graphql";
+
+const greet = defineGrpcCase<{ name: string }>({
+  description: "Greets the requested user",
+  needs: z.object({ name: z.string() }),
+  request: ({ name }) => ({ name }),
+  expect: { statusCode: 0 },
+});
+
+const byId = defineGraphqlCase<{ token: string; userId: string }>({
+  description: "Fetches a user by authenticated id",
+  needs: z.object({ token: z.string(), userId: z.string() }),
+  query: "query User($id: ID!) { user(id: $id) { id name } }",
+  variables: ({ userId }) => ({ id: userId }),
+  headers: ({ token }) => ({ Authorization: `Bearer ${token}` }),
+  expect: { httpStatus: 200, errors: "absent" },
+});
+```
 
 ### 2. Shorthand cases — reference defined cases inside the contract
 
