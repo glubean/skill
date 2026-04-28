@@ -44,14 +44,16 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 | [patterns/polling.md](patterns/polling.md) | Async jobs and eventual consistency |
 | [patterns/webhook.md](patterns/webhook.md) | Webhook delivery testing: tunnel, verify, cleanup |
 | [patterns/metrics.md](patterns/metrics.md) | Custom metrics and performance tracking |
-| [patterns/session-auth.md](patterns/session-auth.md) | Dynamic token for contracts: session bypass + real OAuth dual path |
-| [patterns/case-execution.md](patterns/case-execution.md) | `requires` / `defaultRun` — mark cases that need browser, OOB, or opt-in |
+| [patterns/attachment-model.md](patterns/attachment-model.md) | v10 attachment model: `defineHttpCase<Needs>`, `contract.bootstrap()` overlays, `*.bootstrap.ts` files, `runnability.requireAttachment`, §6.3 dispatch table |
+| [patterns/runner-input.md](patterns/runner-input.md) | CLI bypass channels: `--input-json`, `--bootstrap-json`, `--force-standalone`; `runCase()` programmatic equivalents |
+| [patterns/session-auth.md](patterns/session-auth.md) | Dynamic token for contracts: session bypass + real OAuth dual path (alternative to attachment-model overlays for single-token projects) |
+| [patterns/case-execution.md](patterns/case-execution.md) | `requires` / `defaultRun` / `runnability` — mark cases that need browser, OOB, opt-in, or attachment |
 | [patterns/auth.md](patterns/auth.md) | Auth strategies after user confirmation |
 | [patterns/graphql.md](patterns/graphql.md) | GraphQL testing |
 | [patterns/browser.md](patterns/browser.md) | Browser testing |
 | [patterns/plugins.md](patterns/plugins.md) | Plugin index: `@glubean/auth`, `@glubean/browser`, `@glubean/graphql`, `@glubean/oauth-code` |
 | [patterns/multi-env.md](patterns/multi-env.md) | Multi-environment setup: env files, `${HOST_VAR}` passthrough, switching |
-| [patterns/bootstrap.md](patterns/bootstrap.md) | Project init wizard details and setup sequence |
+| [patterns/init-project.md](patterns/init-project.md) | Project init wizard details and setup sequence (renamed from `bootstrap.md`; not to be confused with `contract.bootstrap()` overlays — see attachment-model.md) |
 
 ## Product docs
 

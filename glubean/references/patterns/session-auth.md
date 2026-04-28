@@ -1,5 +1,17 @@
 # Session Auth — Dynamic Token Acquisition for Contracts
 
+## When to use this pattern (vs alternatives)
+
+There are two ways to inject a dynamic auth token into contracts. Pick by structure:
+
+| Structure | Use |
+|---|---|
+| **Single global token, all contracts use it** (most projects) | This doc — `session.ts` + `configure({ headers: 'Bearer {{TOKEN}}' })`. Token acquired once per run, all contracts read it from the same source. |
+| **Per-case setup with structured Needs** (some cases need fresh tokens, others need seeded data) | [attachment-model.md](attachment-model.md) — `defineHttpCase<Needs>` + `contract.bootstrap()` overlay. Each case's setup is colocated with its semantics. |
+| **Mix** — global token for most, custom setup for a few | Both coexist — session.ts for default, overlay for special cases. |
+
+Quick rule: 90% of your contracts share one token from one source → use this doc. Individual cases need their own setup/cleanup tied to their `needs` schema → see attachment-model.md.
+
 ## Why this pattern
 
 **Problem:** your project uses social login (Google, GitHub, Apple), magic link, SMS OTP, or another interactive auth method. 90% of your contracts need an authenticated JWT, but the JWT can only be obtained through an interactive ceremony that CI can't reproduce.
@@ -18,13 +30,45 @@ This means: `body: { token: "{{AUTH_TOKEN}}" }` sends the literal string `"{{AUT
 
 **Two ways to get a dynamic value into a contract request:**
 
-1. **Via client headers** (preferred for auth tokens) — put the token in a configured client's auth header (`bearer()` or `Authorization: "Bearer {{AUTH_TOKEN}}"`). The token flows through the HTTP client layer, invisible to contracts.
+1. **Via client headers** (preferred for auth tokens, when the token can live in `Authorization`) — put the token in a configured client's auth header (`bearer()` or `Authorization: "Bearer {{AUTH_TOKEN}}"`). The token flows through the HTTP client layer, invisible to contracts.
 
-2. **Via `setup` + `body` function** (when the token must be in the body) — `body` accepts `(state: S) => unknown`, symmetric with `params`/`query`/`headers`:
+2. **Via `defineHttpCase<Needs>` + a `contract.bootstrap()` overlay** (when the token must be in the body, or the case needs per-case setup tied to its `needs` schema) — declare the input shape on the case, derive request fields from it via function-valued action fields, and produce the input from a sibling `*.bootstrap.ts` overlay. v10 removed per-case `setup` / `teardown` from the contract literal — that lifecycle now lives in overlays. See [attachment-model.md](attachment-model.md).
 
 ```typescript
-setup: async (ctx) => ({ token: ctx.session.get("AUTH_TOKEN") as string }),
-body: (state) => ({ token: state.token }),
+// form.contract.ts
+import { contract, defineHttpCase } from "@glubean/sdk";
+import { z } from "zod/v4";
+import { api } from "../../config/api.ts";
+
+const formApi = contract.http.with("form", { client: api });
+
+// Case bound at its own const site (locks Needs across `needs` + body).
+const submit = defineHttpCase<{ token: string }>({
+  description: "Submit form with a session-supplied token in the body.",
+  needs: z.object({ token: z.string() }),
+  body: ({ token }) => ({ token }),  // function of Needs — token reaches the body
+  expect: { status: 200 },
+});
+
+// @contract
+export const formContract = formApi("form-submit", {
+  endpoint: "POST /forms/submit",
+  description: "Submit form with session-supplied token.",
+  cases: { submit },
+});
+```
+
+```typescript
+// form.bootstrap.ts (sibling)
+import { contract } from "@glubean/sdk";
+import { formContract } from "./form.contract.ts";
+
+// `.case(key)` is on the exported contract object, NOT on the scoped
+// factory (`formApi`) or on the bare `defineHttpCase` value.
+export const formSubmitOverlay = contract.bootstrap(
+  formContract.case("submit"),
+  async (ctx) => ({ token: ctx.session.get("AUTH_TOKEN") as string }),
+);
 ```
 
 ## Three-layer separation
@@ -161,31 +205,57 @@ This is the **one** contract that tests the real OAuth callback itself. It uses 
 **Note:** this is a narrow exception to the three-layer separation. The OAuth callback contract is the *only* place where an auth-specific client appears in a contract file — because verifying the callback endpoint *is* the auth flow. All other contracts use the shared `api` client from `config/client.ts` and have zero auth awareness.
 
 ```typescript
-import { contract } from "@glubean/sdk";
+// google-callback.contract.ts
+import { contract, defineHttpCase } from "@glubean/sdk";
+import { z } from "zod/v4";
 import { oauthClient } from "../../config/oauth-client.js";
 
 const oauthApi = contract.http.with("oauth", { client: oauthClient });
 
+// Case has dynamic token in body → defineHttpCase<Needs> + overlay.
+// v10 removed per-case `setup` / `teardown`; the lifecycle moves to
+// google-callback.bootstrap.ts (see below).
+const success = defineHttpCase<{ token: string }>({
+  description: "Valid Google token returns app JWT.",
+  needs: z.object({ token: z.string() }),
+  body: ({ token }) => ({ token }),  // function of Needs
+  expect: { status: 200 },
+  requires: "browser",
+  // requireAttachment gates this: bare runs hard-fail unless the overlay
+  // is loaded or `--input-json` is supplied. Without this gate, a missing
+  // overlay would let the runner attempt the case bare and the request
+  // would fire with no token — defeating the whole pattern.
+  runnability: { requireAttachment: true },
+});
+
+const invalidToken = defineHttpCase({
+  description: "Forged token is rejected.",
+  body: { token: "obviously-fake" },
+  expect: { status: 401 },
+});
+
+// @contract
 export const googleCallback = oauthApi("google-callback", {
   endpoint: "POST /auth/google/callback",
   description: "Exchange Google ID token for app session JWT.",
   cases: {
-    success: {
-      description: "Valid Google token returns app JWT.",
-      requires: "browser",
-      // setup runs after session.ts acquires the token via acquireOAuthToken.
-      // body receives setup state so the dynamic token reaches the request body.
-      setup: async (ctx) => ({ token: ctx.session.get("GOOGLE_ACCESS_TOKEN") as string }),
-      body: (state) => ({ token: state.token }),
-      expect: { status: 200 },
-    },
-    invalidToken: {
-      description: "Forged token is rejected.",
-      body: { token: "obviously-fake" },
-      expect: { status: 401 },
-    },
+    success,
+    invalidToken,
   },
 });
+```
+
+```typescript
+// google-callback.bootstrap.ts (sibling of the contract)
+import { contract } from "@glubean/sdk";
+import { googleCallback } from "./google-callback.contract.ts";
+
+// `.case(key)` is on the exported contract object, NOT on the scoped
+// factory. Overlay reads the token session.ts already produced.
+export const googleCallbackOverlay = contract.bootstrap(
+  googleCallback.case("success"),
+  async (ctx) => ({ token: ctx.session.get("GOOGLE_ACCESS_TOKEN") as string }),
+);
 ```
 
 The `oauthCode` client lives in `config/oauth-client.ts` — not inline in the contract:

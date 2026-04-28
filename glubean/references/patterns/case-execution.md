@@ -27,6 +27,36 @@
 
 **Auto-imply:** `requires !== "headless"` automatically sets `defaultRun: "opt-in"` unless you explicitly override. You almost never need to set `defaultRun` manually.
 
+### `runnability.requireAttachment` — logical bare-run gate (v10 attachment-model)
+
+Different from `requires` and `defaultRun`. Marks a case as "not bare-runnable" — the runner refuses to execute it without either an overlay or an explicit input.
+
+```typescript
+const requiresLogin = defineHttpCase<{ token: string }>({
+  description: "Bare runs blocked — overlay or --input-json required.",
+  needs: z.object({ token: z.string() }),
+  headers: ({ token }) => ({ Authorization: `Bearer ${token}` }),
+  expect: { status: 200, schema: ProfileSchema },
+  runnability: { requireAttachment: true },
+});
+```
+
+The three flags answer different questions:
+
+| Flag | Question | Effect on bare run |
+|---|---|---|
+| `requires: "browser"` | What physical capability is needed? | Skipped unless `--include-browser` flag is set |
+| `defaultRun: "opt-in"` | Should the case run by default? | Skipped unless explicitly requested |
+| `runnability: { requireAttachment: true }` | Can the case run without setup? | **Hard error** unless overlay registered or `--input-json` supplied |
+
+The three combine independently. A case can have all three: e.g. an OAuth case might be `requires: "browser"` + `requireAttachment: true` + auto-implied `defaultRun: "opt-in"`.
+
+When a case marked `requireAttachment: true` is hit by a bare run with no attachment:
+- With `needs` declared → suggest `--input-json '<JSON>'` or register an overlay.
+- Without `needs` → only an overlay can run the case. Use `--force-standalone` for debug-only bypass.
+
+See [attachment-model.md](attachment-model.md) for the full §6.3 dispatch table and the overlay pattern. See [runner-input.md](runner-input.md) for the CLI bypass channels.
+
 ## CLI flags
 
 ```bash

@@ -1,4 +1,6 @@
-# Bootstrap — From Skill Only to First Demo
+# Init Project — From Skill Only to First Demo
+
+> **Note**: this doc was previously named `bootstrap.md`. Renamed to avoid collision with the `contract.bootstrap()` overlay pattern in [attachment-model.md](attachment-model.md). The two are unrelated: this doc is about initial project setup (`npx glubean init`); attachment-model bootstrap is about per-case overlays.
 
 Use this guide when the user has the Glubean skill but no Glubean project yet.
 

@@ -106,7 +106,21 @@ export const userFlow = test.each(users)("user-flow-$username")
   });
 ```
 
-## test.pick — runs ONE selected case
+## test.pick — runs ONE by default, ALL via `--pick all`
+
+By default, `test.pick` randomly selects ONE case per run — fuzz-style smoke coverage. To run ALL cases, or specific ones, use the `--pick` flag.
+
+| CLI invocation | Behavior | When |
+|---|---|---|
+| `glubean run …test.pick.ts` (no flag) | Random pick of 1 case | Default — lightweight smoke |
+| `--pick all` or `--pick '*'` | Run every key in the data | CI full coverage; verifying all data points actually run |
+| `--pick keyA,keyB` | Run only keys "keyA" and "keyB" | Reproducing a specific failure; targeted debug |
+| `GLUBEAN_PICK=all glubean run …` | Same as `--pick all` (env-var form) | Persistent for shell session |
+| Glob pattern: `--pick 'us-*'` | Run all keys matching the glob | Group-by-prefix data (regions, tenants) |
+
+**CI rule of thumb:** if you want full coverage in CI, set `--pick all` explicitly. The default random-pick-1 behavior is for local fuzz exploration — silently shipping tests that "pass" but only ran 1 of N data points is a footgun.
+
+**VSCode integration:** the extension's CodeLens shows individual buttons for each pick key (when ≤5) or a QuickPick selector (when >5). Clicking a key runs that single case; clicking "Run (random)" runs the default one.
 
 `shared.json` has defaults. `*.local.json` for personal overrides (gitignored).
 

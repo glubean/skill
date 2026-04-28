@@ -494,6 +494,116 @@ await page.locator("#input").fill("text");
 
 ---
 
+## Contract API
+
+For full contract authoring workflow: [patterns/contract-first.md](patterns/contract-first.md). For the v10 attachment model (Needs / overlays / dispatch): [patterns/attachment-model.md](patterns/attachment-model.md). This section is signature lookup only.
+
+### `contract.http.with(name, defaults)` — scoped contract instance
+
+Creates a reusable factory that binds a protocol name, client, and optional auth/tags. Required entry point — bare `contract.http("id", spec)` throws at runtime.
+
+```typescript
+const userApi = contract.http.with("user", {
+  client: api,
+  security: "bearer",   // | "basic" | { type: "apiKey", name, in } | { type: "oauth2", flows } | null
+  tags: ["users"],
+  extensions: { "x-owner": "platform-team" },
+});
+```
+
+Returns a function `(id, spec) => Test[]`.
+
+### `contract.http(id, spec)` — legacy (deprecated)
+
+Bare `contract.http()` is removed. Use `contract.http.with()` and call the returned factory. Bare calls throw at runtime; the SDK does not auto-recover.
+
+### `contract.flow(id)` — multi-step verification
+
+Composes existing contract cases into a workflow. State flows through pure-lens `in` / `out` callbacks; non-lens transformations go in `.compute()`.
+
+```typescript
+contract.flow("user-lifecycle")
+  .meta({ description: "...", tags: ["e2e"] })
+  .step(createUser.case("success"), { out: (_s, res) => ({ userId: res.body.id }) })
+  .step(getUser.case("success"),    { in: (s) => ({ params: { id: s.userId } }) })
+  .step(deleteUser.case("success"), { in: (s) => ({ params: { id: s.userId } }) });
+```
+
+Full reference in [patterns/contract-first.md](patterns/contract-first.md) "Flow contract" section.
+
+### `defineHttpCase<Needs>(spec)` — case at its own const site
+
+Type-locks the `Needs` generic across the case's `needs` schema and its function-valued action fields (`headers`, `body`, `params`, `query`). Use this when the case has runtime input.
+
+```typescript
+const authorized = defineHttpCase<{ token: string }>({
+  description: "Valid bearer token returns the caller's profile.",
+  needs: z.object({ token: z.string() }),
+  headers: ({ token }) => ({ Authorization: `Bearer ${token}` }),
+  expect: { status: 200, schema: ProfileSchema },
+});
+
+// Then reference shorthand inside the contract:
+export const getMe = userApi("get-me", {
+  endpoint: "GET /me",
+  cases: { authorized },   // shorthand — no `: { ... }` inline body
+});
+```
+
+**HTTP only.** No `defineGrpcCase` / `defineGraphqlCase` shipped today — gRPC and GraphQL contracts declare `needs` directly on their case literal. See [patterns/attachment-model.md](patterns/attachment-model.md).
+
+### `contract.bootstrap(caseRef, attachment)` — overlay registration
+
+Registers a setup/cleanup overlay for a contract case. Lives in `*.bootstrap.ts` files, eagerly loaded by the harness before any test discovery.
+
+```typescript
+// me.bootstrap.ts (sibling of me.contract.ts)
+import { contract } from "@glubean/sdk";
+import { getMe } from "./me.contract.ts";
+
+// Plain-function form
+export const meAuthorizedOverlay = contract.bootstrap(
+  getMe.case("authorized"),
+  async (ctx) => {
+    const res = await ctx.http.post(/* login */).json<...>();
+    ctx.cleanup(/* logout / fixture cleanup */);
+    return { token: res.accessToken };  // matches case `needs` shape
+  },
+);
+
+// Structured form (with bootstrap-json params support)
+export const meAttachOverlay = contract.bootstrap(
+  getMe.case("requiresAttachment"),
+  {
+    params: z.object({ username: z.string(), password: z.string() }),
+    run: async (ctx, { username, password }) => { /* ... */ },
+  },
+);
+```
+
+Full mechanics, including §5.1 dispatch and §6.3 runnability table: [patterns/attachment-model.md](patterns/attachment-model.md).
+
+### `runCase()` — programmatic single-test entry
+
+```typescript
+import { runCase } from "@glubean/runner";
+
+const result = await runCase({
+  filePath: "me.contract.ts",
+  testId: "auth.me.authorized",
+  sharedConfig: { /* ... */ },
+
+  // One of these (mutually exclusive):
+  input: { token: "..." },              // explicit input — overlay skipped
+  bootstrapInput: { username: "...", password: "..." },  // overlay params
+  forceStandalone: true,                // debug bypass for requireAttachment
+});
+```
+
+CLI equivalents: `--input-json`, `--bootstrap-json`, `--force-standalone`. See [patterns/runner-input.md](patterns/runner-input.md).
+
+---
+
 ## CLI Commands
 
 ```bash
@@ -503,6 +613,16 @@ glubean run tests/api/health.test.ts   # Run single file
 glubean run --filter smoke             # Filter by tag
 glubean run --upload                   # Upload results to Cloud
 glubean run --upload --tag ci          # Tag the run
+
+# Data-driven (test.pick) — see patterns/data-driven.md
+glubean run --pick all                 # Run every key (default is random-pick-1)
+glubean run --pick keyA,keyB           # Run specific keys
+glubean run --pick 'us-*'              # Glob pattern
+
+# Attachment-model channels — see patterns/runner-input.md
+glubean run --filter X --input-json '<JSON>'      # Explicit input bypass
+glubean run --filter X --bootstrap-json '<JSON>'  # Overlay params
+glubean run --filter X --force-standalone         # Debug bypass for requireAttachment
 ```
 
 ---

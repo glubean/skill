@@ -122,9 +122,24 @@ const userApi   = contract.http.with("user",   { client: api, security: "bearer"
 const adminApi  = contract.http.with("admin",  { client: adminHttp, security: "bearer" });
 ```
 
+### Two ways to define cases
+
+The contract literal supports two case styles. Use `defineHttpCase<Needs>` whenever the case has dynamic input (auth tokens, seeded IDs, feature flags) — it locks the input shape across `needs` schema and the function-valued action fields. Use the inline literal for simple cases without runtime input.
+
+| Pattern | Use when | Type-locks `needs` ↔ action fields |
+|---|---|---|
+| **Inline literal** `cases: { key: { ... } }` | Static body / params; no runtime input | No (TypeScript can't correlate sibling fields) |
+| **`defineHttpCase<Needs>(...)` + shorthand** `cases: { key }` | Case has `needs` and function-valued `headers` / `body` / etc. | Yes (`<Needs>` generic flows through) |
+
+For the canonical v10 pattern (per-case Needs + overlay), see [attachment-model.md](attachment-model.md). This section shows both styles for reference.
+
 ### Single-endpoint contract
 
 Use a scoped instance with `cases`. Each case must have a `description` explaining why it exists. Every exported contract must be preceded by `// @contract` on the line above.
+
+#### Style A — inline cases (no Needs / static input)
+
+Simplest. Use when the case has no runtime input (no `needs`, no function-valued action fields).
 
 ```typescript
 import { contract } from "@glubean/sdk";
@@ -176,7 +191,53 @@ export const createUser = userApi("create-user", {
 });
 ```
 
-**`// @contract` marker:** Every `export const` that is a contract must be preceded by `// @contract` on the line above. This is a marker for VSCode CodeLens — it tells the editor where contracts are. It carries no semantic information; it is purely a UI hint.
+#### Style B — `defineHttpCase<Needs>` + shorthand cases (canonical for v10 contracts with `needs`)
+
+When the case declares `needs` and uses function-valued action fields (`headers: ({ token }) => ...`, `body: (input) => ...`), define each case at its own `const` site with `defineHttpCase<Needs>` and reference it in the contract via shorthand. This locks the input type — a typo like `headers: ({ tkoen }) => ...` becomes a compile error rather than a runtime surprise.
+
+```typescript
+import { contract, defineHttpCase } from "@glubean/sdk";
+import { z } from "zod/v4";
+
+const userApi = contract.http.with("user", { client: api, security: "bearer" });
+
+const ProfileSchema = z.object({
+  id: z.string(), name: z.string(), email: z.string().email(),
+});
+
+// Case bound at its own const site — the <Needs> generic is type-locked
+// across `needs` schema and `headers`/`body`/`params`/`query` functions.
+const authorized = defineHttpCase<{ token: string }>({
+  description: "Valid bearer token returns the caller's profile.",
+  needs: z.object({ token: z.string() }),
+  headers: ({ token }) => ({ Authorization: `Bearer ${token}` }),
+  expect: { status: 200, schema: ProfileSchema },
+});
+
+const requiresLogin = defineHttpCase<{ token: string }>({
+  description: "Bare runs blocked — overlay or --input-json required.",
+  needs: z.object({ token: z.string() }),
+  headers: ({ token }) => ({ Authorization: `Bearer ${token}` }),
+  expect: { status: 200, schema: ProfileSchema },
+  runnability: { requireAttachment: true },  // see attachment-model.md §6.3
+});
+
+// @contract
+export const getMe = userApi("get-me", {
+  endpoint: "GET /me",
+  description: "Return the authenticated user's profile.",
+  cases: {
+    authorized,           // ← shorthand reference
+    requiresLogin,
+  },
+});
+```
+
+The shorthand `cases: { authorized }` is equivalent to `cases: { authorized: authorized }` (standard JS shorthand property syntax). This is the canonical pattern used in cookbook v10 examples.
+
+To supply the `token` at runtime: register a `contract.bootstrap()` overlay in a sibling `*.bootstrap.ts` file, OR pass `--input-json '{"token":"..."}'` from the CLI. See [attachment-model.md](attachment-model.md) for the overlay pattern; [runner-input.md](runner-input.md) for `--input-json`.
+
+**`// @contract` marker:** Every `export const` that is a contract must be preceded by `// @contract` on the line above. This is a marker for VSCode CodeLens — it tells the editor where contracts are. It carries no semantic information; it is purely a UI hint. Both inline and shorthand-case styles are detected.
 
 **`noAuth` pattern:** In the old `contract.http()` syntax, unauthenticated cases used `client: publicHttp` inline. In the new syntax you have two options:
 1. Per-case `client` override (shown above) — the case overrides the instance's client
@@ -451,31 +512,68 @@ Key points:
 
 ### Error contract
 
-Define expected error responses explicitly:
+Define expected error responses explicitly. For error cases that require **state setup** (e.g. "duplicate email returns 409" needs an existing user first), v10 keeps the contract case as pure semantics and moves the setup into a `contract.bootstrap()` overlay in a sibling `*.bootstrap.ts` file. Per-case `setup` / `teardown` fields were removed in v10 — the contract case has **no lifecycle**.
 
 ```typescript
+// users.contract.ts
+import { contract, defineHttpCase } from "@glubean/sdk";
+import { z } from "zod/v4";
+
 const userApi = contract.http.with("user", { client: api, security: "bearer" });
+
+const ErrorBody = z.object({ error: z.literal("EMAIL_EXISTS") });
+
+// Case is pure semantics. State precondition is declared via `given`
+// (semantic description) + the overlay handles HOW. `requireAttachment`
+// gates the case so a bare run (no overlay loaded) hard-fails — without
+// this, a forgotten / unloaded overlay would let the runner POST against
+// an un-seeded server, producing a 201 instead of the expected 409 and
+// silently failing the contract for the wrong reason.
+const duplicate = defineHttpCase({
+  description: "Duplicate email returns 409 with EMAIL_EXISTS error code.",
+  given: "a user with this email already exists",
+  body: { name: "Alice", email: "existing@example.com" },
+  expect: { status: 409, schema: ErrorBody },
+  runnability: { requireAttachment: true },
+});
 
 // @contract
 export const createUserDuplicate = userApi("create-user-errors", {
   endpoint: "POST /users",
   description: "Error cases for user creation.",
-  cases: {
-    duplicate: {
-      description: "Duplicate email returns 409 with EMAIL_EXISTS error code.",
-      setup: async () => {
-        // Create a user first to cause duplicate
-        await api.post("users", { json: { name: "Alice", email: "existing@example.com" } });
-      },
-      body: { name: "Alice", email: "existing@example.com" },
-      expect: { status: 409, schema: z.object({ error: z.literal("EMAIL_EXISTS") }) },
-      teardown: async () => {
-        // Clean up
-      },
-    },
-  },
+  cases: { duplicate },
 });
 ```
+
+```typescript
+// users.bootstrap.ts (sibling)
+import { contract } from "@glubean/sdk";
+import { createUserDuplicate } from "./users.contract.ts";
+import { api } from "../config/api.ts";
+
+export const duplicateOverlay = contract.bootstrap(
+  createUserDuplicate.case("duplicate"),
+  async (ctx) => {
+    // Create the prior user that will cause the 409.
+    const existing = await api.post(
+      "users",
+      { json: { name: "Alice", email: "existing@example.com" } },
+    ).json<{ id: string }>();
+
+    ctx.cleanup(async () => {
+      await api.delete(`users/${existing.id}`);
+    });
+
+    // Return value satisfies the case's `needs`. This case has no `needs`,
+    // so just return undefined — overlay's job here is the side-effect
+    // (seeding the user) + cleanup, not producing input.
+  },
+);
+```
+
+Why split this way: the contract case now describes **what should happen** in business terms (`given`, `description`, `expect`); the overlay handles **how to set up the world** for that case to be true. The two evolve independently — you can swap implementations of "seed a duplicate" without touching the contract, and the contract reads cleanly without lifecycle noise.
+
+For cases that need both setup AND a runtime input (e.g. token + a seeded record), use `defineHttpCase<{ token: string; recordId: string }>` and have the overlay return both. See [attachment-model.md](attachment-model.md).
 
 ## Escalation — the critical rule
 
@@ -547,3 +645,8 @@ When writing contracts, follow this order:
 - Do not write `extensions: { owner: "team-a" }` — TypeScript will reject it. Keys must start with `x-`: `{ "x-owner": "team-a" }`.
 - Do not set `contentType` on a case unless you actually need non-JSON serialization. It adds cognitive load for readers.
 - Do not change `contract.flow()` syntax — flow contracts are not affected by the `.with()` API change
+- Do not inline cases with `needs` and function-valued action fields. TypeScript can't correlate the schema with the function parameter type across sibling object keys. Use `defineHttpCase<Needs>` so the input shape is locked — see [attachment-model.md](attachment-model.md).
+- Do not put setup logic inside a contract case. The case is pure semantics. Lifecycle (login, seed data, cleanup) goes in a `contract.bootstrap()` overlay in a sibling `*.bootstrap.ts` file. See [attachment-model.md](attachment-model.md).
+- Do not declare `needs` and then write `headers: { Authorization: "Bearer {{TOKEN}}" }` (static template). With `needs`, headers must be a function: `headers: ({ token }) => ({ Authorization: `Bearer ${token}` })`. Static template strings are interpolated against env/secrets at the configure() boundary, not against per-case input.
+- Do not pass `--input-json` and `--bootstrap-json` together — surface boundary rejects. Pick one channel. See [runner-input.md](runner-input.md).
+- Do not use `--force-standalone` in CI — it's a debug-only bypass for `runnability.requireAttachment` and emits a runtime warning.

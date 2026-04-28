@@ -24,6 +24,6 @@ Rules:
 
 Deep refs:
 
-- Setup details: [patterns/bootstrap.md](patterns/bootstrap.md)
+- Setup details: [patterns/init-project.md](patterns/init-project.md)
 - MCP details: [mcp.md](mcp.md)
 - Extension quick start: [docs/extension/quick-start.mdx](docs/extension/quick-start.mdx)
