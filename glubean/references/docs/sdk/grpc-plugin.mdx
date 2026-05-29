@@ -1,12 +1,22 @@
 # gRPC Plugin (`@glubean/grpc`)
 
-`@glubean/grpc` is the planned first-party gRPC plugin for Glubean.
+`@glubean/grpc` is a first-party gRPC client plugin for Glubean.
 
-> **Status:** Coming soon. The package is reserved for gRPC client helpers, status matchers, metadata redaction scopes, and a gRPC contract protocol.
+> **Status:** Experimental (pre-1.0). API may evolve. This page covers setup
+> and the configure-mode client; see the package types for the full contract
+> and matcher surface.
 
-## Expected setup
+## Install
 
-When available, the plugin will follow the same manifest installation model as the other first-party protocol plugins:
+```bash
+npm install @glubean/grpc
+```
+
+## Project setup — install the plugin manifest
+
+`@glubean/grpc` ships a plugin manifest (registers the `grpc` contract protocol
+and the `toHaveGrpc*` matchers) and a client factory. Install the manifest once
+from `glubean.setup.ts` at the project root:
 
 ```typescript
 // glubean.setup.ts
@@ -16,13 +26,65 @@ import grpcPlugin from "@glubean/grpc";
 await installPlugin(grpcPlugin);
 ```
 
-`glubean.setup.ts` runs once before tests and contract modules load, so protocol adapters and matchers are registered before use.
+A top-level `import "@glubean/grpc"` no longer auto-registers these globals.
 
-## Until it ships
+## Quick start (configure plugin mode)
 
-- Use [HTTP contracts](/sdk/contract-http) for HTTP APIs.
-- Use [GraphQL Plugin](/sdk/graphql-plugin) for GraphQL services.
-- Keep gRPC credentials and metadata redaction rules explicit in project docs until the plugin package is available.
+```typescript
+import { test, configure } from "@glubean/sdk";
+import { grpc } from "@glubean/grpc";
+
+const { billing } = configure({
+  plugins: {
+    billing: grpc({
+      proto: "./protos/billing.proto",
+      address: "{{BILLING_ADDR}}",
+      package: "acme.billing.v1",
+      service: "BillingService",
+      metadata: { authorization: "Bearer {{API_TOKEN}}" },
+    }),
+  },
+});
+
+export const createInvoice = test("create-invoice", async (ctx) => {
+  const res = await billing.call("CreateInvoice", {
+    customer_id: "cus_123",
+    amount_cents: 1200,
+  });
+  ctx.expect(res.status.code).toBe(0); // 0 = OK
+});
+```
+
+`{{template}}` placeholders in `address`/`metadata` resolve from vars + secrets
+at run time. `call<T>(method, request, options?)` returns
+`{ message, status: { code, details }, responseMetadata, duration }`.
+
+## Matchers
+
+`toHaveGrpcStatus(code)`, `toHaveGrpcOk()`, `toHaveGrpcMetadata(key, value?)`.
+
+## Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `proto` | `string` | _(required)_ | Path to the `.proto` file |
+| `address` | `string` | _(required)_ | Server `host:port` (`{{KEY}}` supported) |
+| `package` | `string` | _(required)_ | Protobuf package (e.g. `acme.users.v1`) |
+| `service` | `string` | _(required)_ | Service name within the package |
+| `metadata` | `Record<string, string>` | `{}` | Static call metadata (`{{KEY}}` supported) |
+| `tls` | `boolean` | `false` | Use TLS credentials (default: insecure) |
+| `deadlineMs` | `number` | `30000` | Default per-call deadline (ms) |
+
+## Contracts & redaction
+
+- The manifest registers a `grpc` contract protocol used via
+  `contract.grpc.with("name", { client })`. Its case shape differs from HTTP
+  (e.g. `target: "Service/Method"`, `request`, `expect.statusCode`) — see the
+  `@glubean/grpc` types for the exact `GrpcContractSpec`.
+- ⚠️ **gRPC call metadata is not redacted before upload.** The CLI's built-in
+  redaction scopes don't cover gRPC metadata, and there's no `glubean.yaml`
+  switch for the package's `GRPC_REDACTION_SCOPES` yet. Avoid `--upload` on
+  runs whose metadata carries resolved credentials.
 
 ## Next
 

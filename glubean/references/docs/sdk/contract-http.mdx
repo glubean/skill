@@ -257,7 +257,7 @@ cases: {
 }
 ```
 
-Deprecated cases are skipped at runtime (just like deferred), but appear in projection as `🚫` and translate to OpenAPI `deprecated: true` + `x-deprecated-reason`.
+Deprecated cases are skipped at runtime (just like deferred) and appear in projection as `🚫`. Case-level `deprecated` is runtime + projection only — it does **not** change the generated OpenAPI. To mark an endpoint deprecated in OpenAPI (`deprecated: true` + `x-deprecated-reason`), set `deprecated` at the **contract** level (below).
 
 For entire endpoints, set `deprecated` at the contract level — it propagates to every case:
 
@@ -478,7 +478,7 @@ export const listUsers = adminApi("admin-list", {
 });
 ```
 
-Merge precedence: `instance defaults < contract < case`. The final merged view appears in the OpenAPI operation as `x-*` fields.
+Merge precedence: `instance defaults < contract`. Instance- and contract-level `extensions` are emitted as `x-*` fields on the OpenAPI operation. Case-level `extensions` stay scoped to the case and are **not** merged onto the operation — put anything that must appear in the OpenAPI spec at the contract level.
 
 Non-`x-` keys are rejected at the TypeScript level. Pick a namespace for internal-only keys (e.g. `x-glubean-internal-*`) and exclude them from public OpenAPI in your own tooling — there is no automatic distinction.
 
