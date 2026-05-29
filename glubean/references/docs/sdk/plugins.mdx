@@ -1,13 +1,13 @@
 # Plugins
 
-Glubean has **two distinct plugin concepts**. Which one you use depends on what you're extending.
+Glubean has **two distinct plugin concepts**. Pick the one that matches what you're extending.
 
 | Concept | API | Scope | Consumed by |
 |---|---|---|---|
 | **Plugin manifest** (global) | `definePlugin(manifest)` + `installPlugin(manifest)` | Process-wide matchers, protocol adapters, one-time setup | `glubean.setup.ts` |
 | **Client factory** (per file) | `defineClientFactory((runtime) => client)` | Per-test lazy client instance (shared auth, HTTP, domain helpers) | `configure({ plugins })` |
 
-The legacy `definePlugin((runtime) => T)` overload was removed in favor of `defineClientFactory`. Use whichever matches your intent below.
+The legacy `definePlugin((runtime) => T)` overload has been removed. Use `defineClientFactory` for that use case.
 
 ---
 
@@ -105,7 +105,7 @@ export default myPlugin;
 A plugin manifest has **no effect** until `installPlugin(manifest)` runs. The canonical place to call it is `glubean.setup.ts` at the project root:
 
 ```typescript
-// glubean.setup.ts  (project root, alongside ci-config/ and tests/)
+// glubean.setup.ts  (project root, alongside glubean.yaml and tests/)
 import { installPlugin } from "@glubean/sdk";
 import graphqlPlugin from "@glubean/graphql";
 import grpcPlugin from "@glubean/grpc";

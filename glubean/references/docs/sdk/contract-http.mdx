@@ -1,0 +1,531 @@
+# Contract HTTP
+
+Use `contract.http.with()` to declare endpoint behavior as named cases. Each case becomes a runnable test — no `test()` wrapper needed.
+
+## When to use
+
+- You want to define what an API **should do** before implementing it
+- You want structured, scannable specs that tools can extract without running code
+- You want one declaration to cover success, error, and edge cases for a single endpoint
+- You want a single source of truth that produces runnable tests **and** OpenAPI documentation
+
+## Basic contract
+
+```typescript
+import { contract, configure } from "@glubean/sdk";
+import { z } from "zod";
+
+const { api } = configure({
+  http: { prefixUrl: "{{BASE_URL}}" },
+});
+
+// Create a scoped instance. Every contract shares the same client, security, tags.
+const userApi = contract.http.with("user", {
+  client: api,
+  security: "bearer",
+});
+
+const UserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  createdAt: z.string().datetime(),
+});
+
+// @contract
+export const createUser = userApi("create-user", {
+  endpoint: "POST /users",
+  feature: "User Registration",
+  description: "Create a new user account",
+  cases: {
+    success: {
+      description: "Valid registration creates user and returns profile",
+      body: { email: "test@example.com", password: "secure123" },
+      expect: { status: 201, schema: UserSchema },
+    },
+    duplicateEmail: {
+      description: "Already registered email is rejected",
+      body: { email: "existing@example.com", password: "secure123" },
+      expect: { status: 409 },
+    },
+    missingPassword: {
+      description: "Missing required field returns validation error",
+      body: { email: "test@example.com" },
+      expect: { status: 400 },
+    },
+  },
+});
+```
+
+Each case key (`success`, `duplicateEmail`, `missingPassword`) becomes a test with ID `create-user.success`, etc.
+
+The `// @contract` marker above the export is required for VSCode CodeLens. It has no runtime effect — it's a UI hint for the editor.
+
+## Scoped instances — `contract.http.with()`
+
+`contract.http.with(name, defaults)` binds a client, security scheme, and tags to a reusable factory. Direct `contract.http("id", spec)` is **not supported** — all contracts must go through an instance.
+
+```typescript
+// One instance per auth boundary is the common pattern
+const publicApi = contract.http.with("public", { client: publicHttp, security: null });
+const userApi   = contract.http.with("user",   { client: api,        security: "bearer" });
+const adminApi  = contract.http.with("admin",  { client: adminHttp,  security: "bearer" });
+```
+
+Instance defaults:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `client` | HTTP client | Default client for all contracts in this instance |
+| `security` | security scheme | `"bearer"`, `"basic"`, `{ type: "apiKey", ... }`, `{ type: "oauth2", ... }`, or `null` for public |
+| `tags` | `string[]` | Merged additively with contract + case tags |
+| `feature` | `string` | Default feature grouping key |
+| `extensions` | `Extensions` ([see below](#openapi-extensions)) | OpenAPI `x-*` extensions inherited by all contracts |
+
+Instances can be chained: `userApi.with("scoped", { ... })` creates a nested instance where tags and extensions merge.
+
+## Contract-level fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `endpoint` | `string` | Yes | HTTP method + path, e.g. `"POST /users"` |
+| `description` | `string` | No | What this endpoint does, in business language |
+| `feature` | `string` | No | Groups contracts in projection output (e.g. `"User Registration"`) |
+| `request` | `RequestSpec` | No | Request spec — schema shorthand or `{ body, contentType, headers, example, examples }` |
+| `tags` | `string[]` | No | Inherited by all cases |
+| `deprecated` | `string` | No | Mark entire endpoint deprecated with reason; propagates to all cases |
+| `extensions` | `Extensions` ([see below](#openapi-extensions)) | No | OpenAPI `x-*` extensions at the operation level |
+
+Per-case `client` is still allowed and overrides the instance's client. `client` is **never** set at the spec level — it belongs on the `.with()` instance.
+
+## Case fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `description` | `string` | **Yes** | Why this case exists — business behavior, not HTTP details |
+| `expect` | object | Yes | See [expect](#expect) below |
+| `body` | object / fn / FormData / URLSearchParams | No | Request body. Can be a function of state: `(state) => ({...})` |
+| `contentType` | `string` | No | Override request body serialization (default: `"application/json"`) |
+| `headers` | object / fn | No | Request headers. Can be a function of state |
+| `params` | `Record<string, ParamValue>` | No | URL path parameters |
+| `query` | `Record<string, ParamValue>` | No | Query string parameters |
+| `client` | HTTP client | No | Override instance's client (useful for auth testing) |
+| `setup` | fn | No | Run before request: `async (ctx) => state` |
+| `teardown` | fn | No | Run after request (always, even on failure): `async (ctx, state) => void` |
+| `verify` | fn | No | Custom assertions after response: `async (ctx, response) => void` |
+| `deferred` | `string` | No | Mark case as not yet runnable, with reason |
+| `deprecated` | `string` | No | Mark case as retained but no longer executed |
+| `severity` | `"critical" \| "warning" \| "info"` | No | Alert routing hint (default: `"warning"`) |
+| `requires` | `"headless" \| "browser" \| "out-of-band"` | No | Physical capability required (default: `"headless"`) |
+| `defaultRun` | `"always" \| "opt-in"` | No | Whether case runs automatically (default: `"always"`) |
+| `tags` | `string[]` | No | Case-specific tags (merged with contract-level tags) |
+| `extensions` | `Extensions` ([see below](#openapi-extensions)) | No | OpenAPI `x-*` extensions on the case, merged over contract + instance |
+
+## `expect`
+
+The `expect` object declares the expected response:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | `number` | Expected HTTP status code (required) |
+| `schema` | `SchemaLike` | Zod/Valibot schema for response body |
+| `headers` | `SchemaLike<NormalizedHeaders>` | Schema for response headers (see [header validation](#response-header-validation)) |
+| `contentType` | `string` | Expected response content-type (defaults to `"application/json"`) |
+| `example` | `T` | Single response example for OpenAPI docs (shorthand for `examples: { default: { value } }`) |
+| `examples` | `Record<string, { value, summary?, description? }>` | Named response examples for OpenAPI docs |
+
+## Schema validation
+
+Use `expect.schema` with a Zod schema to validate response body shape:
+
+```typescript
+const UserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  createdAt: z.string().datetime(),
+});
+
+// @contract
+export const getUser = userApi("get-user", {
+  endpoint: "GET /users/:id",
+  cases: {
+    found: {
+      description: "Returns full user profile by ID",
+      params: { id: "user-123" },
+      expect: { status: 200, schema: UserSchema },
+    },
+  },
+});
+```
+
+## Response header validation
+
+Use `expect.headers` to validate response headers. Header names are normalized to lowercase before validation (HTTP spec: header names are case-insensitive), so your schema uses lowercase keys. Multi-value headers like `Set-Cookie` come through as `string[]`.
+
+```typescript
+success: {
+  description: "Successful request returns content-type and request id",
+  expect: {
+    status: 200,
+    schema: UserSchema,
+    headers: z.object({
+      "content-type": z.string().regex(/^application\/json/),
+      "x-request-id": z.string().uuid(),
+      "set-cookie": z.array(z.string()).optional(),
+    }),
+  },
+},
+```
+
+Failed header validation emits a `contract:failure` event with `kind: "schema"`. The headers schema also surfaces in the OpenAPI spec under `responses[status].headers`.
+
+## Response examples
+
+`expect.example` (single) and `expect.examples` (named) populate the OpenAPI `content.examples` section. Examples do **not** run at test time — they're purely for documentation.
+
+```typescript
+success: {
+  description: "Returns user profile",
+  expect: {
+    status: 200,
+    schema: UserSchema,
+    example: { id: "u_1", email: "alice@example.com", createdAt: "2026-01-01T00:00:00Z" },
+  },
+},
+multiRole: {
+  description: "Role dictates returned profile shape",
+  expect: {
+    status: 200,
+    schema: UserSchema,
+    examples: {
+      admin:  { value: { id: "u_1", role: "admin"  }, summary: "Admin user" },
+      viewer: { value: { id: "u_2", role: "viewer" } },
+    },
+  },
+},
+```
+
+When multiple cases share a status code, all their examples merge into the OpenAPI response, keyed by case name to avoid collisions.
+
+## Custom verification
+
+Use `verify` for assertions beyond status, schema, and headers:
+
+```typescript
+cases: {
+  success: {
+    description: "Created user has correct email",
+    body: { email: "new@example.com", password: "secure123" },
+    expect: { status: 201, schema: UserSchema },
+    verify: async (ctx, user) => {
+      // `user` is the schema-parsed body (typed)
+      ctx.expect(user.email).toBe("new@example.com");
+      ctx.expect(user.id).toBeDefined();
+    },
+  },
+}
+```
+
+## Deferred cases
+
+Mark cases that can't run yet (missing credentials, infrastructure):
+
+```typescript
+cases: {
+  rateLimit: {
+    description: "Excessive requests are throttled",
+    deferred: "Rate limiting not deployed yet",
+    body: { email: "spam@example.com", password: "x" },
+    expect: { status: 429 },
+  },
+}
+```
+
+Deferred cases are skipped during execution and show as `⊘` in projection output.
+
+## Deprecated cases
+
+Mark cases that are retained for history but no longer executed:
+
+```typescript
+cases: {
+  legacyTokenRefresh: {
+    description: "Legacy token refresh endpoint was removed in API v2",
+    deprecated: "replaced by /auth/refresh in v2",
+    body: { token: "old" },
+    expect: { status: 400 },
+  },
+}
+```
+
+Deprecated cases are skipped at runtime (just like deferred), but appear in projection as `🚫` and translate to OpenAPI `deprecated: true` + `x-deprecated-reason`.
+
+For entire endpoints, set `deprecated` at the contract level — it propagates to every case:
+
+```typescript
+// @contract
+export const legacyLookup = userApi("legacy-lookup", {
+  endpoint: "GET /v1/users",
+  deprecated: "replaced by GET /v2/users — will be removed Q3 2026",
+  cases: {
+    paged:  { description: "Paged listing still works", expect: { status: 200 } },
+    search: { description: "Search still works via ?q=", expect: { status: 200 } },
+  },
+});
+```
+
+A case-level `deprecated` overrides the propagated contract-level value.
+
+## Severity
+
+`severity` tells Cloud / alerting tools how to triage failures:
+
+- `"critical"` — failure triggers immediate alert (auth, permission, payment boundaries)
+- `"warning"` — default, recorded but may not alert
+- `"info"` — informational check, no alert on failure
+
+Only set explicitly when the default is wrong:
+
+```typescript
+success: {
+  description: "Valid credentials return auth token",
+  severity: "critical",  // auth must work — paging oncall if it breaks
+  body: { username: "alice", password: "..." },
+  expect: { status: 200, schema: LoginSchema },
+},
+notFound: {
+  description: "Unknown product returns 404",
+  severity: "info",  // informational — doesn't need alert
+  params: { id: "99999" },
+  expect: { status: 404 },
+},
+```
+
+## Per-case auth
+
+Use per-case `client` overrides to test auth boundaries:
+
+```typescript
+const userApi   = contract.http.with("user",   { client: api,        security: "bearer" });
+const publicApi = contract.http.with("public", { client: publicHttp, security: null });
+
+// @contract
+export const deleteUser = userApi("delete-user", {
+  endpoint: "DELETE /users/:id",
+  cases: {
+    success: {
+      description: "Admin can delete a user",
+      params: { id: "user-123" },
+      expect: { status: 204 },
+    },
+    forbidden: {
+      description: "Regular user cannot delete others",
+      client: api,  // overrides the admin client from the instance
+      params: { id: "user-123" },
+      expect: { status: 403 },
+    },
+    unauthenticated: {
+      description: "Anonymous access is rejected",
+      client: publicHttp,  // case-level override to public client
+      params: { id: "user-123" },
+      expect: { status: 401 },
+    },
+  },
+});
+```
+
+## Parameter schemas
+
+By default `params` and `query` accept `Record<string, string>` — simple key/value. When you need the OpenAPI spec to show the parameter's type (UUID, enum, etc.), use the `ParamValue` object form:
+
+```typescript
+success: {
+  description: "Fetches user by UUID",
+  params: {
+    // String shorthand — no schema in OpenAPI output (defaults to string)
+    tenantId: "t_42",
+    // Object form — schema and description flow to OpenAPI
+    id: {
+      value: "550e8400-e29b-41d4-a716-446655440000",
+      schema: z.string().uuid(),
+      description: "User unique identifier",
+    },
+  },
+  query: {
+    include: {
+      value: "profile,settings",
+      description: "Comma-separated fields to include",
+      required: false,
+    },
+    legacy: {
+      value: "false",
+      deprecated: true,
+    },
+  },
+  expect: { status: 200, schema: UserSchema },
+},
+```
+
+The runtime only reads `value` for URL/query construction. `schema`, `description`, `required`, `deprecated` are docs-only and merge at field level across all cases — one case supplying `description` and another supplying `schema` both contribute.
+
+## Request content types
+
+By default `body` is serialized as JSON. Use `contentType` on the case (or at the contract level via structured `request`) to dispatch serialization:
+
+```typescript
+// Multipart form upload
+avatarUpload: {
+  description: "User uploads avatar image",
+  contentType: "multipart/form-data",
+  body: { file: blob, caption: "Profile pic" },  // object → FormData
+  expect: { status: 200, schema: AvatarSchema },
+},
+
+// URL-encoded form post (legacy OAuth-style endpoints)
+tokenExchange: {
+  description: "Exchange code for access token",
+  contentType: "application/x-www-form-urlencoded",
+  body: { grant_type: "authorization_code", code: "abc" },
+  expect: { status: 200 },
+},
+```
+
+Supported content types:
+
+| Content type | Body input | Notes |
+|-------------|-----------|-------|
+| `"application/json"` | plain object | Default |
+| `"multipart/form-data"` | `FormData` or `Record<string, string \| Blob \| File>` | Browser-native `FormData` or Node 20+ |
+| `"application/x-www-form-urlencoded"` | `URLSearchParams` or plain object | |
+| `"text/plain"` / `"application/octet-stream"` | raw `string` / `Uint8Array` | Passed through |
+
+If the whole contract uses a non-JSON content type, set it once at the contract level via structured `request`:
+
+```typescript
+// @contract
+export const uploadAvatar = userApi("upload-avatar", {
+  endpoint: "POST /users/:id/avatar",
+  request: {
+    contentType: "multipart/form-data",
+    body: AvatarRequestSchema,
+    example: { file: "(binary)", caption: "Team pic" },
+  },
+  cases: {
+    success:   { description: "Upload succeeds",       body: { ... }, expect: { status: 200 } },
+    oversized: { description: "File over 5MB rejected", body: { ... }, expect: { status: 413 } },
+  },
+});
+```
+
+### Request form — shorthand vs structured
+
+`request` accepts two shapes:
+
+```typescript
+// Shorthand — bare SchemaLike, treated as JSON body
+request: UserSchema,
+
+// Structured — full RequestSpec object
+request: {
+  body: UserSchema,
+  contentType: "application/json",
+  headers: z.object({ "x-client-version": z.string() }),
+  example: { name: "Alice", email: "alice@example.com" },
+  examples: {
+    valid:   { value: { name: "Alice", email: "alice@example.com" } },
+    edge:    { value: { name: "A".repeat(255), email: "a@b.c" }, summary: "Max-length name" },
+  },
+},
+```
+
+The structured form lets you attach request examples, header schema, and non-JSON content types.
+
+## OpenAPI extensions
+
+For tool-interop metadata that doesn't fit a standard OpenAPI field, use `extensions`. Keys **must start with `x-`** — TypeScript enforces this via a template literal type:
+
+```typescript
+type Extensions = Record<`x-${string}`, unknown>
+```
+
+Example usage on instance, contract, and case:
+
+```typescript
+const adminApi = contract.http.with("admin", {
+  client: admin,
+  security: "bearer",
+  extensions: {
+    "x-owner": "platform-team",
+    "x-tier": "internal",
+  },
+});
+
+// @contract
+export const listUsers = adminApi("admin-list", {
+  endpoint: "GET /admin/users",
+  description: "List all users (admin only)",
+  extensions: {
+    "x-rate-limit": "100/hour",
+  },
+  cases: {
+    success: {
+      description: "Paged response",
+      expect: { status: 200, schema: UserListSchema },
+      extensions: {
+        "x-example-org": "acme-corp",
+      },
+    },
+  },
+});
+```
+
+Merge precedence: `instance defaults < contract < case`. The final merged view appears in the OpenAPI operation as `x-*` fields.
+
+Non-`x-` keys are rejected at the TypeScript level. Pick a namespace for internal-only keys (e.g. `x-glubean-internal-*`) and exclude them from public OpenAPI in your own tooling — there is no automatic distinction.
+
+## Projection
+
+Run `glubean contracts` to see all contracts as a human-readable report:
+
+```bash
+glubean contracts                    # markdown outline (default)
+glubean contracts --format json      # machine-readable JSON
+```
+
+The output groups contracts by `instanceName → feature` and lists cases with descriptions and lifecycle markers:
+
+- `⊘ deferred: <reason>` — skipped, waiting for something
+- `⊘ deprecated: <reason>` — retained for history
+- `🔴` — critical severity
+- `ℹ️` — info severity
+
+## OpenAPI generation
+
+Generate an OpenAPI 3.1 spec from contract definitions via the MCP tool `glubean_openapi` or programmatically. The exporter:
+
+- Emits `responses[status].content[contentType]` (multiple content types per status are supported)
+- Merges examples and response headers from all cases sharing a status
+- Emits `parameters[in=header]` from `request.headers` schema
+- Emits `parameters[in=path|query]` with per-param schema/description from `ParamValue`
+- Emits `operation.deprecated` + `x-deprecated-reason` for deprecated contracts
+- Carries `extensions` through as `x-*` operation fields
+- Derives `securitySchemes` from instance-level `security` declarations
+
+## Description guidelines
+
+Case descriptions should use business language, not HTTP terminology:
+
+| Bad | Good |
+|-----|------|
+| POST creates a user | Valid registration creates user and returns profile |
+| Returns 409 | Already registered email is rejected |
+| Validates request body | Missing required field returns validation error |
+
+`glubean contracts` warns about descriptions that start with HTTP methods, contain status codes, or use jargon like "endpoint", "payload", or "request body".
+
+Descriptions surface in:
+- CLI projection output (for PMs)
+- OpenAPI `summary` / response `description` fields
+- Test runner output on failure
+- AI agent context when consuming contracts
+
+Take time on them — they're the primary communication surface between code and humans.

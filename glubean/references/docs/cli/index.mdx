@@ -9,7 +9,7 @@ The glubean CLI runs API verifications from the terminal. Use it for local devel
 npm install -g @glubean/cli
 
 # Or run without installing
-npx glubean@latest <command>
+npx @glubean/cli <command>
 
 # Or add to your project
 npm install -D @glubean/cli
@@ -17,26 +17,22 @@ npm install -D @glubean/cli
 
 ## Quick start
 
-All commands work with `npx glubean@latest` — no global install required.
-
 ```bash
 # Scaffold a new project
-npx glubean@latest init
+glubean init
 
-# Run all tests in tests/
-npx glubean@latest run tests/
+# Run all tests
+glubean run
 
 # Run a single file
-npx glubean@latest run tests/users.test.ts
+glubean run tests/users.test.ts
 ```
-
-If you installed the CLI globally (`npm install -g @glubean/cli`), you can drop the `npx glubean@latest` prefix and use `glubean` directly.
 
 ## Get help
 
 ```bash
-npx glubean@latest -h              # All commands
-npx glubean@latest run -h          # Options for a specific command
+glubean -h              # All commands
+glubean run -h          # Options for a specific command
 ```
 
 ## Pages in this section

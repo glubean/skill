@@ -6,10 +6,9 @@
 
 | Command | Purpose |
 |---------|---------|
-| `glubean run` | Run tests locally |
+| `glubean run` | Run tests locally (a profile, a target, or both) |
+| `glubean ci run` | Run the `ci` profile (= `glubean run --profile ci`) |
 | `glubean scan` | Generate metadata.json from test files |
-| `glubean sync` | Upload test bundle to Glubean Cloud |
-| `glubean trigger` | Trigger a remote run on Cloud |
 | `glubean login` | Authenticate with Glubean Cloud |
 | `glubean init` | Initialize a new test project (interactive wizard) |
 | `glubean redact` | Preview redaction on a result JSON file |
@@ -25,8 +24,9 @@
 Run tests from a file, directory, or glob pattern.
 
 ```bash
-glubean run                              # Run all tests (from testDir in package.json)
-glubean run tests/api/                   # Run a directory
+glubean run                              # Run the `local` profile (from glubean.yaml)
+glubean run --profile ci                 # Run a named profile
+glubean run tests/api/                   # Run a directory (ad-hoc, no profile)
 glubean run tests/api/health.test.ts     # Run a single file
 glubean run "tests/**/*.test.ts"         # Run by glob pattern
 ```
@@ -60,8 +60,10 @@ glubean run --inspect-brk                # Attach V8 debugger (pauses until atta
 ```bash
 glubean run --fail-fast                  # Stop on first failure
 glubean run --fail-after 3               # Stop after 3 failures
-glubean run --ci                         # CI mode: --fail-fast + --reporter junit
 ```
+
+For CI mode (fail-fast + junit reporter), define a `ci` profile in
+`glubean.yaml` and run `glubean ci run` — there is no `--ci` flag.
 
 ### Cloud Upload
 
@@ -71,50 +73,40 @@ glubean run --upload --project proj_abc  # Specify project (or GLUBEAN_PROJECT_I
 glubean run --upload --token gpt_xxx     # Specify token (or GLUBEAN_TOKEN env)
 ```
 
-### Config
+### Profile & config
 
 ```bash
+glubean run --profile ci                 # Resolve a named profile from glubean.yaml
+glubean run --profile ci --suite tests   # Narrow a multi-suite profile to one suite
 glubean run --env-file .env.staging      # Use alternate .env file
-glubean run --config ci-config/ci.yaml   # Use alternate config file
+glubean run --config ./other/glubean.yaml  # Load an alternate glubean.yaml
 glubean run --trace-limit 50             # Keep up to 50 trace files per test (default: 20)
+```
+
+---
+
+## glubean ci run
+
+Run the `ci` profile from `glubean.yaml`. Equivalent to `glubean run --profile ci`.
+Suites, fail-fast, reporters, and thresholds all come from `profiles.ci` — see
+[ci-workflow.md](ci-workflow.md).
+
+```bash
+glubean ci run                           # Run the ci profile
+glubean ci run --upload                  # ...and upload results to Cloud
+glubean ci run --suite tests             # Narrow to one suite
 ```
 
 ---
 
 ## glubean scan
 
-Generate metadata.json from test files. Used internally by sync and for inspecting test inventory.
+Generate metadata.json from test files. Used for inspecting test inventory and as a CI drift gate (with `validate-metadata`).
 
 ```bash
 glubean scan                             # Scan current directory
 glubean scan --dir ./tests               # Scan specific directory
 glubean scan --out metadata.json         # Custom output path
-```
-
----
-
-## glubean sync
-
-Upload test bundle to Glubean Cloud. Bundles contain test metadata and source for remote execution.
-
-```bash
-glubean sync --project proj_abc          # Sync to a project
-glubean sync --project proj_abc --tag v1.2.0  # Tag the bundle version
-glubean sync --dry-run                   # Generate bundle without uploading
-glubean sync --dir ./tests               # Specify directory to scan
-```
-
----
-
-## glubean trigger
-
-Trigger a remote run on Glubean Cloud (requires synced bundle).
-
-```bash
-glubean trigger --project proj_abc              # Run latest bundle
-glubean trigger --project proj_abc --bundle bnd_xyz  # Run specific bundle
-glubean trigger --project proj_abc --job job_123     # Run a specific job
-glubean trigger --project proj_abc --follow     # Tail logs until completion
 ```
 
 ---
@@ -137,7 +129,7 @@ Initialize a new test project with interactive wizard.
 glubean init                             # Start wizard in current directory
 ```
 
-Creates: `package.json`, `ci-config/*.yaml`, `tests/`, `explore/`, `types/`, `.env`, `.env.secrets`, `.gitignore`.
+Creates: `package.json`, `glubean.yaml` (suites + `local`/`ci`/`explore` profiles), `tests/`, `explore/`, `types/`, `.env`, `.env.secrets`, `.gitignore`.
 
 ---
 
@@ -204,9 +196,9 @@ glubean validate-metadata -d ./tests     # Specify project root
 
 | Variable | Purpose | Used by |
 |----------|---------|---------|
-| `GLUBEAN_TOKEN` | Auth token (`gpt_` prefix) | `run --upload`, `sync`, `trigger` |
-| `GLUBEAN_PROJECT_ID` | Default project ID | `run --upload`, `sync`, `trigger` |
-| `GLUBEAN_API_URL` | API server URL (default: `https://api.glubean.com`) | All cloud commands |
+| `GLUBEAN_TOKEN` | Auth token (`gpt_` prefix) | `run --upload`, `ci run --upload` |
+| `GLUBEAN_PROJECT_ID` | Project short ID (e.g. `prj_…`) | `run --upload`, `ci run --upload` |
+| `GLUBEAN_API_URL` | API server URL (default: `https://api.glubean.com`) | cloud uploads |
 
 ---
 

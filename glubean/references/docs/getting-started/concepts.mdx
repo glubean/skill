@@ -41,11 +41,11 @@ Glubean projects have two directories for test files. Both use the same `*.test.
 | | `explore/` | `tests/` |
 |---|---|---|
 | **Purpose** | Your API collection — try endpoints, save parameter sets, pick one and run | Regression suite — CI runs everything on every commit |
-| **How you run** | Pick one case: `glubean run --explore --pick by-name` | Run all: `glubean run` |
+| **How you run** | Pick one case: `glubean run --profile explore --pick by-name` | Run all: `glubean run` |
 | **Data pattern** | `test.pick` — multiple named examples, run one at a time | `test.each` — multiple rows, run all for coverage |
 | **Analogous to** | Postman Collections + Examples | Jest/Vitest test suites |
 | **Git** | Committed and shared (this is your team's API knowledge base) | Committed and shared |
-| **CLI default** | Needs `--explore` flag or explicit path | Runs by default |
+| **CLI default** | Needs `--profile explore` or explicit path | Runs by default (the `local` profile) |
 
 Both directories share `data/` and `config/`. A test file can live in either directory — or move between them as it matures.
 

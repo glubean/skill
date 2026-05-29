@@ -58,21 +58,23 @@ Patterns marked "off" are available but disabled by default to avoid false posit
 
 ## Customizing redaction
 
-Add a `redaction` section to your `package.json` or config file:
+Add a `redaction` block under `defaults` in `glubean.yaml`. It's inherited by
+every profile:
 
-```json
-{
-  "glubean": {
-    "redaction": {
-      "sensitiveKeys": ["x-internal-token", "session-id"],
-      "customPatterns": [
-        { "name": "stripe-key", "regex": "sk_live_[a-zA-Z0-9]{24,}" }
-      ],
-      "replacementFormat": "simple"
-    }
-  }
-}
+```yaml
+defaults:
+  redaction:
+    sensitiveKeys: [x-internal-token, session-id]
+    customPatterns:
+      - { name: stripe-key, regex: "sk_live_[a-zA-Z0-9]{24,}" }
+    replacementFormat: simple
 ```
+
+> These rules apply when you run a **profile** (`glubean run --profile <name>`
+> or `glubean ci run`). An ad-hoc run with an explicit target
+> (`glubean run tests/`) doesn't resolve a profile and uses the built-in
+> baseline only — run through a profile to apply your custom rules before an
+> upload.
 
 ### Replacement formats
 
@@ -84,15 +86,7 @@ Add a `redaction` section to your `package.json` or config file:
 
 ## Server-side safety net
 
-When results are uploaded to glubean Cloud, the server applies baseline redaction again before persisting. Even if CLI redaction is skipped, secrets are not stored in plaintext.
-
-## Skipping redaction
-
-```bash
-glubean run --no-redact tests/
-```
-
-Not recommended for production APIs.
+When results are uploaded to glubean Cloud, the server applies baseline redaction again before persisting. Even if a local rule is misconfigured, common secrets are not stored in plaintext.
 
 ## Next
 

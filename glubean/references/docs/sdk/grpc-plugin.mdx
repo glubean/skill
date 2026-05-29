@@ -1,0 +1,30 @@
+# gRPC Plugin (`@glubean/grpc`)
+
+`@glubean/grpc` is the planned first-party gRPC plugin for Glubean.
+
+> **Status:** Coming soon. The package is reserved for gRPC client helpers, status matchers, metadata redaction scopes, and a gRPC contract protocol.
+
+## Expected setup
+
+When available, the plugin will follow the same manifest installation model as the other first-party protocol plugins:
+
+```typescript
+// glubean.setup.ts
+import { installPlugin } from "@glubean/sdk";
+import grpcPlugin from "@glubean/grpc";
+
+await installPlugin(grpcPlugin);
+```
+
+`glubean.setup.ts` runs once before tests and contract modules load, so protocol adapters and matchers are registered before use.
+
+## Until it ships
+
+- Use [HTTP contracts](/sdk/contract-http) for HTTP APIs.
+- Use [GraphQL Plugin](/sdk/graphql-plugin) for GraphQL services.
+- Keep gRPC credentials and metadata redaction rules explicit in project docs until the plugin package is available.
+
+## Next
+
+- [Plugins](/sdk/plugins)
+- [Redaction & Privacy](/cli/redaction)

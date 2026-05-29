@@ -1,0 +1,111 @@
+# Use Glubean Cloud from your AI agent
+
+Glubean exposes a focused failure-analysis endpoint so any AI agent can pull
+the data it needs to triage a run — without parsing hundreds of trace events
+to find a handful of real failures.
+
+## The pull model
+
+Your agent calls a Glubean Cloud HTTP endpoint with a project token and a run ID,
+and receives only the failures and their reasons. No worker registration, no
+new SDK, no orchestration glue.
+
+```text
+You paste a run reference → agent fetches /failures → agent reads reasons
+```
+
+## Endpoint
+
+```http
+GET /open/v1/runs/{runId}/failures
+Authorization: Bearer gpt_xxxxxxxxxxxxxxxx
+```
+
+**Auth**: either kind of token works:
+
+- **Project token (`gpt_`, recommended for agents)** — must have `runs:read` scope, must belong to the same project the run is in.
+- **User API key (`gb_`)** — broader access; must be a member of the run's project.
+
+**Response shape**:
+
+```jsonc
+{
+  "runId": "clr_xxx",
+  "projectId": "prj_xxx",
+  "summary": { "total": 14, "failed": 3 },
+  "failures": [
+    {
+      "testId": "auth-login",
+      "testName": "POST /login returns 200 with valid creds",
+      "durationMs": 234,
+      "tags": ["smoke"],
+      "reason": {
+        "kind": "assertion",                // | "exception" | "unknown"
+        "message": "expected 200 to equal 201",
+        "expected": 200,
+        "actual": 201
+      },
+      "lastFewEvents": [/* ≤ 5 most-recent events for context */]
+    }
+  ]
+}
+```
+
+**Status codes**:
+
+| Status | Meaning |
+|---|---|
+| `200` | Success — `failures` may be empty if all tests passed |
+| `401` | No / invalid auth |
+| `403` | Project token lacks `runs:read` scope, or is from a different project |
+| `404` | Run not found, or run has no result yet (still queued / running) |
+
+## Why a dedicated endpoint vs `GET /runs/{id}/events`?
+
+Tested informally: a 200-event run is **~30K agent tokens** in context just to
+find 3 failures. The dedicated `/failures` endpoint is **under 1K tokens** for
+the same outcome — a 10-30× reduction. The endpoint also normalizes
+reason shape across runtimes (assertion / exception / timeout) so the agent
+doesn't have to thread event IDs back to test IDs by hand.
+
+## Recommended agent token setup
+
+Create a scope-minimal token per agent. Settings → Tokens → New project token:
+
+- **Scope**: `runs:read` (no write, no manage)
+- **Name**: e.g. `agent-claude-2026-06` — one token per agent so you can revoke per agent
+- **Blast radius**: this one project's read data
+
+The token IS in the agent's context, so treat it as a read-only credential for
+one project, not a "master key".
+
+## Example prompts
+
+```text
+Here's a Glubean run: clr_GEb9bPvhE4nL
+Project token (read-only): gpt_xxxxxxxxxxxxxxxx
+
+Please fetch GET https://api.glubean.com/open/v1/runs/clr_GEb9bPvhE4nL/failures
+with `Authorization: Bearer gpt_...` and tell me why these tests failed.
+```
+
+```text
+Failure analysis for run {runId}:
+- fetch /open/v1/runs/{runId}/failures
+- for each failure, read reason.kind / reason.message and lastFewEvents
+- group by reason.kind to spot patterns (mostly assertions? all the same exception?)
+- propose 1-2 likely root causes per group, citing the message + location
+```
+
+## What this endpoint is not (yet)
+
+This page covers the HTTP endpoint only. Two adjacent paths are in plan but
+not yet shipped:
+
+- **CLI subcommand** (`glubean cloud runs failures <runId>`) — a thin shell
+  wrapper for non-MCP agent runtimes. Tracked in the agent-cloud-access
+  proposal Phase 2.
+- **MCP tool** (`glubean_cloud_get_failures`) — same capability as a
+  registered tool for Claude / Cursor. Also Phase 2.
+
+When those land, the same `/failures` endpoint backs all three surfaces.

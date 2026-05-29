@@ -1,18 +1,41 @@
 # Connect CI
 
-Use the same command locally and in CI. That is the simplest way to avoid drift.
+Use the same profile locally and in CI. Define a `ci` profile in `glubean.yaml`
+once, then run it with one command everywhere — that is the simplest way to
+avoid drift.
+
+## The `ci` profile
+
+`glubean init` scaffolds a `ci` profile. It declares which suites run, plus
+fail-fast, reporters, and (optionally) thresholds:
+
+```yaml
+profiles:
+  ci:
+    suites: [tests]
+    execution:
+      failFast: true
+    reporters:
+      junit: .glubean/results/junit.xml
+      resultJson: .glubean/results/ci.result.json
+```
 
 ## Recommended command
 
 ```bash
-npx glubean run tests/ --ci --result-json .glubean/last-run.json --reporter junit:test-results.xml
+npx glubean ci run
 ```
 
-This shape works well because:
+`glubean ci run` is shorthand for `glubean run --profile ci`. Suites,
+fail-fast, and reporter paths all come from `profiles.ci` — nothing to
+remember on the command line, and CI matches what you run locally with
+`glubean run --profile ci`.
 
-- `./tests` keeps CI focused on committed regression tests.
-- `--result-json .glubean/last-run.json` gives you a stable machine-readable artifact.
-- `--reporter junit:test-results.xml` integrates with common CI test dashboards.
+- `suites: [tests]` keeps CI focused on committed regression tests.
+- `reporters.resultJson` gives you a stable machine-readable artifact.
+- `reporters.junit` integrates with common CI test dashboards.
+
+Override a path ad-hoc when needed: `glubean ci run --reporter junit:other.xml`.
 
 ## GitHub Actions example
 
@@ -29,7 +52,7 @@ jobs:
         with:
           node-version: "22"
       - run: npm ci
-      - run: npx glubean run tests/ --ci --result-json .glubean/last-run.json --reporter junit:test-results.xml
+      - run: npx glubean ci run
 ```
 
 ## When you are ready for uploads
@@ -37,7 +60,7 @@ jobs:
 Add `--upload` to send results to Glubean Cloud after each CI run:
 
 ```bash
-npx glubean run tests/ --ci --upload
+npx glubean ci run --upload
 ```
 
 This requires `GLUBEAN_TOKEN`. Setup is covered in [Upload Your First Run](/getting-started/upload-to-cloud).

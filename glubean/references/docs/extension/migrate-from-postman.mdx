@@ -1,140 +1,159 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
 
-# Convert Your Existing APIs to Glubean Tests
+# Migrate Existing API Assets into Glubean Tests
 
-You do **not** need to rewrite everything by hand.
+You do **not** need to rewrite your suite by hand.
 
-Most teams convert 80-90% of their existing API collections with AI assistance. Manual effort goes only into flow design and edge cases.
+But you also should not treat migration as a blind format conversion job.
 
-If your first reaction after the demo is:
+The right workflow is:
 
-> "We have hundreds of Postman requests. Are we supposed to rewrite all of this one by one?"
+1. start inside a real Glubean project
+2. use the `glubean` skill
+3. scan the source assets first
+4. lock one good pattern
+5. batch-convert from that pattern
 
-The short answer is: **no**.
+That works for Postman, Apifox, OpenAPI, `.http` files, cURL snippets, and legacy test code.
 
 <Callout type="warning">
-**You must run migration inside a Glubean project.**
+**Run migration inside a real Glubean project.**
 
-Do not ask AI to convert Postman/OpenAPI files in a random folder. Initialize a real Glubean project first:
+Do not ask AI to convert collections or specs in a random folder. Start with:
 
 ```bash
-npx glubean@latest init
+npx @glubean/cli init
 ```
 
-The AI assistant needs to see `package.json`, the `@glubean/sdk` dependency, and your `tests/` conventions. Without this context, it will generate generic Node/Jest-style code instead of Glubean SDK tests.
+The agent needs to see `package.json`, `@glubean/sdk`, your `tests/` layout, and any existing config helpers. Without that context it will default to generic Node or Jest-style output instead of Glubean patterns.
 </Callout>
 
 ---
 
-## What this migration is really about
+## Use the Glubean skill for migration
 
-Migration is not a text-format conversion problem. It is a **test architecture** problem:
+Do not approach migration with a generic “convert this collection” prompt.
 
-- Keep request definitions you already have.
-- Let AI generate Glubean test code from those sources.
-- Make a few structural decisions once (auth, grouping, assertion depth).
-- Reuse that pattern across the rest of the collection.
+Install and use the Glubean skill first:
 
-Once the pattern is locked, conversion speed increases dramatically.
+```bash
+npx glubean config mcp
+npx skills add glubean/skill
+```
+
+Then invoke the skill in chat when your editor supports it:
+
+```text
+/glubean help me migrate these API assets into Glubean tests
+```
+
+Why this matters:
+
+- the skill tells the agent to read project structure first
+- it routes migration work through a migration-specific workflow instead of generic code generation
+- it nudges the agent toward `configure()`, builder flows, types, schemas, and CI-safe structure
+- it is much more likely to stop and ask when auth or secret mapping is unclear
+
+If your AI tool does not support slash commands, still mention the skill explicitly in the prompt:
+
+```text
+Use the glubean skill and follow a phased migration workflow.
+```
+
+---
+
+## What migration really means
+
+Migration is not “translate this JSON into code.”
+
+It is a **test architecture** task:
+
+- keep the useful request definitions you already have
+- classify which requests are isolated vs stateful
+- choose one auth and config approach
+- decide file grouping and assertion depth
+- convert one representative slice first
+- then reuse that pattern across the rest of the suite
+
+If you skip those decisions, bulk conversion usually creates a large pile of weak or broken tests.
 
 ---
 
 ## Supported source formats
 
-| Format | How to export |
+| Source | Typical input |
 |---|---|
-| **Postman** | Collection → Export → Collection v2.1 (JSON) |
-| **Apifox** | Project → Export → OpenAPI 3.0 or Postman format |
-| **REST Client** | Use existing `.http` / `.rest` files directly |
+| **Postman** | Collection export (v2.1 JSON) |
+| **Apifox** | OpenAPI export or Postman export |
 | **Swagger / OpenAPI** | `openapi.yaml` or `openapi.json` |
-| **RapidAPI** | Export as Postman Collection or copy requests as cURL |
-| **cURL commands** | Paste directly into AI prompt |
-| **Anything else** | Markdown, plain text, JSON examples, wiki notes — if it describes request structure, it works |
+| **REST Client** | `.http` or `.rest` files |
+| **cURL** | copied commands |
+| **RapidAPI** | Postman export or cURL |
+| **Legacy test code** | Jest, Supertest, pytest, Playwright API tests, old helper-based suites |
+| **Docs / notes** | Markdown, wiki pages, request samples, README notes |
 
-The table above lists common formats, but there's no strict requirement. If you have a README with endpoint descriptions, a Confluence page, a JSON request/response sample, or even a Slack thread listing your endpoints — drop it into the project and point the AI at it. As long as the document describes URLs, methods, headers, or payloads, AI can generate tests from it.
+These sources are all useful, but in different ways:
+
+- Postman and `.http` files are strong request seeds
+- OpenAPI is strong for grouping and schema hints
+- legacy test code is strong for business intent and assertion history
+- docs and notes are strong for explaining why the API behaves a certain way
 
 <Callout type="info">
-**Swagger / OpenAPI users — this is also a "generate new tests" workflow.**
+**OpenAPI-only users can follow this guide too.**
 
-If you are not migrating old collections and only have an OpenAPI spec, this guide still applies end-to-end. Treat your spec as the source of truth and ask AI to generate fresh Glubean tests by tag or operationId.
-
-This document covers both **migration** and **greenfield test generation**.
+If you are not “migrating” old tests and only have an API spec, the same workflow applies: scan first, generate one representative slice, then batch by tag or resource.
 </Callout>
 
 ---
 
-## What converts well automatically
+## What AI can do well
 
-AI assistants can reliably convert:
+AI is good at converting:
 
-- HTTP methods and URLs → `ctx.http.get/post/put/patch/delete(...)`
-- Query parameters → `searchParams`
-- Request headers and JSON bodies
-- Basic status assertions → `ctx.expect(res.status).toBe(...)`
-- Environment placeholders → `ctx.vars.require(...)`
-- Sensitive values → `ctx.secrets.require(...)`
-- OpenAPI `operationId` → test IDs
-- OpenAPI tags → test grouping (typically one file per tag/folder)
+- methods, URLs, headers, query params, and bodies
+- placeholders into `vars` and `secrets`
+- source grouping hints into candidate file plans
+- old assertions into Glubean assertion syntax
+- repeated setup into shared `configure()` clients or helper flows
 
-## What still needs your decisions
+AI is **not** good at guessing:
 
-AI cannot infer business intent from export files alone. You still need to decide:
+- auth strategy
+- which values are secrets vs public config
+- whether two requests belong in one workflow or separate tests
+- whether status-only assertions are enough
+- what custom pre-request scripts were really doing
 
-1. **Granularity** — independent tests vs multi-step flow tests
-2. **Auth model** — static token vs dynamic login setup
-3. **Secrets boundary** — which values must be `ctx.secrets`
-4. **Assertion depth** — status-only vs key fields vs schema validation
-5. **File layout** — one file per resource/tag vs merged files
+Those are the points where the agent should stop and ask.
 
-These five choices determine 80% of migration quality.
+---
+
+## Guide the migration phase by phase
+
+The user guidance should be explicit and phased:
+
+1. use the `glubean` skill
+2. ask for a scan-only migration phase
+3. **confirm auth before any code** — this is the most common migration failure
+4. lock minimal project shape (config, vars/secrets, grouping)
+5. build one representative slice to validate that shape
+6. freeze reusable style from the slice, then batch-convert
+7. run and tighten the migrated suite
+
+The first prompt should produce a **plan**, not files.
+
+<Callout type="error">
+**Confirm auth before writing any test code.**
+
+Source assets almost never describe auth correctly. Postman inherits from folder-level settings, Apifox uses globals, OpenAPI `securitySchemes` rarely match runtime behavior, and `.http` files hardcode expired tokens. Ask the agent to present its auth evidence and proposed strategy, then confirm or correct before code generation starts.
+</Callout>
 
 <Callout type="warning">
-**For large collections: use Plan mode first.**
+**For larger suites, insist on a read-only planning round first.**
 
-If your source has more than ~20 requests, **start in Plan mode** (Cursor: ⌘⇧P → "Plan mode", or type `@plan` in chat). This forces the AI to produce a structured proposal — file layout, auth strategy, variable mapping, assertion depth — before writing a single line of code.
-
-Without Plan mode, AI tends to start generating immediately and make early assumptions that cascade into dozens of broken tests. Plan mode is cheap (read-only, no code changes) and catches misunderstandings before they multiply.
+If the source has more than about 20 requests, or it mixes auth flows and write paths, the first step should be a scan-only report. Do not let the agent start by generating 30 files.
 </Callout>
-
-<Callout type="info">
-**AI must ask, not guess.**
-
-When migrating large collections, AI will inevitably encounter ambiguity: which variables are secrets vs config, how to handle complex pre-request scripts, whether to split flows into separate tests, etc.
-
-**The correct behavior is to stop and ask you.** If your AI assistant is looping on errors instead of asking a clarifying question, explicitly tell it:
-
-```text
-Stop. Do not guess. List what you're unsure about and ask me before continuing.
-```
-
-Common decision points where AI should pause:
-- **Authentication** — static token vs. login flow vs. OAuth refresh
-- **Variable classification** — which values go in `.env` vs `.env.secrets`
-- **Pre-request scripts** — complex signing, encryption, or chained calls that have no direct equivalent
-- **Test granularity** — independent tests vs multi-step builder flows
-- **Assertion depth** — status-only vs. key fields vs. full schema validation
-</Callout>
-
----
-
-## Model selection matters (a lot)
-
-Use different model tiers at different migration stages:
-
-| Stage | Recommended model type | Why |
-|---|---|---|
-| First 1-3 flows (pattern design) | More capable model | Better at multi-step state flow and auth reasoning |
-| Bulk conversion after pattern is stable | Faster/cheaper model | High throughput once rules are clear |
-| Final review and risk scan | More capable model | Better at catching hidden state coupling and missing assertions |
-
-Practical strategy:
-
-1. Start with a stronger model for architecture decisions.
-2. Freeze your conventions (`configure.ts`, naming, auth helper, assertions).
-3. Switch to a faster model for batch conversion.
-4. Use a stronger model again for final review.
-
-This gives you both quality and speed.
 
 ---
 
@@ -142,121 +161,234 @@ This gives you both quality and speed.
 
 <Steps>
 
-### Set up and feasibility scan
+### Phase 0: Set up the skill and gather sources
 
-Make sure you are in a Glubean project root (created by `npx glubean@latest init`).
-
-Drop your source file (Postman JSON, OpenAPI spec, or `.http` file) into the project folder.
-
-Then run a **scan-only round first** — do not ask AI to generate files yet:
-
-```text
-You are in a Glubean project (Node + @glubean/sdk).
-Before generating any files, do a feasibility scan only.
-
-Please:
-1) Read project context first:
-   - package.json
-   - tests/ and explore/ structure
-   - existing configure.ts (if any)
-   - @glubean/sdk usage patterns in this repo
-2) Read source API assets:
-   - [Postman/OpenAPI/REST files path]
-3) Output a feasibility report (no code generation yet):
-   - What can be converted automatically
-   - What requires manual decisions
-   - Risks / unknowns / blockers
-   - Proposed file plan (which .test.ts files to create)
-   - Proposed auth strategy and assertion depth
-   - A small sample (one endpoint/flow) plan only
-4) If anything is ambiguous (auth model, secret classification,
-   pre-request script logic), list it as an open question —
-   do NOT guess and continue.
-5) Wait for my approval before writing any files.
-```
-
-Review the report. Fix any misunderstandings before proceeding.
-
-### Convert one representative flow first
-
-After approving the plan:
-
-```text
-Approved. Now generate files according to the plan.
-Start with one representative flow first, then stop for review.
-```
-
-Pick a flow that includes auth, a create/update action, a verification, and cleanup. This becomes your reference pattern.
-
-### Lock your house style
-
-Decide and document:
-
-- `configure.ts` structure
-- Status/assertion policy
-- When to use builder steps vs single tests
-- Teardown requirements for data-creating tests
-
-### Batch-convert by folder or tag
-
-Convert one Postman folder or OpenAPI tag group at a time. Reuse the pattern from step 2.
-
-### Run and fix flagged cases
+Install the skill and MCP if you have not already:
 
 ```bash
-npm test
-# or
-glubean run tests/
+npx glubean config mcp
+npx skills add glubean/skill
 ```
 
-Handle only failures and TODO-marked script logic.
+Tell the agent where your source assets are — do not copy them into the Glubean project:
+
+```text
+/glubean I want to migrate existing API assets into Glubean tests.
+Use a phased workflow and do not generate files yet.
+
+Sources:
+- Postman collection: /path/to/collection.json
+- OpenAPI spec: ../api/openapi.yaml
+- Legacy tests: ../backend/tests/api/
+```
+
+The agent will read from those paths directly. If you have multiple sources, list them all — the agent should cross-check instead of trusting one export.
+
+### Phase 1: Run a feasibility scan only
+
+Start with a scan-only prompt:
+
+```text
+/glubean do a migration feasibility scan only. Do not generate files yet.
+
+Read the Glubean project first (package.json, GLUBEAN.md, tests/, config/).
+
+Then read these source assets (do not copy them into the project):
+- [paths to Postman / Apifox / OpenAPI / .http / legacy tests]
+
+Return:
+1) source inventory
+2) what can be converted safely
+3) what needs manual decisions
+4) open questions and blockers
+5) proposed file plan
+6) proposed auth + vars/secrets mapping
+7) one representative slice to implement first
+
+If auth, secret classification, or pre-request logic is unclear, stop and ask.
+```
+
+Review this report before approving code generation.
+
+### Phase 2: Confirm auth and lock minimal project shape
+
+Auth is the single most common migration failure. Before approving any code generation, confirm:
+
+- **Auth strategy**: bearer token, API key, OAuth, cookie, or none
+- **Secret classification**: what goes in `.env.secrets` vs `.env`
+- **Auth plugin**: whether `@glubean/auth` is needed or plain `configure()` headers are enough
+
+If the agent says "I'll use what Postman has," push back — Postman env variables and pre-request scripts do not translate directly.
+
+After auth is confirmed, lock the remaining decisions that pollute everything if wrong:
+
+- shared `configure()` location and base URL
+- public vars vs secrets naming
+- file grouping: by resource, workflow, or tag
+
+Leave assertion depth, builder boundaries, naming details, and type/schema extraction for after the representative slice.
+
+```text
+/glubean I've reviewed the scan. Here is the auth and project shape:
+- Auth: [bearer / API key / OAuth / none]
+- Secrets: [list what goes in .env.secrets]
+- Config: [shared client location]
+- Grouping: [by resource / workflow / tag]
+
+Lock this shape and implement only the representative slice.
+```
+
+### Phase 3: Build one representative slice
+
+The slice validates whether the locked shape actually works in a real flow. Pick one with real complexity:
+
+- auth if the suite needs it
+- at least one write if the API has writes
+- verification after the mutation
+- cleanup if the flow creates data
+
+Review before expanding. If the shape is wrong, fix it now — before it spreads to every file.
+
+### Phase 4: Freeze reusable style, then batch-convert
+
+Once the slice is approved, freeze the remaining conventions from what worked:
+
+- assertion depth: status-only vs key fields vs schema
+- when to use builder flows vs independent tests
+- teardown policy for write tests
+- test ID naming conventions
+- when to extract to `types/` or `schemas/`
+
+Then batch-convert incrementally:
+
+- one Postman folder at a time
+- one OpenAPI tag at a time
+- one legacy test module at a time
+
+Avoid all-at-once migration unless the suite is very small.
+
+```text
+/glubean the representative slice is approved.
+Freeze the migration style from it, then convert the next group only: [folder/tag/module].
+Stop after that group and summarize manual follow-up items.
+```
+
+### Phase 5: Run, fix, and tighten
+
+Run the migrated files and fix:
+
+- setup or teardown problems
+- duplicated helper logic
+- weak status-only assertions
+- TODO-marked manual follow-up items
+
+```text
+/glubean run and review the migrated files for this phase.
+Fix real failures, tighten weak assertions, and keep unresolved logic as explicit TODOs.
+```
 
 </Steps>
 
 ---
 
-## Mapping guide
+## How to map old assets to Glubean
 
-| Source concept | Glubean equivalent |
+| Source concept | Glubean target |
 |---|---|
-| Postman env variable | `ctx.vars.require("VAR_NAME")` |
-| Postman secret variable | `ctx.secrets.require("SECRET_NAME")` |
-| Postman `pm.collectionVariables.set(k, v)` | Return `{ key: value }` from a step; receive in next step's `state` |
-| Postman `pm.test("name", fn)` | `ctx.expect(...)` or `ctx.assert(...)` |
-| Postman pre-request auth step | `.setup(async (ctx) => { ... })` |
-| Postman folder | One `*.test.ts` file (or grouped exports) |
-| OpenAPI `operationId` | `test("operation-id", ...)` or `test({ id: "operation-id" }, ...)` |
-| REST Client `###` block | One test export |
-| cURL header/body | `headers` / `json` in `ctx.http` options |
+| base URL env var | `configure({ http: { prefixUrl: "{{BASE_URL}}" } })` |
+| secret token | `configure({ secrets: { token: "{{API_TOKEN}}" } })` or auth plugin config |
+| repeated authenticated requests | shared configured client such as `api` |
+| source script stores IDs | builder state between steps |
+| source folder or tag | candidate file grouping |
+| one request block | one test export |
+| one workflow with setup and cleanup | builder flow |
+| repeated body or response shape | extract to `types/` or `schemas/` |
+
+### Postman
+
+Translate carefully:
+
+- env variables -> vars or secrets
+- folder structure -> grouping hints only
+- `pm.test(...)` -> Glubean assertions
+- collection or local variables -> builder state or shared setup
+- pre-request scripts -> shared auth/setup or manual follow-up
+
+Do not mechanically port `pm.*` helpers line by line.
+
+### Apifox
+
+Apifox usually works best when exported as:
+
+- OpenAPI for schema-aware planning
+- Postman when example requests are clearer than the spec
+
+If both exist, the agent should compare them instead of trusting one blindly.
+
+### OpenAPI / Swagger
+
+OpenAPI is useful for:
+
+- operation grouping
+- operation IDs
+- request and response shape
+- deprecated endpoint filtering
+
+It is weaker for runtime auth behavior and business-rule assertions, so those usually need repo context or user input.
+
+### REST Client and cURL
+
+Treat these as strong request seeds:
+
+- preserve request shape
+- improve assertion depth
+- merge duplicated setup into shared config
+- convert ad-hoc examples into stable regression tests
+
+### Legacy test code
+
+This is often the best source for real test intent.
+
+Keep:
+
+- scenarios
+- business assertions
+- setup and teardown meaning
+
+Do not keep:
+
+- framework-specific fixtures
+- custom client wrappers unless they encode essential business behavior
+- assertion syntax that hides the real expectation
 
 ---
 
-## Prompt templates by source format
+## Prompt templates
 
-Use the feasibility scan (step 1 above) first, then follow up with one of these:
+Use the feasibility scan first. Then use a focused follow-up prompt with the skill.
 
-<Tabs items={['Postman / Apifox', 'OpenAPI / Swagger', 'REST Client .http']}>
+<Tabs items={['Postman / Apifox', 'OpenAPI / Swagger', 'Legacy Tests / .http']}>
 
 <Tabs.Tab>
 
 ```text
-I have a Postman Collection at [path].
-Please convert it into Glubean tests using @glubean/sdk.
+/glubean I have a Postman or Apifox export at [path].
+
+Use the approved migration plan.
+Implement only one group first.
 
 Requirements:
-- Group by Postman folder, one file per folder under tests/
-- Use ctx.vars.require("BASE_URL") for base URL
-- Sensitive keys [API_KEY, PASSWORD, TOKEN] must use ctx.secrets.require(...)
-- Use builder flow (.setup/.step/.teardown) for stateful sequences
-- Use single test(...) for isolated endpoints
-- Assertions: status + key fields present
-- Create a shared tests/configure.ts with configure({ vars, secrets, http })
-- If any script logic is not safely convertible, add a TODO comment
+- create or reuse a shared configured client
+- classify secrets vs vars explicitly
+- use builder flows only for stateful sequences
+- keep isolated requests as separate tests
+- add status + key field assertions
+- mark unclear script behavior with TODO instead of guessing
 
 Return:
-1) tests/configure.ts
-2) generated test files
-3) a short "manual follow-up" list
+1) shared config changes
+2) one migrated test file
+3) short manual follow-up items
 ```
 
 </Tabs.Tab>
@@ -264,17 +396,17 @@ Return:
 <Tabs.Tab>
 
 ```text
-I have an OpenAPI 3 spec at [path].
-Generate Glubean tests for non-deprecated endpoints.
+/glubean I have an OpenAPI spec at [path].
+
+Use the approved migration plan.
+Implement only one representative tag first.
 
 Requirements:
-- Group by OpenAPI tag, one file per tag
-- Use operationId as test id where available
-- Use ctx.vars for non-sensitive values and ctx.secrets for sensitive values
-- Add status assertions based on responses
-- Where schemas are available, add schema validation logic
-- Create tests/configure.ts with shared HTTP settings
-- Mark uncertain conversions with TODO comments
+- group by tag unless the repo conventions suggest a better grouping
+- use operationId as the default test id when it is stable
+- create shared config first
+- add schema validation where the shape is trustworthy
+- stop and ask if auth or error semantics are unclear
 ```
 
 </Tabs.Tab>
@@ -282,15 +414,17 @@ Requirements:
 <Tabs.Tab>
 
 ```text
-I have a REST Client file at [path].
-Convert each ### block into one Glubean test export.
+/glubean I have existing API tests or .http files at [path].
+
+Use them as migration sources, not as code to translate literally.
+Implement one representative slice first.
 
 Requirements:
-- Map {{BASE_URL}} to ctx.vars.require("BASE_URL")
-- Map sensitive placeholders (TOKEN, API_KEY, PASSWORD) to ctx.secrets.require(...)
-- Add status assertions using the expected status from context/comments.
-  If unknown, keep a TODO instead of guessing.
-- Put output in tests/[name].test.ts
+- preserve the scenario intent
+- move repeated request config into a shared client
+- convert setup/cleanup into builder flows only when state truly carries across steps
+- keep strong assertions from the old suite
+- replace framework-specific helpers with Glubean patterns
 ```
 
 </Tabs.Tab>
@@ -299,30 +433,36 @@ Requirements:
 
 ---
 
-## `configure.ts` baseline
+## Shared client baseline
+
+Prefer a configured client over ad-hoc request setup in every file.
 
 ```ts
+// config/api.ts
 import { configure } from "@glubean/sdk";
 
-export const { vars, secrets, http } = configure({
+export const { http: api, vars, secrets } = configure({
   vars: { baseUrl: "{{BASE_URL}}" },
   secrets: { apiToken: "{{API_TOKEN}}" },
   http: {
     prefixUrl: "{{BASE_URL}}",
-    headers: { Authorization: "Bearer {{API_TOKEN}}" },
+    headers: {
+      Authorization: "Bearer {{API_TOKEN}}",
+      Accept: "application/json",
+    },
   },
 });
 ```
 
-Then import and use in any test file:
+Then use the shared client in tests:
 
 ```ts
 import { test } from "@glubean/sdk";
-import { http } from "./configure.ts";
+import { api } from "../config/api";
 
 export const listUsers = test("list-users", async (ctx) => {
-  const data = await http.get("users").json();
-  ctx.expect(data.length).toBeGreaterThan(0);
+  const res = await api.get("users");
+  ctx.expect(res.status).toBe(200);
 });
 ```
 
@@ -330,32 +470,36 @@ export const listUsers = test("list-users", async (ctx) => {
 
 ## Quality checklist
 
-- [ ] `ctx.vars.require(...)` is used for non-sensitive runtime config
-- [ ] `ctx.secrets.require(...)` is used for tokens, keys, passwords
-- [ ] Stateful flows use builder (`.setup()` → `.step()` → `.teardown()`)
-- [ ] Data-creating tests include cleanup paths
-- [ ] Assertions are not status-only for critical endpoints
-- [ ] Any unconverted dynamic script logic is explicitly marked with TODO
+- [ ] the user was told to use the `glubean` skill, not a generic prompt
+- [ ] migration happened inside a real Glubean project
+- [ ] the first round was a scan, not bulk file generation
+- [ ] **auth was explicitly confirmed before any code was generated**
+- [ ] minimal project shape (config, vars/secrets, grouping) was locked before the slice
+- [ ] one representative slice was reviewed before expansion
+- [ ] reusable style was frozen from the slice before batch work
+- [ ] stateful flows use builders only when needed
+- [ ] write tests include reliable cleanup
+- [ ] critical endpoints have more than status-only assertions
+- [ ] unclear script logic is marked and isolated instead of guessed
 
 ---
 
 ## Known limits
 
-These often require manual touch-ups:
+These usually need manual follow-up:
 
-- Complex Postman pre-request scripts (custom signing/encryption)
-- Dynamic test scripts with branching business logic
-- Implicit state dependencies across folders/collections
-- APIs with undocumented response variance
+- custom signing or encryption scripts
+- token refresh or browser-based login flows
+- implicit state shared across folders or files
+- poorly documented business rules
+- conflicting evidence between collections, specs, and runtime behavior
 
-That is normal. Migration succeeds when 80-90% is automated and the remaining 10-20% is clear and reviewable.
+That is normal. Success means the migration becomes structured, reviewable, and consistent, not that every source detail is translated literally.
 
 ---
 
-## What's next?
+## What next?
 
-Ready to start? Set up your project first, then come back here with your export file.
-
-- [Quick Start](/extension/quick-start) — install the extension and run `npx glubean@latest init`
-- [Generate Tests with AI](/extension/generate-with-ai) — tips for better AI-generated tests
-- [Writing Tests](/extension/writing-tests) — snippets, data-driven patterns, project structure
+- [Quick Start](/extension/quick-start) — initialize the project and install the extension
+- [Generate with AI](/extension/generate-with-ai) — prompt more effectively
+- [Writing Tests](/extension/writing-tests) — learn the test shapes and project layout

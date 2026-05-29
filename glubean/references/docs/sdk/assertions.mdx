@@ -89,6 +89,27 @@ const UserSchema = z.object({
 ctx.validate(responseBody, UserSchema, "user response");
 ```
 
+`contract.http` uses `ctx.validate` under the hood for both `expect.schema` (response body) and `expect.headers` (response headers). You rarely need to call it manually inside a contract — the declarative form is preferred.
+
+### Response header normalization
+
+When `contract.http` validates `expect.headers`, it normalizes the response headers before calling `ctx.validate`:
+
+- **Keys are lowercased** (HTTP spec: header names are case-insensitive)
+- **Values keep `string | string[]` shape** (multi-value headers like `Set-Cookie` come through as arrays)
+
+Your header schema should therefore use lowercase keys:
+
+```typescript
+headers: z.object({
+  "content-type": z.string().regex(/^application\/json/),
+  "x-request-id": z.string().uuid(),
+  "set-cookie": z.array(z.string()).optional(),
+}),
+```
+
+If you validate headers manually via `ctx.validate(res.headers, schema, label)`, the raw `res.headers` object is **not** pre-normalized — you'd need to lowercase-transform it yourself. Prefer `expect.headers` in contract.http cases.
+
 ## `ctx.warn`
 
 Non-failing tests for budgets and best-practice monitoring:

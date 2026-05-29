@@ -85,11 +85,11 @@ This keeps the core SDK lightweight — you only install what you use.
 
 ## CLI Defaults to `tests/` Only
 
-`glubean run` without arguments only scans the `tests/` directory. To run explore files:
+`glubean run` without arguments runs the `local` profile (the `tests/` suite). To run explore files:
 
 ```bash
-glubean run --explore              # run all files in explore/
-glubean run explore/smoke.test.ts  # run a specific explore file
+glubean run --profile explore      # run the explore profile (explore/ suite)
+glubean run explore/smoke.test.ts  # run a specific explore file (ad-hoc)
 ```
 
 This is intentional — `explore/` is your interactive API collection, not something CI should run automatically.

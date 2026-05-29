@@ -4,7 +4,7 @@
 
 **Problem:** tests hardcode one base URL and one set of credentials. When the user needs to run against staging, production, or a teammate's local server, they manually edit `.env` and hope they remember to revert.
 **Alternative:** use shell scripts or CI-only env injection — but then local and CI diverge, and developers can't easily switch targets.
-**This pattern:** one `.env` + `.env.secrets` pair per environment, switched with `--env-file` or ci-config yaml. Test code never changes. The runner resolves the right file at runtime.
+**This pattern:** one `.env` + `.env.secrets` pair per environment, switched with `--env-file` (or a `package.json` script per environment). Test code never changes. The runner resolves the right file at runtime.
 
 ## File naming convention
 
@@ -21,31 +21,27 @@ Rule: every `.env.{name}` has a matching `.env.{name}.secrets`. The runner loads
 
 ## Switching environments
 
-CLI:
+CLI — pass the env file at run time:
 
 ```bash
-glubean run tests/ --env-file .env.staging
+glubean run --profile ci --env-file .env.staging
 ```
 
-ci-config yaml:
-
-```yaml
-# ci-config/staging.yaml
-run:
-  testDir: tests
-  envFile: .env.staging
-```
-
-package.json:
+package.json — one script per environment. The profile stays the same; only
+the env file changes:
 
 ```json
 {
   "scripts": {
-    "test": "glubean run --config ci-config/default.yaml",
-    "test:staging": "glubean run --config ci-config/staging.yaml"
+    "test": "glubean run --profile local",
+    "test:staging": "glubean run --profile ci --env-file .env.staging",
+    "test:prod": "glubean run --profile ci --env-file .env.production"
   }
 }
 ```
+
+`--env-file` is the switch — test code, `configure()`, and your `glubean.yaml`
+profiles never change.
 
 ## Host environment variable passthrough
 

@@ -15,10 +15,11 @@ Produces both a glubean result file and a JUnit XML for CI dashboards.
 ## CI shorthand
 
 ```bash
-glubean run tests/ --ci
+glubean ci run
 ```
 
-`--ci` enables `--fail-fast` and `--reporter junit` in one flag.
+`glubean ci run` runs the `ci` profile from `glubean.yaml` — fail-fast and
+the junit/result-json reporters come from `profiles.ci`. See [Connect CI](/getting-started/ci).
 
 ## Switch environments without changing code
 
@@ -55,10 +56,10 @@ glubean run --tag smoke --tag auth --tag-mode and
 glubean run tests/ --upload --project <id>
 ```
 
-Or upload a previous result file:
+Or run the `ci` profile and upload in one step:
 
 ```bash
-glubean sync -p <project-id>
+glubean ci run --upload --project <id>
 ```
 
 ## Preview redaction before upload

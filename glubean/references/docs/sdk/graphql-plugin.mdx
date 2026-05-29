@@ -10,6 +10,20 @@
 npm install @glubean/graphql
 ```
 
+## Project setup — install the plugin manifest
+
+`@glubean/graphql` ships two things: a **plugin manifest** (registers the `graphql` contract protocol and `toHaveGraphql*` matchers) and the **client factory** shown in the quick start below. The manifest must be installed once per project from `glubean.setup.ts` at the project root:
+
+```typescript
+// glubean.setup.ts
+import { installPlugin } from "@glubean/sdk";
+import graphqlPlugin from "@glubean/graphql";
+
+await installPlugin(graphqlPlugin);
+```
+
+Without this file, `contract.graphql(...)` and `ctx.expect(result).toHaveGraphqlData(...)` will throw "unknown protocol" / missing-matcher errors at runtime. A top-level `import "@glubean/graphql"` no longer auto-registers these globals.
+
 ## Quick Start (configure plugin mode)
 
 ```typescript

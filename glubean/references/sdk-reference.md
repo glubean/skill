@@ -652,8 +652,9 @@ tests/
   api/               # API integration tests
   e2e/               # Browser end-to-end tests
 data/                # Test data files (JSON, CSV, YAML)
-.env                 # Public variables (BASE_URL, APP_URL)
-.env.secrets         # Credentials (API_KEY) — gitignored
-package.json         # Runtime config, npm deps, glubean settings
+glubean.yaml         # Config: suites + profiles + defaults (redaction, thresholds)
+.env                 # Public variables (BASE_URL, APP_URL, GLUBEAN_PROJECT_ID)
+.env.secrets         # Credentials (API_KEY, GLUBEAN_TOKEN) — gitignored
+package.json         # npm deps + scripts
 AGENTS.md            # AI agent instructions
 ```

@@ -1,0 +1,149 @@
+---
+title: API Tooling Didn't Get Better. We Just Lowered Our Expectations
+description: The API ecosystem quietly normalized fragmented workflows. AI made the gap more visible, not less. It is time to care about API tooling again.
+sidebar: false
+pagination: false
+typesetting: article
+---
+
+import { Callout } from "nextra/components"
+
+# API Tooling Didn't Get Better. We Just Lowered Our Expectations
+
+It is strange how little we talk about APIs now.
+
+Not because APIs matter less. They matter more than ever. Modern software is held together by APIs: SaaS products, internal platforms, mobile apps, partner integrations, automation workflows, and now AI agents calling tools over HTTP-shaped boundaries all day long.
+
+And yet the API ecosystem feels oddly quiet, almost resigned. As if the problem has already been solved. As if Postman, Swagger, a test runner, some CI glue, and a folder full of half-maintained examples are simply the natural end state.
+
+Even newer waves like GraphQL and gRPC, important as they are, never really restarted the broader API tooling conversation. They shifted some technical boundaries, but the workflow problem remained.
+
+I do not think the problem was solved.
+
+I think we just got used to the friction.
+
+## The easiest API problem got dramatically better
+
+For a long time, the most visible API problem was documentation.
+
+Docs were incomplete. Docs drifted. Docs showed idealized examples that did not quite match reality. Swagger and OpenAPI helped a lot, but the workflow was still familiar: read the spec, hit the endpoint, discover the actual behavior, update your mental model, move on.
+
+AI changed this surprisingly fast.
+
+Today, if you have a half-decent spec, some examples, or even just a working endpoint, AI can explain the API, summarize it, generate payloads, compare versions, write a client, and answer questions about the docs faster than most human workflows ever could.
+
+That is real progress. But it also exposed something deeper: documentation used to absorb a lot of our frustration with APIs. Once AI made that part dramatically easier, the unsolved parts of API work became much harder to ignore.
+
+## The real problem was never just docs
+
+The harder problem is everything that happens after understanding an API.
+
+How do you explore it, keep the useful parts, turn one-off discovery into repeatable verification, test a real workflow instead of a pile of disconnected requests, move from local use to CI without rewriting everything, and make this whole thing work with AI instead of around it?
+
+That is why workflow matters so much. Workflow determines what knowledge survives, how quickly feedback returns, whether a useful experiment becomes a durable asset or disappears, and whether AI is helping inside a real verification loop or just generating more throwaway code.
+
+Workflow is where API knowledge either compounds or dies.
+
+This is where I think the ecosystem largely failed. We got many partial tools:
+
+- documentation tools
+- request senders
+- schema generators
+- mock servers
+- test runners
+- SDK generators
+- contract tooling
+
+Some of them are good. Swagger is good. OpenAPI is useful. Design-first was a genuinely strong idea.
+
+But if we are honest, none of that really changed the day-to-day workflow for most teams.
+
+Too much of the category kept reinventing the API client while leaving the workflow itself mostly untouched.
+
+The industry spent years polishing variations of the same request-sending model and calling that progress.
+
+The common reality still looks the same: you explore in one place, document in another, test in another, automate in another, and debug failures somewhere else. The useful knowledge gets lost in the gaps. That is the part the industry quietly normalized.
+
+A small example: someone changes a field name in the backend response. The frontend type is now stale. The API example in the docs is stale too. A saved request still "works" but no longer reflects the real workflow. The test suite fails later in CI, far away from the original change. Nothing about this is rare. It is ordinary API work.
+
+## Design-first made sense for the human coordination era
+
+Design-first was not a bad idea. It was a coordination technology for humans.
+
+It made sense in a world where frontend and backend were built by different people, often on different teams, moving at different speeds, and trying to align before implementation drifted too far. In that world, the spec had to carry a lot of weight:
+
+- team alignment
+- mock generation
+- frontend/backend parallel work
+- review before implementation
+- external documentation
+
+That was a real problem, and design-first was a real answer to it.
+
+But AI changes the coordination model.
+
+Now one developer, with one or more AI agents, can often move across frontend, backend, tests, examples, and docs in a single loop. The coordination cost that used to justify spec-first workflow collapses.
+
+The new default starts to look more like this:
+
+- AI writes backend code
+- AI writes frontend code
+- AI drafts tests
+- the code gets run
+- the spec is generated or updated only when needed
+
+That does not make contracts unimportant. It means the center of gravity shifts away from spec as the starting point.
+
+## AI makes this problem more obvious, not less
+
+A lot of people assume AI reduces the importance of API tooling. I think the opposite is true.
+
+AI is very good at working with code, structured schemas, and explicit contracts. It is much less naturally aligned with fragmented click-through workflows, stale collections, and operational knowledge scattered across tools.
+
+If AI helps you understand an endpoint, draft a request, or even generate a test, that is useful. But if the workflow still breaks the moment you want to keep that work, verify it, rerun it in CI, inspect failures, or reuse it inside a larger flow, then AI is not solving the actual problem. It is just accelerating the first step.
+
+That is also what current AI coding tools still lack in practice. The bottleneck is usually not "more documentation." It is live execution feedback, structured traces, failing assertions, environment context, and a clean way to turn exploratory code into durable verification.
+
+AI solved a lot of API explanation. It did not solve API workflow. If anything, it made the gap more visible.
+
+That is why testing matters more now, not as endpoint checking after the fact, but as the place where exploration becomes verification, verification stays close to the code, and the same artifact survives local use, CI, debugging, and AI-assisted authoring.
+
+The old center was specification. The new center should be executable workflow.
+
+In the AI era, the source of truth is less likely to be a carefully maintained design document and more likely to be:
+
+- working code
+- runnable tests
+- traces and real responses
+- generated specs when needed
+- verification that survives across local runs, CI, and debugging
+
+We do not need less contract. We need less ceremony and more executable truth.
+
+That kind of workflow is what I think the ecosystem should be building toward: API exploration stays in code, useful discoveries become runnable checks, AI can help write and refactor them, and the same artifacts survive local runs, debugging, and CI.
+
+That is also the direction I want Glubean to push toward, not as another request sender, but as tooling built around that loop.
+
+![Executable API workflow in VSCode](https://3ese0ujr3e86dvfp.public.blob.vercel-storage.com/glubean-demo-scratch.gif)
+
+That matters because, despite all the abstraction layers, the real boundary still looks a lot like HTTP: requests, responses, auth, retries, headers, payloads, failures, and state transitions between calls. If that boundary remains central, the workflow around it cannot stay this fragmented forever.
+
+## It is time to care about API tooling again
+
+I do not think the conclusion is that we need another Swagger clone. And I do not think AI will make API tooling disappear.
+
+The conclusion is almost the opposite: it is time to take the API ecosystem seriously again.
+
+Not just as documentation, schema, generated code, or a request sender with a nicer UI, but as a workflow problem.
+
+A real API workflow should let you understand an API, explore it, keep the useful parts, turn them into verification, run them in different environments, inspect failures, and make that whole loop work better with AI instead of breaking under it.
+
+That is still missing.
+
+We did not stop talking about APIs because they became perfect. We stopped talking about them because we stopped expecting anything better.
+
+I think that is a mistake.
+
+The reason I am building Glubean is simple: it never felt good enough in the API ecosystem. Not the exploration workflow. Not the testing story. Not the handoff into automation.
+
+So I want to try one more time. Not because I think one new tool will magically fix everything, but because I do not think the community should give up on this problem.

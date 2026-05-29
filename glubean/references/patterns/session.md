@@ -11,7 +11,7 @@ Share state (auth tokens, IDs) across test files without re-authenticating.
 ## Session setup file
 
 ```typescript
-// session.ts (or configure in package.json "glubean.session")
+// session.ts (or glubean.setup.ts at the project root)
 import { defineSession, configure } from "@glubean/sdk";
 
 const { http } = configure({

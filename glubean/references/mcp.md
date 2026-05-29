@@ -225,8 +225,8 @@ The list replaces the default — include the defaults if you still want them.
 |---|---|
 | Agent in local project, MCP available | **MCP** (`glubean_run_local_file`) |
 | Agent exploring API, needs response shape | **MCP** (with `includeTraces: true`) |
-| CI pipeline (`npm run test:ci`) | **CLI** (`glubean run --config ci-config/ci.yaml`) |
-| Cloud upload from CI | **CLI** (`glubean run tests/ --upload`) |
+| CI pipeline (`npm run test:ci`) | **CLI** (`glubean ci run`) |
+| Cloud upload from CI | **CLI** (`glubean ci run --upload`) |
 | MCP not available in environment | **CLI** (fallback only) |
 
 See [ci-workflow.md](ci-workflow.md) for CI setup.

@@ -4,21 +4,29 @@ Glubean redacts sensitive data before results leave your machine. The CLI applie
 
 Cloud adds a team-facing control surface on top of that local behavior.
 
-## Recommended workflow
+## Two layers of redaction
 
-```text
-1. Configure rules        2. Export config         3. Use locally
-┌─────────────────┐      ┌──────────────────┐     ┌──────────────────┐
-│ Cloud dashboard │ ───► │ Copy as JSON     │ ──► │ Paste into       │
-│ (visual editor) │      │                  │     │ glubean.json     │
-└─────────────────┘      └──────────────────┘     └──────────────────┘
-```
+Redaction runs in two places, configured independently:
 
-1. Use the Cloud dashboard's visual editor to build your redaction rules (easier than writing JSON by hand).
-2. Export the config as JSON.
-3. Paste into your project's `glubean.json` under `glubean.redaction`.
+| Layer | Configured in | Controls |
+|---|---|---|
+| **Local** (before upload) | `defaults.redaction` in `glubean.yaml` | Extra `sensitiveKeys`, `customPatterns`, and `replacementFormat`. Applied **on profile runs** (see caveat below). |
+| **Server baseline** (at ingestion) | Built-in (not configurable for CLI uploads) | A fixed baseline re-applied when results are ingested, as a safety net. |
 
-The CLI applies these rules **locally before upload** — sensitive data never leaves your machine.
+Author your local rules by hand in `glubean.yaml` under `defaults.redaction`.
+On ingestion the server re-applies a fixed built-in baseline (it does **not**
+load your team dashboard policy for CLI runs), so don't rely on dashboard
+toggles to catch a value you didn't also cover locally. `defaults.redaction` is
+additive — it can only *add* keys/patterns, never disable a built-in scope.
+
+> **Apply custom redaction via a profile.** `defaults.redaction` is applied
+> when you run a **profile** — `glubean run --profile <name>` or `glubean ci
+> run`. An ad-hoc run with an explicit target (e.g. `glubean run tests/ --upload`)
+> does **not** resolve a profile and uploads with the built-in baseline only,
+> so your project-specific `sensitiveKeys`/`customPatterns` are skipped. To
+> apply them before upload, run through a profile.
+
+See [CLI Redaction](/cli/redaction) for the local rules.
 
 ## Configuring rules in Cloud
 
@@ -88,21 +96,16 @@ Choose how redacted values appear:
 
 ## Local Config Format
 
-The CLI reads redaction rules from `glubean.json` or `package.json`:
+The CLI reads redaction rules from `defaults.redaction` in `glubean.yaml`:
 
-```json
-{
-  "glubean": {
-    "redaction": {
-      "sensitiveKeys": ["x-custom-secret", "internal-token"],
-      "customPatterns": [
-        { "name": "stripe_key", "regex": "sk_live_\\w+" },
-        { "name": "internal_id", "regex": "int_[a-f0-9]{32}" }
-      ],
-      "replacementFormat": "labeled"
-    }
-  }
-}
+```yaml
+defaults:
+  redaction:
+    sensitiveKeys: [x-custom-secret, internal-token]
+    customPatterns:
+      - { name: stripe_key, regex: "sk_live_\\w+" }
+      - { name: internal_id, regex: "int_[a-f0-9]{32}" }
+    replacementFormat: labeled
 ```
 
 The built-in baseline (scope-specific sensitive keys + 5 default patterns) is always active and **cannot be weakened**. Your config can only add rules on top.

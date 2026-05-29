@@ -12,33 +12,49 @@ Use this page when local tests already work and you want a shared run history in
 
 In Glubean Cloud, open your project and go to **Settings → Tokens**.
 
-Create a token with at least `runs:write`. Project tokens start with `gpt_`.
+Create a token with the **`runs:write`** scope. Project tokens start with `gpt_`. Copy the value now — Glubean won't show it again.
 
-For token types and tradeoffs, see [Tokens](/cloud/tokens).
+For when to use a project token vs a user API key, see [Tokens](/cloud/tokens).
 
 ## 2. Store the token
 
-For local development, put it in `.env.secrets`:
+### Local development
+
+Put the token in `.env.secrets` (must be gitignored), and the project ID in `.env` (committed):
 
 ```bash
+# .env.secrets — NOT committed
 GLUBEAN_TOKEN=gpt_your_project_token
+```
+
+```dotenv
+# .env — committed; shared by every contributor
 GLUBEAN_PROJECT_ID=prj_abc123
 ```
 
-`.env.secrets` should stay out of git.
+The project ID isn't sensitive and belongs in the repo (`.env`). The token is sensitive and goes in `.env.secrets`. Because it's an env var, every run mode — `glubean run --upload`, `glubean ci run --upload`, or a filtered/tagged run — uploads to the same project.
 
-For CI, store the same values in your provider's secret store:
+> **Working on multiple Glubean projects from one laptop?** See [Multi-workspace setup](/cloud/tokens#multi-workspace-setup).
+
+### CI
+
+Store the project token in your provider's secret store and inject it as the `GLUBEAN_TOKEN` env var. The CLI auto-picks it up — **no `glubean login` step in CI**.
+
+GitHub Actions example:
 
 ```yaml
-env:
-  GLUBEAN_TOKEN: ${{ secrets.GLUBEAN_TOKEN }}
-  GLUBEAN_PROJECT_ID: ${{ vars.GLUBEAN_PROJECT_ID }}
+- name: Upload Glubean run
+  env:
+    GLUBEAN_TOKEN: ${{ secrets.GLUBEAN_TOKEN }}
+  run: npx glubean ci run --upload
 ```
+
+The project ID is in `.env`, so no second secret is needed.
 
 ## 3. Upload a run
 
 ```bash
-npx glubean run tests/ --ci --upload
+npx glubean ci run --upload
 ```
 
 You can still target a file, folder, filter, or tag:
@@ -53,22 +69,26 @@ glubean run --tag smoke --upload
 
 After upload, the CLI prints a Cloud URL. Open it to inspect:
 
-- run summary
-- test results
-- logs, traces, and metrics
+- Run summary
+- Test results
+- Logs, traces, and metrics
 
 ## Credential lookup order
 
-The CLI uses the first matching credential source:
+The CLI uses the first matching credential source for `GLUBEAN_TOKEN`, `GLUBEAN_PROJECT_ID`, and `GLUBEAN_API_URL`:
 
-1. `--token`
-2. `GLUBEAN_TOKEN`
-3. project env files such as `.env.secrets`
-4. `package.json` → `glubean.cloud`
-5. `~/.glubean/credentials.json` from `glubean login`
+1. `--token` / `--project` / `--api-url` CLI flags
+2. `GLUBEAN_TOKEN` / `GLUBEAN_PROJECT_ID` / `GLUBEAN_API_URL` env vars
+3. `.env` and `.env.secrets` files in the project root
+4. `~/.glubean/credentials.json` (written by `glubean login`)
+
+The chain is per-field — for example, the token can come from an env var while the project ID comes from `.env`. This is what makes the recommended CI pattern (1 secret) work. Keep token *values* in `.env.secrets` (gitignored) — a literal `GLUBEAN_TOKEN` in the committed `.env` **is** read, so never commit one there.
+
+For project ID, a profile's `upload.projectAlias` in `glubean.yaml` is also honored when you run that profile — and it takes precedence over `GLUBEAN_PROJECT_ID`. See [Tokens](/cloud/tokens#where-to-store-it) for the exact order.
 
 ## Next
 
+- [Tokens — types and storage](/cloud/tokens)
 - [Dashboard](/cloud/dashboard)
 - [Analytics](/cloud/analytics)
-- [Plans & Quotas](/cloud/quotas)
+- [Plans & quotas](/cloud/quotas)

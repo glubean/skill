@@ -29,7 +29,7 @@ Use `--trace-limit <N>` to control how many trace files are kept per test (defau
 
 ```bash
 glubean run tests/ --upload              # Run and upload in one step
-glubean sync -p <project-id>             # Upload an existing bundle
+glubean ci run --upload                  # Run the `ci` profile and upload
 ```
 
 Before uploading, results pass through [redaction](/cli/redaction) to mask sensitive values.

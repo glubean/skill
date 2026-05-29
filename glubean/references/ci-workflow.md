@@ -24,58 +24,44 @@ Read these before making CI changes:
 
 Prefer this shape:
 
-1. put run config in `ci-config/*.yaml` files (one per environment)
-2. put `package.json` scripts that point at those configs
-3. make CI call those scripts
+1. Define **profiles** in `glubean.yaml` (one named run plan per scenario — `local`, `ci`, …).
+2. Run a profile by name: `glubean ci run` (shorthand for `glubean run --profile ci`).
+3. Make CI call `glubean ci run`.
 
-### Config files
+### glubean.yaml profiles
 
-`glubean init` generates these by default. In an already initialized project, add them if they do not exist. If core project structure is still missing, go back to `glubean init` first instead of hand-creating around a half-initialized repo:
-
-**ci-config/default.yaml** — local development:
-
-```yaml
-# Default run config — used by: npm test
-run:
-  testDir: ./tests
-  exploreDir: ./explore
-  verbose: false
-  pretty: true
-
-redaction:
-  replacementFormat: simple
-```
-
-**ci-config/ci.yaml** — CI pipelines:
+`glubean init` generates `glubean.yaml` with `local` + `ci` profiles. In an
+already-initialized project, add a profile if one doesn't exist. If core
+project structure is still missing, run `glubean init` first instead of
+hand-creating around a half-initialized repo.
 
 ```yaml
-# CI run config — used by: npm run test:ci
-# Optimized for CI pipelines: fail fast, structured output, no pretty-print
-run:
-  testDir: ./tests
-  failFast: true
-  pretty: false
-  # Emit full HTTP trace in results (useful for debugging CI failures)
-  emitFullTrace: false
-  # Stop after N failures (uncomment to enable)
-  # failAfter: 5
+version: 1
 
-redaction:
-  replacementFormat: simple
-```
+defaults:
+  redaction:
+    replacementFormat: simple
 
-**ci-config/staging.yaml** — staging environment:
+suites:
+  tests:
+    target: ./tests
+    kinds: [test]
+  explore:
+    target: ./explore
+    kinds: [test]
 
-```yaml
-# Staging run config — used by: npm run test:staging
-run:
-  testDir: ./tests
-  envFile: .env.staging
-  verbose: false
-  pretty: true
-
-redaction:
-  replacementFormat: simple
+profiles:
+  local:                 # bare `glubean run` / npm test
+    suites: [tests]
+  ci:                    # `glubean ci run` / npm run test:ci
+    suites: [tests]
+    execution:
+      failFast: true
+    reporters:
+      junit: .glubean/results/junit.xml
+      resultJson: .glubean/results/ci.result.json
+  explore:
+    suites: [explore]
 ```
 
 ### package.json scripts
@@ -83,12 +69,18 @@ redaction:
 ```json
 {
   "scripts": {
-    "test": "glubean run --config ci-config/default.yaml",
-    "test:ci": "glubean run --config ci-config/ci.yaml",
-    "test:staging": "glubean run --config ci-config/staging.yaml",
-    "explore": "glubean run --config ci-config/explore.yaml"
+    "test": "glubean run --profile local",
+    "test:ci": "glubean ci run",
+    "explore": "glubean run --profile explore"
   }
 }
+```
+
+For a staging environment, switch env files at run time — test code and
+profiles never change:
+
+```json
+"test:staging": "glubean run --profile ci --env-file .env.staging"
 ```
 
 Then the underlying CI command becomes:
@@ -99,16 +91,15 @@ npm run test:ci
 
 ### Why this shape is preferred
 
-- YAML files support comments — each option is self-documenting
-- changing CI behavior means editing a yaml file, not rewriting a `package.json` script
-- `--config` supports stacking (`--config base.yaml --config ci-overrides.yaml`)
+- one config source (`glubean.yaml`) — no split between `package.json` and separate config files
+- profiles are named, self-documenting run plans; CI just picks one by name
+- `glubean ci run` matches `glubean run --profile ci` run locally — no drift between local and CI
+- changing CI behavior means editing the `ci` profile in `glubean.yaml`, not rewriting a `package.json` script
 - consistent with `glubean init` output — no disconnect between scaffolding and CI guidance
-- the canonical command lives in one place
-- workflow files stay short and easier to review
 
 ## GitHub Actions
 
-If the user wants GitHub Actions, prefer a workflow that calls the script:
+If the user wants GitHub Actions, prefer a workflow that calls the script (or `glubean ci run` directly):
 
 ```yaml
 name: test-api
@@ -123,7 +114,7 @@ jobs:
         with:
           node-version: "22"
       - run: npm ci
-      - run: npm run test:ci
+      - run: npx glubean ci run
 ```
 
 If the project already has a CI style, preserve the existing conventions instead of forcing this exact workflow.
@@ -136,32 +127,26 @@ If the user is still at project setup time and wants CI immediately, check wheth
 glubean init --hooks --github-actions
 ```
 
-This generates `ci-config/*.yaml`, `package.json` scripts, and a GitHub Actions workflow in one step. Use this only when creating or re-initializing the project structure makes sense. Do not overwrite a hand-maintained CI setup without good reason.
+This generates `glubean.yaml` (with `local` + `ci` profiles), `package.json` scripts, and a GitHub Actions workflow in one step. Use this only when creating or re-initializing the project structure makes sense. Do not overwrite a hand-maintained CI setup without good reason.
 
 ## Cloud upload in CI
 
-To enable Cloud upload, add the `cloud` section to `ci-config/ci.yaml`:
+`glubean ci run` resolves the `ci` profile, so add `--upload`:
 
-```yaml
-run:
-  testDir: ./tests
-  failFast: true
-  pretty: false
-
-cloud:
-  upload: true
-  # projectId from env: GLUBEAN_PROJECT_ID
-
-redaction:
-  replacementFormat: simple
+```bash
+glubean ci run --upload
 ```
 
-Required CI secrets:
+Provide the project ID via the committed `.env` (`GLUBEAN_PROJECT_ID=prj_...`)
+or a profile's `upload.projectAlias`; store the token in the CI secret store.
 
-- `GLUBEAN_TOKEN`
-- `GLUBEAN_PROJECT_ID`
+Required CI secret:
 
-Store them in the CI provider's secret store, not in the repo.
+- `GLUBEAN_TOKEN` (the project ID is not a secret — keep it in `.env` or `glubean.yaml`)
+
+Store the token in the CI provider's secret store, not in the repo. Because
+`ci run` resolves a profile, your `defaults.redaction` rules are applied before
+upload.
 
 ## Metadata and validation
 
@@ -178,8 +163,8 @@ Use it when metadata drift matters to the team's workflow. Do not add it blindly
 When creating CI for the user:
 
 1. Reuse the repo's existing CI conventions if they already exist.
-2. Add or update `package.json` scripts before editing the CI workflow file.
+2. Add or update the `ci` profile in `glubean.yaml` (and matching `package.json` scripts) before editing the CI workflow file.
 3. Keep CI focused on `tests/`, not `explore/`.
-4. Prefer stable output locations for result JSON and JUnit XML.
+4. Prefer stable output locations for result JSON and JUnit XML (set them in `reporters`).
 5. Ask before adding Cloud upload if credentials are not already configured.
-6. After creating CI, explain the script names and the artifacts they will produce.
+6. After creating CI, explain the profile, the script names, and the artifacts they will produce.
