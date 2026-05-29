@@ -194,29 +194,27 @@ All other headers are discarded before the trace reaches the agent.
 
 ### Configuring additional headers
 
-Add to `package.json`:
+Add an `mcp.trace` block to `glubean.yaml`:
 
-```json
-{
-  "glubean": {
-    "mcp": {
-      "trace": {
-        "keepResponseHeaders": [
-          "content-type", "set-cookie", "location",
-          "x-processing-duration", "x-request-id", "server-timing"
-        ]
-      }
-    }
-  }
-}
+```yaml
+mcp:
+  trace:
+    keepResponseHeaders:
+      - content-type
+      - set-cookie
+      - location
+      - x-processing-duration
+      - x-request-id
+      - server-timing
 ```
 
 The list replaces the default — include the defaults if you still want them.
+(`keepRequestHeaders` works the same way.)
 
 ### Agent behavior
 
 - When the agent needs header data it cannot see in traces (e.g. for metrics, debugging, rate limit tracking), ask the user: "Does your API return useful headers like `x-processing-duration` or `server-timing`?"
-- If yes, suggest adding them to `keepResponseHeaders` in `package.json` so future traces include them.
+- If yes, suggest adding them to `keepResponseHeaders` under `mcp.trace` in `glubean.yaml` so future traces include them.
 - **Test code always has full access to `res.headers`** regardless of this config. The filtering only affects what the agent sees via MCP traces.
 
 ## When CLI is appropriate
