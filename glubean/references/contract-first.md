@@ -22,7 +22,7 @@ Rules:
 
 - Do not write contracts in `explore/` or `tests/`.
 - Create a scoped instance with `contract.http.with(name, { client, security, ... })`, then declare contracts as `myApi(id, { cases })`. Bare `contract.http(id, spec)` throws at runtime.
-- Each case must have a `description`.
+- Each case must have a diagnostic `description` that names the business rule, boundary, or invariant being checked.
 - Use `contract.flow()` for stateful endpoint chains (upload → read → delete).
 - Use `test()` only for scenarios contract can't express (browser, polling, complex state machines).
 - Keep Zod schemas in `schemas/`. Use `expect.schema` for response validation, not scattered assertions.

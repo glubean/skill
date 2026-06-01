@@ -15,6 +15,18 @@ Design-first override:
 
 Then pick a mode based on intent and project structure.
 
+## Cloud diagnosis
+
+**When to use:**
+- User provides a Glubean Cloud run ID or run URL
+- User asks to diagnose an uploaded run, CI failure, or Cloud failure
+- User asks the agent to fetch failures or run evidence from Cloud
+
+**Steps:**
+1. Read [patterns/cloud-diagnosis.md](patterns/cloud-diagnosis.md) before calling Cloud APIs or asking for tokens.
+2. Prefer a focused failure summary over full event pagination.
+3. If the user wants a code fix after the diagnosis, then route to simple mode or contract-first based on the failing test source.
+
 ## Simple mode (default — test-after)
 
 **When to use:**

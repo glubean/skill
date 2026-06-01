@@ -65,9 +65,11 @@ ctx.expect(x).toBeType("string");
 
 Hard assertion. Stops execution immediately on failure.
 
+Always include a diagnostic message. The message should name the invariant being checked, and custom boolean predicates should include `actual` / `expected` details when runtime values are compared.
+
 ```typescript
-ctx.assert(res.ok, "Request should succeed");
-ctx.assert(body.id > 0, "User ID should be positive", {
+ctx.assert(res.ok, "create user request should return a 2xx response");
+ctx.assert(body.id > 0, "created user id should be a positive integer", {
   actual: body.id,
   expected: "> 0",
 });

@@ -36,4 +36,5 @@ Common entry points:
 - Feature support / limitations / plugins: [docs/reference/limitations.mdx](docs/reference/limitations.mdx), [patterns/plugins.md](patterns/plugins.md)
 - Extension workflow: [docs/extension/editor-experience.mdx](docs/extension/editor-experience.mdx)
 - Cloud: [docs/cloud/index.mdx](docs/cloud/index.mdx)
+- Cloud run diagnosis: [patterns/cloud-diagnosis.md](patterns/cloud-diagnosis.md) and [docs/cloud/agent-access.mdx](docs/cloud/agent-access.mdx)
 - Planning / coverage: [patterns/test-planning.md](patterns/test-planning.md)

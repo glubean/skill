@@ -166,6 +166,25 @@ These tools call the Glubean Open Platform API. They require `apiUrl`, `token`, 
 
 Use these when the user wants to trigger a Cloud run from within the agent conversation, or to tail a run triggered by CI.
 
+### Cloud failure diagnosis
+
+When the user gives you a Cloud run ID or run URL and asks why it failed, read [patterns/cloud-diagnosis.md](patterns/cloud-diagnosis.md) before pulling data.
+
+Preferred order:
+
+1. Use a focused failure summary tool or endpoint when available:
+
+   ```http
+   GET /open/v1/runs/{runId}/failures
+   Authorization: Bearer <read-only project token>
+   ```
+
+2. If no focused failures tool is available, use `glubean_open_get_run` to confirm the run status, then `glubean_open_get_run_events` to fetch the smallest useful event slice.
+3. Group failures by reason and cite test IDs, messages, `actual` / `expected`, and relevant trace facts.
+4. Do not dump full event streams or echo tokens.
+
+The `/failures` endpoint returns a compact agent-facing summary. It is better than paging all events when the goal is quick diagnosis.
+
 ## Agent run loop
 
 The standard MCP-powered write/run/fix loop:

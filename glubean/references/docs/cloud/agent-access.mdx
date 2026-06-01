@@ -97,6 +97,22 @@ Failure analysis for run {runId}:
 - propose 1-2 likely root causes per group, citing the message + location
 ```
 
+## Skill behavior
+
+The Glubean skill routes run-ID diagnosis to the Cloud diagnosis pattern:
+
+1. Extract the run ID from the pasted ID or Cloud URL.
+2. Use a read-only project token with `runs:read`.
+3. Fetch `/open/v1/runs/{runId}/failures` when the agent environment can call HTTP APIs with auth headers.
+4. Fall back to run/event APIs when the focused endpoint is not available through the current tool surface.
+5. Group failures by cause, cite the evidence, and propose the next action without dumping full event streams or token values.
+
+This makes the user-facing flow simple:
+
+```text
+Paste run ID + read-only token -> agent fetches focused failures -> agent explains root causes
+```
+
 ## What this endpoint is not (yet)
 
 This page covers the HTTP endpoint only. Two adjacent paths are in plan but

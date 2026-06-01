@@ -40,6 +40,8 @@ Before writing or expanding tests:
 - If they did not specify one:
   - `explore/` is for trying, probing, and interactive API exploration.
   - `tests/` is for permanent regression and CI coverage.
+- Treat test text as diagnostic output. Case titles, test names, step names, schema labels, assertion messages, warnings, and logs should say what invariant or business rule is being checked. Avoid generic labels such as "works" or "check response".
+- For `ctx.assert`, always write a diagnostic message; include `{ actual, expected }` when comparing runtime values.
 
 ### Directory-aware CRUD routing
 
@@ -79,6 +81,7 @@ For CI, use `package.json` scripts calling `glubean run tests/`. See [ci-workflo
 ## 8. Fix failures iteratively
 
 - Read structured failures carefully.
+- If the failure comes from an uploaded Cloud or CI run and the user provides a run ID or Cloud URL, read [patterns/cloud-diagnosis.md](patterns/cloud-diagnosis.md) first and pull focused failure evidence before guessing from logs.
 - Classify the failure first. If it smells like repair drift, auth entropy, spec amnesia, or terminal fog, read [patterns/repair.md](patterns/repair.md) before changing assertions.
 - Fix the test, not just the symptom.
 - Do not weaken assertions unless you have confirmed the behavior actually changed.

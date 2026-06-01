@@ -135,7 +135,7 @@ For the canonical v10 pattern (per-case Needs + overlay), see [attachment-model.
 
 ### Single-endpoint contract
 
-Use a scoped instance with `cases`. Each case must have a `description` explaining why it exists. Every exported contract must be preceded by `// @contract` on the line above.
+Use a scoped instance with `cases`. Each case must have a diagnostic `description` explaining the business rule, boundary, or invariant it verifies. Every exported contract must be preceded by `// @contract` on the line above.
 
 #### Style A — inline cases (no Needs / static input)
 

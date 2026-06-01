@@ -27,6 +27,7 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 |------|------------------|
 | [patterns/configure.md](patterns/configure.md) | Shared client, env, secrets, plugins |
 | [patterns/contract-first.md](patterns/contract-first.md) | Full contract authoring workflow |
+| [patterns/cloud-diagnosis.md](patterns/cloud-diagnosis.md) | Diagnose uploaded Cloud or CI runs from run IDs, focused failures, or run events |
 | [patterns/projection.md](patterns/projection.md) | Contract coverage report: API surface, deferred cases, gap analysis |
 | [patterns/test-planning.md](patterns/test-planning.md) | Coverage planning and gap reports |
 | [patterns/migration.md](patterns/migration.md) | Migrate from Postman, Apifox, OpenAPI, `.http`, cURL, or legacy test code |

@@ -17,6 +17,38 @@
 
 ## Decision rules
 
+### Diagnostic text is part of the test
+
+Every string that appears in a result viewer, MCP event, Cloud report, or CI log should help a human or agent diagnose the failure.
+
+Write diagnostic text for:
+
+- case titles and test names
+- builder step names
+- schema validation labels
+- `ctx.assert` messages
+- warnings and logs
+
+Avoid generic text like "works", "valid", "check response", "assert", or "should pass". Name the invariant or business rule instead: "active users endpoint excludes disabled accounts", "created project name round-trips from write to read", or "duplicate email is rejected with a conflict status".
+
+When using `ctx.assert`, always provide a message. If the assertion compares runtime values, include structured details:
+
+```typescript
+// ❌ No diagnostic message or structured values
+ctx.assert(body.id > 0);
+
+// ❌ Message says that something failed, but not what invariant failed
+ctx.assert(body.id > 0, "invalid id");
+
+// ✅ Message names the invariant, details expose the runtime mismatch
+ctx.assert(body.id > 0, "created user id should be a positive integer", {
+  actual: body.id,
+  expected: "> 0",
+});
+```
+
+Prefer `ctx.expect(...)` matchers when they naturally capture `actual` and `expected`; use `ctx.assert(...)` for custom boolean predicates that need a clear message and details.
+
 ### By directory
 
 | Directory | Default level | Rationale |

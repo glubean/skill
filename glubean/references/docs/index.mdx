@@ -96,6 +96,7 @@ prompt → draft → inspect → repair → keep → CI → cloud
 | Write tests myself | [SDK overview](/sdk) → [Test shape](/sdk/test-api) → [Assertions](/sdk/assertions) |
 | Explore APIs in my editor | [Extension](/extension) → [Running tests](/extension/running-tests) |
 | Get team visibility | [Cloud](/cloud) → [Upload first run](/getting-started/upload-to-cloud) |
+| Diagnose an uploaded run | [Cloud agent access](/cloud/agent-access) |
 | Migrate from Postman / OpenAPI / legacy tests | [Migration guide](/extension/migrate-from-postman) |
 | Define API contracts before implementation | [Contract HTTP](/sdk/contract-http) |
 
@@ -104,6 +105,7 @@ prompt → draft → inspect → repair → keep → CI → cloud
 - **`explore/` replaces Postman** — your API collection lives in git, not a proprietary cloud. No per-seat pricing.
 - **Agent output is not throwaway** — the same file graduates from `explore/` to CI without rewriting
 - **Structured failures** — AI and humans read typed `expected` vs `actual`, not terminal noise
+- **Cloud failure diagnosis** — agents can fetch focused run failures instead of scanning CI logs
 - **One codebase** across local development, CI, and production verification
 - **Git-safe** — TypeScript files, no binary formats, no merge conflicts
 - **No vendor lock-in** — tests are plain TypeScript. If Glubean disappears, your code still runs.
