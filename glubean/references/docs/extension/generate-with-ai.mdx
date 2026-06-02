@@ -12,7 +12,6 @@ Most API tools were built for humans clicking buttons. AI agents can't click a G
 2. **MCP server** — gives the AI tools to discover, run, and inspect tests without leaving the chat
 3. **Schema inference** — large API responses are summarized as JSON Schema, so AI understands the shape without reading megabytes of data
 4. **Structured failures** — when a test fails, AI sees exactly which assertion failed with `expected` vs `actual`, not a wall of text
-5. **Cloud diagnosis** — for uploaded runs, AI can fetch focused failure summaries instead of scanning CI logs
 
 With the right project context — ideally API source code in the same workspace, or an up-to-date OpenAPI spec, plus the skill (which bundles SDK reference docs) — we've achieved an AI self-healing loop: describe what to verify → AI writes the test → MCP runs it → AI reads structured failures → fixes and reruns → loop until green. In practice, the quality depends heavily on how much context is available — we're continuously improving this to make it more seamless. But even without perfect setup, AI-generated tests are a strong starting point that you refine, not write from scratch.
 
@@ -97,7 +96,7 @@ Notice what the AI figured out on its own — no hand-holding needed:
 </Callout>
 
 <Callout type="info">
-**One prerequisite: a Glubean project.** Run `npx @glubean/cli init` first so the AI can see `package.json`, the `@glubean/sdk` dependency, and your `tests/` / `explore/` layout. Without this context, it generates generic Node/Jest-style code instead of Glubean tests.
+**One prerequisite: a Glubean project.** Run `npx glubean init` first so the AI can see `package.json`, the `@glubean/sdk` dependency, and your `tests/` / `explore/` layout. Without this context, it generates generic Node/Jest-style code instead of Glubean tests.
 </Callout>
 
 ---

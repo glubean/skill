@@ -18,7 +18,7 @@ Run `Glubean: Diagnose` from the Command Palette. The extension checks four area
 3. **Test discovery** — how many test files and test cases were found.
 4. **Current file** — whether the active file is a test file, its parse result.
 
-If problems are detected, the output includes specific suggestions (e.g. "CLI version is outdated, run `npm update @glubean/cli`").
+If problems are detected, the output includes specific suggestions (e.g. "CLI version is outdated, run `npm install -g glubean@latest`").
 
 ---
 
@@ -58,8 +58,8 @@ The status bar shows the Glubean CLI installation status (only visible in Glubea
 
 | Status bar display | Meaning | Click action |
 |---|---|---|
-| `$(alert) Glubean CLI` (yellow) | CLI not installed | Runs `npm install --save-dev @glubean/cli` |
-| `$(arrow-up) CLI 0.1.12 -> 0.1.15` | Update available | Runs `npm update @glubean/cli` |
+| `$(alert) Glubean CLI` (yellow) | CLI not installed | Runs `npm install -g glubean` |
+| `$(arrow-up) CLI 0.1.12 -> 0.1.15` | Update available | Runs `npm install -g glubean@latest` |
 | `$(check) CLI 0.1.15` | Up to date | Shows confirmation message |
 
 Version checks query the npm registry with a 24-hour cache.

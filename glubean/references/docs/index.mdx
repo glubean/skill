@@ -14,7 +14,7 @@ Two ways to use it:
 | Component | What it does | Get started |
 |-----------|-------------|-------------|
 | **SDK** (`@glubean/sdk`) | Author tests — `test()`, `configure()`, assertions, builder flows, data-driven patterns. Tests are plain TypeScript, no proprietary format. | [SDK overview →](/sdk) |
-| **CLI** (`@glubean/cli`) | Run tests, emit traces, manage environments, initialize projects. Same runner in local dev and CI. | [CLI reference →](/cli) |
+| **CLI** (`glubean`) | Run tests, emit traces, manage environments, initialize projects. Same runner in local dev and CI. | [CLI reference →](/cli) |
 | **MCP server** (`@glubean/mcp`) | Lets AI agents run tests, read structured results, and self-repair — the bridge between agent and runner. | [MCP setup →](/extension/generate-with-ai#setup) |
 | **Skill** (`glubean/skill`) | Teaches AI agents SDK patterns, project conventions, and migration workflows. Agents write better tests with it. | [Skill setup →](/extension/generate-with-ai#setup) |
 
@@ -64,7 +64,7 @@ The agent writes the test, runs it via MCP, reads structured failures, fixes, an
 ### By hand
 
 ```bash
-npx @glubean/cli init
+npx glubean init
 ```
 
 1. [Extension Quick Start](/extension/quick-start) — install and create a project
@@ -96,7 +96,6 @@ prompt → draft → inspect → repair → keep → CI → cloud
 | Write tests myself | [SDK overview](/sdk) → [Test shape](/sdk/test-api) → [Assertions](/sdk/assertions) |
 | Explore APIs in my editor | [Extension](/extension) → [Running tests](/extension/running-tests) |
 | Get team visibility | [Cloud](/cloud) → [Upload first run](/getting-started/upload-to-cloud) |
-| Diagnose an uploaded run | [Cloud agent access](/cloud/agent-access) |
 | Migrate from Postman / OpenAPI / legacy tests | [Migration guide](/extension/migrate-from-postman) |
 | Define API contracts before implementation | [Contract HTTP](/sdk/contract-http) |
 
@@ -105,7 +104,6 @@ prompt → draft → inspect → repair → keep → CI → cloud
 - **`explore/` replaces Postman** — your API collection lives in git, not a proprietary cloud. No per-seat pricing.
 - **Agent output is not throwaway** — the same file graduates from `explore/` to CI without rewriting
 - **Structured failures** — AI and humans read typed `expected` vs `actual`, not terminal noise
-- **Cloud failure diagnosis** — agents can fetch focused run failures instead of scanning CI logs
 - **One codebase** across local development, CI, and production verification
 - **Git-safe** — TypeScript files, no binary formats, no merge conflicts
 - **No vendor lock-in** — tests are plain TypeScript. If Glubean disappears, your code still runs.
