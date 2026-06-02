@@ -71,51 +71,17 @@ Use `glubean login` for personal local development across multiple Glubean proje
 
 ## Configuration
 
-glubean reads config from `glubean.yaml` at the project root. It declares
-**suites** (where runnable files live), **profiles** (named run plans you
-select with `--profile`), and shared **defaults**. `glubean init` scaffolds one.
-
-```yaml
-version: 1
-
-defaults:
-  redaction:
-    sensitiveKeys: [x-internal-token]
-    customPatterns:
-      - { name: stripe-key, regex: "sk_live_[a-zA-Z0-9]{24,}" }
-
-suites:
-  tests:
-    target: ./tests
-    kinds: [test]
-  explore:
-    target: ./explore
-    kinds: [test]
-
-profiles:
-  local:
-    suites: [tests]
-  ci:
-    suites: [tests]
-    selection:
-      excludeTags: [manual, destructive]
-    execution:
-      failFast: true
-      concurrency: 2
-    reporters:
-      junit: .glubean/results/junit.xml
-    thresholds:
-      http_duration_ms: { p95: "<500" }
-  explore:
-    suites: [explore]
-```
+glubean reads config from `glubean.yaml` at the project root — it declares
+**suites** (where runnable files live) and **profiles** (named run plans you
+select with `--profile`). `glubean init` scaffolds one.
 
 - `glubean run` (no `--profile`) uses `local`; `glubean ci run` uses `ci`.
 - Run a specific profile with `glubean run --profile <name>`, or narrow a
   multi-suite profile to one suite with `--suite <name>`.
 - Load an alternate config with `--config ./path/to/glubean.yaml`.
 
-Secrets (cloud `token`, `apiUrl`) never live in `glubean.yaml` — they come from
-`.env.secrets`, environment variables, or `glubean login`. See [Tokens](/cloud/tokens).
+See **[Configuration (`glubean.yaml`)](/cli/config)** for the complete schema —
+every `suites` / `profiles` field (selection, execution, capabilities,
+reporters, thresholds, upload) with a full annotated example.
 
 Run `glubean -h` or `glubean <command> -h` for the full option list.

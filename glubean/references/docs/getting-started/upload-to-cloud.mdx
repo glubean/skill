@@ -84,7 +84,7 @@ The CLI uses the first matching credential source for `GLUBEAN_TOKEN`, `GLUBEAN_
 
 The chain is per-field — for example, the token can come from an env var while the project ID comes from `.env`. This is what makes the recommended CI pattern (1 secret) work. Keep token *values* in `.env.secrets` (gitignored) — a literal `GLUBEAN_TOKEN` in the committed `.env` **is** read, so never commit one there.
 
-For project ID, a profile's `upload.projectAlias` in `glubean.yaml` is also honored when you run that profile — and it takes precedence over `GLUBEAN_PROJECT_ID`. See [Tokens](/cloud/tokens#where-to-store-it) for the exact order.
+For project ID, a profile's `upload.projectId` in `glubean.yaml` is also honored when you run that profile — and it takes precedence over `GLUBEAN_PROJECT_ID`. A profile can also set `upload.tokenEnv` (the name of the env var holding *its* token) so different profiles upload to different projects. See [Tokens](/cloud/tokens#where-to-store-it) for the exact order and the full config reference at [Configuration](/cli/config).
 
 ## Next
 

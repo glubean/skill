@@ -1,0 +1,186 @@
+# Configuration (`glubean.yaml`)
+
+`glubean.yaml` at the project root is the canonical config. It declares
+**suites** (where runnable files live) and **profiles** (named run plans you
+select with `--profile`), plus shared **defaults**. `glubean init` scaffolds
+one. Load an alternate file with `--config ./path/to/glubean.yaml`.
+
+Secrets (a cloud `token`, the project's `tokenEnv` *value*) **never** live in
+`glubean.yaml` — they come from `.env.secrets`, environment variables, or
+`glubean login`. See [Tokens](/cloud/tokens).
+
+## A complete example
+
+```yaml
+version: 1
+
+# Applied to every profile unless the profile overrides them.
+defaults:
+  envFile: .env
+  redaction:
+    replacementFormat: simple          # simple | labeled | partial
+    sensitiveKeys: [x-internal-token]
+    customPatterns:
+      - { name: stripe-key, regex: "sk_live_[a-zA-Z0-9]{24,}" }
+  execution:
+    concurrency: 4
+    timeoutMs: 30000
+  thresholds:
+    http_duration_ms: { p95: "<500" }
+
+# Where runnable files live. Reference these by name from a profile.
+suites:
+  api:       { target: ./tests/api,        kinds: [test] }
+  contracts: { target: ./tests/contracts,  kinds: [contract, flow] }
+  browser:   { target: ./tests/browser,    kinds: [test] }
+  explore:   { target: ./explore,          kinds: [test] }
+
+# Named run plans. `glubean run --profile <name>`.
+profiles:
+  # `glubean run` with no --profile uses `local`.
+  local:
+    suites: [api, contracts]
+
+  # `glubean ci run` uses `ci`.
+  ci:
+    suites: [api, contracts]
+    selection:
+      excludeTags: [manual, destructive]
+      tagMode: or                        # or | and
+    execution:
+      failFast: true
+      failAfter: 5
+      concurrency: 2
+      timeoutMs: 60000
+      noSession: false
+    capabilities:
+      browser: true
+      outOfBand: true
+      optIn: true
+    reporters:
+      console: summary                   # summary | detailed
+      junit: .glubean/results/junit.xml
+      resultJson: .glubean/results/ci.result.json
+    thresholds:
+      http_duration_ms: { p95: "<500", avg: "<200" }
+    upload:
+      enabled: true
+      projectId: prj_abc123              # project short ID (from Project Settings)
+      tokenEnv: GLUBEAN_TOKEN_CI         # env var NAME holding this profile's token
+
+  explore:
+    suites: [explore]
+```
+
+## Top level
+
+| Key | Meaning |
+|---|---|
+| `version` | Schema version. Always `1`. |
+| `defaults` | Settings inherited by every profile (overridable per profile). |
+| `suites` | Map of suite name → `{ target, kinds, data }`. |
+| `profiles` | Map of profile name → run plan. |
+| `mcp` | MCP server options — `mcp.trace.{keepRequestHeaders, keepResponseHeaders}`. |
+
+## `suites`
+
+A suite points at a directory (or file/glob) of runnable files.
+
+| Key | Meaning |
+|---|---|
+| `target` | Path to the suite's files, e.g. `./tests/api`. |
+| `kinds` | Which runnable kinds to include: any of `test`, `contract`, `flow`. |
+| `data` | Optional data-driven inputs directory/config. |
+
+## `profiles`
+
+Each profile composes suites + selection + execution + capabilities +
+reporters + thresholds + upload. Every key except `suites` is optional and
+falls back to `defaults`.
+
+| Key | Meaning |
+|---|---|
+| `suites` | List of suite names this profile runs. Narrow to one at run time with `--suite <name>`. |
+| `selection` | Filter which runnables execute (see below). |
+| `execution` | How they run (see below). |
+| `capabilities` | Opt-in gates for runnables that need extra setup (see below). |
+| `reporters` | Output formats (see below). |
+| `thresholds` | Pass/fail metric gates (see below). |
+| `upload` | Cloud upload directive (see below). |
+
+### `selection`
+
+| Key | Meaning |
+|---|---|
+| `tags` | Run only runnables with one of these tags. |
+| `excludeTags` | Drop runnables with any of these tags (always OR). |
+| `tagMode` | `or` (any tag matches) or `and` (all tags). |
+| `filter` | Substring match on name/id. |
+| `pick` | Select specific `test.pick` example key(s). |
+
+### `execution`
+
+| Key | Meaning |
+|---|---|
+| `failFast` | Stop on first failure. |
+| `failAfter` | Stop after N failures. |
+| `timeoutMs` | Per-test timeout. |
+| `concurrency` | Max parallel runnables. |
+| `noSession` | Skip session setup/teardown. |
+
+### `capabilities`
+
+Opt-in gates — runnables that require these are skipped unless the gate is on
+(equivalent to the `--include-*` flags).
+
+| Key | Flag | Meaning |
+|---|---|---|
+| `browser` | `--include-browser` | Cases that drive a real browser. |
+| `outOfBand` | `--include-out-of-band` | Cases using email / SMS / webhooks. |
+| `optIn` | `--include-opt-in` | Expensive / slow / side-effecting cases. |
+
+### `reporters`
+
+| Key | Meaning |
+|---|---|
+| `console` | `summary` or `detailed`. |
+| `junit` | Write a JUnit XML report to this path. |
+| `resultJson` | Write a structured result JSON to this path. |
+| `emitFullTrace` | Include full request/response headers + bodies in traces. |
+| `inferSchema` | Infer JSON Schema from response bodies. |
+| `truncateArrays` | Truncate arrays in trace bodies (AI-friendly). |
+
+### `redaction` (under `defaults`)
+
+| Key | Meaning |
+|---|---|
+| `replacementFormat` | `simple`, `labeled`, or `partial`. |
+| `sensitiveKeys` | Extra header/field names to redact. |
+| `customPatterns` | List of `{ name, regex }` to redact by value. |
+
+### `thresholds`
+
+Per-metric pass/fail gates. Each metric maps to aggregation rules (`p95`,
+`avg`, `min`, `max`) with comparison strings, or a shorthand string:
+
+```yaml
+thresholds:
+  http_duration_ms: { p95: "<500", avg: "<200" }
+  error_rate: "<0.05"        # shorthand
+```
+
+### `upload`
+
+Cloud upload, per profile. Secrets stay out of this file.
+
+| Key | Meaning |
+|---|---|
+| `enabled` | Turn on upload for this profile (no `--upload` flag needed). |
+| `projectId` | Destination project's short ID (e.g. `prj_abc123`). Overrides `GLUBEAN_PROJECT_ID`; shown in the printed plan. |
+| `tokenEnv` | **Name** of the env var holding this profile's token (value lives in `.env.secrets`). Lets different profiles upload to different projects. |
+
+> `upload.projectAlias` is the deprecated former name for `projectId` — still
+> accepted (with a warning), but use `projectId`.
+
+See [Upload to Cloud](/getting-started/upload-to-cloud) and
+[Tokens](/cloud/tokens) for the project-ID / token resolution order.

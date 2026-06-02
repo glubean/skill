@@ -87,15 +87,15 @@ A token is a secret — it **never** lives in a committed file, and there is no
 **Project ID** resolves in this order:
 
 1. `--project` flag
-2. A profile's `upload.projectAlias` in `glubean.yaml` (when you run that profile)
+2. A profile's `upload.projectId` in `glubean.yaml` (when you run that profile)
 3. `GLUBEAN_PROJECT_ID` (env var or `.env`)
 4. Your `glubean login` credential
 
-Note step 2: when a profile sets `upload.projectAlias`, it's forwarded as the
+Note step 2: when a profile sets `upload.projectId`, it's forwarded as the
 project and **takes precedence over `GLUBEAN_PROJECT_ID`** — only `--project`
 overrides it.
 
-Both `GLUBEAN_PROJECT_ID` and `upload.projectAlias` must be the project's
+Both `GLUBEAN_PROJECT_ID` and `upload.projectId` must be the project's
 **short ID** (find it in Project Settings — e.g. `prj_abc123`), not a friendly
 name. Cloud resolves the value as a project short ID, not a slug/alias lookup.
 
@@ -115,16 +115,23 @@ run`, filtered runs), and every contributor uploads to the same project:
 GLUBEAN_PROJECT_ID=prj_abc123
 ```
 
-Use a profile's `upload.projectAlias` in `glubean.yaml` instead when one
-profile should always target a specific project:
+Use a profile's `upload` block in `glubean.yaml` instead when a profile should
+always target a specific project. Pair it with `tokenEnv` — the **name** of the
+env var holding that profile's token (the value stays in `.env.secrets`) — so
+different profiles can upload to different projects with different tokens:
 
 ```yaml
 profiles:
   ci:
     suites: [tests]
     upload:
-      projectAlias: prj_abc123
+      enabled: true
+      projectId: prj_abc123       # this profile's target (a project short ID)
+      tokenEnv: GLUBEAN_TOKEN_CI  # env var holding its token; never the token itself
 ```
+
+> `upload.projectAlias` is the deprecated former name for `projectId` — it still
+> works (with a warning) but use `projectId`.
 
 **API URL** (self-hosted only) resolves from `--api-url`, then
 `GLUBEAN_API_URL` (env var or `.env` / `.env.secrets`), then the API URL saved
