@@ -48,6 +48,16 @@ npx skills update
 
 Supports 40+ agents: Claude Code, Cursor, GitHub Copilot, Codex, Gemini CLI, Windsurf, and more.
 
+## Custom GPT context
+
+Generate a single Markdown file containing the skill, references, and bundled docs:
+
+```bash
+node scripts/build-custom-gpt-context.mjs
+```
+
+The default output is `dist/glubean-custom-gpt-context.md`, which can be uploaded to a Custom GPT knowledge base. Re-run the script whenever the skill or references change.
+
 ## How it works
 
 The skill routes automatically — you don't pick a mode.
