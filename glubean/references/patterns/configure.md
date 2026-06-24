@@ -232,3 +232,46 @@ const BASE_URL = "https://api.example.com";
 // .env: BASE_URL=https://api.example.com
 // configure: http: { prefixUrl: "{{BASE_URL}}" }
 ```
+
+## Runner must be installed (configure() single-instance requirement)
+
+`configure()` stores vars/secrets/clients in an AsyncLocalStorage context owned
+by the `@glubean/sdk` module instance. The test runner sets that context before
+each test; your test code reads it during execution. **This only works if both
+sides resolve the SAME `@glubean/sdk` instance** — i.e. there is exactly one
+`@glubean/sdk` in the project.
+
+If you hit:
+
+```
+configure() values can only be accessed during test execution.
+Did you try to read a var or secret at module load time?
+```
+
+...and you are NOT reading at module load time, the real cause is usually **two
+`@glubean/sdk` instances**: your test code resolves the project's sdk, but the
+runner resolved a different (bundled/vendored) one. This happens when
+`@glubean/runner` isn't installed as a **direct** dependency — under pnpm a
+runner that's only a transitive dep of the `glubean` CLI isn't hoisted to
+`node_modules/@glubean/runner`, so tooling (e.g. the VSCode extension) can't find
+the project's runner and falls back to its own bundled runner + sdk.
+
+**Fix** — install runner at the **same version as your `@glubean/sdk`** (check
+`package.json`) so both collapse to one instance. Installing the *latest* runner
+into a project whose sdk is pinned to an older version re-creates the very
+two-instance problem you're trying to fix (the new runner pulls its own,
+different sdk):
+
+```bash
+# replace <sdk-version> with the @glubean/sdk version in your package.json
+npm i -D @glubean/runner@<sdk-version>        # e.g. @glubean/runner@0.8.0
+# or: pnpm add -D @glubean/runner@<sdk-version>
+```
+
+`glubean init` scaffolds this for you (runner pinned in lockstep with sdk). After
+installing in an editor, reload the window so the extension re-resolves the
+runner.
+
+> A *genuine* module-load-time read triggers the same message — e.g.
+> `const token = secrets.require("API_KEY")` at the top of a file, outside any
+> test. If that's the case, move the access inside a test/`setup` function.
