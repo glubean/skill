@@ -61,13 +61,22 @@ glubean spec split openapi.yaml          # Split spec into per-endpoint files
 ## Cloud authentication
 
 ```bash
-glubean login                            # Interactive: paste a user API key (gb_...)
-glubean login --token <token>            # Non-interactive variant
+glubean login                            # Intended: RFC 8628 device flow (browser approval)
+glubean login --token glb_...            # Provide a dashboard token directly
 ```
 
-Use `glubean login` for personal local development across multiple Glubean projects. It saves a user API key (`gb_…`) to `~/.glubean/credentials.json`, which the CLI then uses as a fallback whenever no project-local credential is set.
+`glubean login` is meant to run the device-authorization flow and save the
+resulting `glb_` token to `~/.glubean/credentials.json`, which the CLI then uses
+as a fallback whenever no project-local credential is set.
 
-**Do not use `glubean login` in CI.** In CI, store a project token (`gpt_…`) in your provider's secret store and inject it as the `GLUBEAN_TOKEN` env var. See [Tokens](/cloud/tokens) and [Upload your first run](/getting-started/upload-to-cloud).
+> **Today:** the server device endpoints aren't live yet, so the browser flow
+> can't complete. Create a `glb_` token in the dashboard (Settings → Tokens) and
+> provide it via `--token glb_…`, the `GLUBEAN_TOKEN` env var, or `.env.secrets`.
+
+**Do not use `glubean login` in CI.** In CI, store a **scoped** token (`glb_…`,
+`runs:write`) in your provider's secret store and inject it as the
+`GLUBEAN_TOKEN` env var. See [Tokens](/cloud/tokens) and [Upload your first
+run](/getting-started/upload-to-cloud).
 
 ## Configuration
 

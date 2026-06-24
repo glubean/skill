@@ -1,128 +1,280 @@
-# Contract Flow
+# Workflow
 
-Use `contract.flow()` to verify that multiple endpoints work together correctly — create then retrieve, purchase then refund, register then login.
+Use `workflow()` to verify business lifecycles across multiple contract cases: register then login, create then read then delete, request export then poll until ready.
+
+`workflow()` is the current lifecycle API. Do not author new `contract.flow()` files.
 
 ## When to use
 
-- Cross-endpoint verification: one endpoint's output feeds the next
-- Lifecycle testing: create → read → update → delete
-- State machines: order placed → paid → shipped → delivered
+- Cross-endpoint lifecycle verification
+- Data passed between contract cases
+- Bounded polling of an async contract case
+- Branching business paths that should be visible in projection
+- Reusable lifecycle fragments or data-driven workflow matrices
 
-For single-endpoint specs, use [contract.http()](/sdk/contract-http) instead.
+For single-endpoint behavior, use [Contract HTTP](/sdk/contract-http). For opaque exploratory runtime checks, use [Test Shape](/sdk/test-api).
 
-## Basic flow
+## Basic workflow
 
-A flow composes **existing contract cases**. You don't redeclare endpoints inside the flow — you reference cases already defined in your `contract.http.with()` specs and wire them together with pure lens functions.
+A workflow composes **existing contract cases**. It does not redeclare endpoints.
 
 ```typescript
-import { contract } from "@glubean/sdk";
-import { login } from "./auth.contract.ts";
-import { getProfile } from "./profile.contract.ts";
+import { workflow } from "@glubean/sdk";
+import { createUser, getUser, deleteUser } from "./users.contract.ts";
 
-// @flow
-export const loginThenGetProfile = contract
-  .flow("login-then-profile")
-  .meta({
-    description: "Login, then fetch profile using the returned token",
-    tags: ["e2e"],
+export const userLifecycle = workflow({
+  id: "user-lifecycle",
+  name: "User lifecycle",
+  tags: ["users", "e2e"],
+})
+  .call("create-user", createUser.case("success"), {
+    out: (_state, res) => ({ userId: res.body.id as string }),
   })
-  // Step 1: call login.case("success"). The case already encodes its body.
-  // `out` captures data from the response into flow state.
-  .step(login.case("success"), {
-    out: (_state, res) => ({
-      token: res.body.accessToken as string,
-      userId: res.body.id as number,
-    }),
+  .call("read-user", getUser.case("success"), {
+    in: (state) => ({ params: { id: state.userId } }),
   })
-  // Pure sync transform. String concatenation isn't a lens operation,
-  // so it lives in a `.compute()` step.
-  .compute((s) => ({
-    ...s,
-    authHeader: `Bearer ${s.token}`,
-  }))
-  // Step 2: feed the header into the next case via the `in` lens.
-  .step(getProfile.case("authorized"), {
-    in: (s) => ({ headers: { Authorization: s.authHeader } }),
+  .call("delete-user", deleteUser.case("success"), {
+    in: (state) => ({ params: { id: state.userId } }),
   });
 ```
 
-The `// @flow` marker above the export is required for VSCode CodeLens. It has no runtime effect — it's a UI hint for the editor.
+The trailing `.build()` call is optional. Exported workflow builders auto-build and are discovered by the scanner and runner.
 
-## How it works
+## Mental model
 
-1. Each `.step(ref, { in, out })` invokes one already-defined contract case.
-2. `in` is a **pure lens** that reads from flow state and produces the case's inputs (e.g. `params`, `body`, `headers`). No I/O, no method calls, no branching — just field lookup and repacking.
-3. `out` is a **pure lens** that reads the case's response and produces the new flow state.
-4. `.compute(fn)` runs any synchronous TS expression (template literals, `.map()`, method calls) that lenses can't express. Its read/write dependencies are recorded, not the formula itself.
-5. Steps execute in order — the flow stops on the first failure.
+| Layer | API | Purpose |
+|---|---|---|
+| Endpoint promise | `contract.http.with()` | Defines what one endpoint must do |
+| Lifecycle promise | `workflow()` | Defines how endpoint promises work together |
+| Runtime evidence | `test()` | Captures imperative checks that should not be projected |
 
-## Why lens functions must be pure
+Workflows execute, but they also project. Every node gets a projection grade:
 
-The scanner, MCP, and Cloud dashboards extract the field-level dependencies of your flow **without running it**. They do this by dry-running `in` / `out` against a traced Proxy. If a lens calls a method, branches, or does I/O, it throws `LensPurityError` at projection time.
+| Grade | Meaning |
+|---|---|
+| `full` | Declarative and statically projectable |
+| `partial` | Opaque logic with declared reads/writes/assertion hints |
+| `trace` | Runtime evidence promotes an otherwise opaque node |
+| `opaque` | Only node identity/result are known |
 
-Anything the lens can't express belongs in `.compute()`.
+Prefer `full` or `partial` nodes for workflows that Cloud, reviewers, or agents should understand.
+
+## Node APIs
+
+### `setup()`
+
+Runs once before workflow nodes and returns initial state. Use it for lifecycle setup that belongs to the whole journey.
 
 ```typescript
-// ❌ Not a lens — `"Bearer " + token` calls String.prototype methods
-.step(next.case("..."), {
-  in: (s) => ({ headers: { Authorization: `Bearer ${s.token}` } }),
-})
+export const checkout = workflow("checkout")
+  .setup(async (ctx) => ({
+    tenantId: ctx.vars.require("TENANT_ID"),
+  }))
+  .call("create-cart", createCart.case("success"), {
+    in: (s) => ({ body: { tenantId: s.tenantId } }),
+    out: (s, res) => ({ ...s, cartId: res.body.id as string }),
+  });
+```
 
-// ✅ Build the value in compute, then inject with a pure lens
-.compute((s) => ({ ...s, authHeader: `Bearer ${s.token}` }))
-.step(next.case("..."), {
-  in: (s) => ({ headers: { Authorization: s.authHeader } }),
+### `call()`
+
+Calls an existing contract case. Use `in` to map workflow state to case input and `out` to fold the response back into state.
+
+```typescript
+.call("pay-order", payOrder.case("success"), {
+  in: (s) => ({ params: { id: s.orderId } }),
+  out: (s, res) => ({ ...s, paymentId: res.body.paymentId as string }),
 })
 ```
 
-## Setup and teardown
+`in` and `out` must be pure synchronous lenses. Do not do I/O or return a Promise from them. Put arbitrary async work in `action()`.
 
-`.setup()` is the **only** I/O-capable callback in a flow. Use it to seed the initial state from external systems. `.teardown()` runs in the outer finally and receives the last-committed state; if `.setup()` throws, teardown does NOT run.
+### `compute()`
+
+Pure synchronous state transform. Use it for reshaping, derived fields, or values a lens should not build inline.
 
 ```typescript
-export const orderLifecycle = contract
-  .flow("order-lifecycle")
-  .setup(async (ctx) => ({
-    userId: ctx.vars.require("TEST_USER_ID"),
-  }))
-  .step(createOrder.case("success"), {
-    in: (s) => ({ body: { userId: s.userId, items: [...] } }),
-    out: (s, res) => ({ ...s, orderId: res.body.id }),
-  })
-  .step(payOrder.case("success"), {
-    in: (s) => ({ params: { id: s.orderId } }),
+.compute("auth-header", (s) => ({
+  ...s,
+  authHeader: `Bearer ${s.token}`,
+}))
+```
+
+### `action()`
+
+Arbitrary async work. Add `project` hints when the action matters to reviewers.
+
+```typescript
+.action(
+  "seed-inventory",
+  async (ctx, s) => {
+    const item = await seedInventory(ctx, s.tenantId);
+    return { ...s, itemId: item.id };
+  },
+  { project: { writes: ["itemId"], note: "seed inventory for checkout" } },
+)
+```
+
+`action()` supports explicit retry metadata on safe, idempotent actions:
+
+```typescript
+.action("warm-cache", warmCache, {
+  retry: { attempts: 3, delay: 500, reason: "cache warmup is idempotent" },
+})
+```
+
+### `check()`
+
+Use `check()` for workflow-state assertions. Prefer the declarative form when projection matters.
+
+```typescript
+.check("cart-total", {
+  expect: (w) => [
+    w.when((s: { total: number }) => s.total).gt(0),
+  ],
+})
+```
+
+Use the callback form when the assertion is necessarily imperative. Add a projection hint.
+
+```typescript
+.check(
+  "discount-applied",
+  async (ctx, s) => {
+    ctx.expect(s.discount).toBe("SUMMER25", "Checkout applies the selected promo code");
+  },
+  { project: { asserts: "selected promo code is applied to checkout total" } },
+)
+```
+
+### `branch()`
+
+Two-way branch. Declarative `when` projects as `full`; runtime `whenRuntime` is opaque and must include a message.
+
+```typescript
+.branch("route-inventory", {
+  when: (w) => w.when((s: { inStock: boolean }) => s.inStock).eq(true),
+  then: (b) => b.call("reserve", reserveItem.case("success")),
+  else: (b) => b.call("backorder", createBackorder.case("success")),
+})
+```
+
+### `switch()` and `route()`
+
+Use `switch()` when cases converge and the workflow continues. Use `route()` when each path owns the rest of the workflow and no trunk continues.
+
+```typescript
+.switch("fulfillment-method", {
+  on: (s: { method: string }) => s.method,
+  cases: [
+    { value: "ship", then: (b) => b.call("ship", shipOrder.case("success")) },
+    { value: "pickup", then: (b) => b.call("pickup", createPickup.case("success")) },
+  ],
+  default: (b) => b.check("unsupported-method", async (ctx) => ctx.fail("Unsupported fulfillment method")),
+})
+```
+
+### `poll()`
+
+Use `poll()` to repeat a contract case until a declarative or runtime exit predicate holds. Bounds are required: total timeout and/or max attempts with per-attempt budget.
+
+```typescript
+.poll("wait-for-export", getExport.case("ready"), {
+  in: (s) => ({ params: { id: s.exportId } }),
+  until: (w) => w.when((res: { body: { state: string } }) => res.body.state).eq("ready"),
+  timeout: 60_000,
+  every: 2_000,
+  out: (s, res) => ({ ...s, downloadUrl: res.body.downloadUrl as string }),
+})
+```
+
+Inbound cases are also awaited with `poll()`, using a receiver supplied by `via`.
+
+```typescript
+.poll("wait-for-stripe-webhook", stripeWebhook.case("paymentIntentCreated"), {
+  via: (s) => s.receiver,
+  correlate: {
+    event: (event) => event.data.object.metadata.orderId,
+    state: (s) => s.orderId,
+  },
+  timeout: 60_000,
+  out: (s, event) => ({ ...s, stripeEventId: event.id }),
+})
+```
+
+Use `pollAction()` only when the repeated probe is not modeled as a contract case yet.
+
+### `use()` and `group()`
+
+Reusable fragments are plain functions over the builder:
+
+```typescript
+import type { WorkflowBuilder } from "@glubean/sdk";
+
+const withLogin = (b: WorkflowBuilder<undefined>) => b
+  .call("login", login.case("success"), {
+    out: (_s, res) => ({ token: res.body.token as string }),
+  });
+
+export const profileJourney = workflow("profile-journey")
+  .use(withLogin)
+  .group("profile", (b) => b
+    .call("read-profile", getProfile.case("authorized"), {
+      in: (s) => ({ headers: { Authorization: `Bearer ${s.token}` } }),
+    })
+  );
+```
+
+## Data-driven workflows
+
+Use `workflow.each()` for deterministic workflow matrices. There is no `workflow.pick()`.
+
+```typescript
+export const checkoutByRegion = workflow.each([
+  { region: "us", currency: "USD" },
+  { region: "eu", currency: "EUR" },
+])(
+  { id: "checkout-$region", tags: ["checkout"], tagFields: ["region"] },
+  (wf, row) => wf
+    .setup(async () => ({ region: row.region, currency: row.currency }))
+    .call("quote", quote.case("success"), {
+      in: (s) => ({ query: { region: s.region } }),
+    }),
+);
+```
+
+Every row must project the same workflow structure. Row data should enter through `setup()` or closed-over literals, not by conditionally adding different nodes per row.
+
+## Setup, teardown, and cleanup
+
+Use `workflow().setup()` for journey-level initial state and `workflow().teardown()` for journey-level cleanup. Contract cases stay pure; they do not own setup/teardown.
+
+```typescript
+export const orderLifecycle = workflow("order-lifecycle")
+  .setup(async (ctx) => ({ tenantId: ctx.vars.require("TENANT_ID") }))
+  .call("create-order", createOrder.case("success"), {
+    in: (s) => ({ body: { tenantId: s.tenantId } }),
+    out: (s, res) => ({ ...s, orderId: res.body.id as string }),
   })
   .teardown(async (ctx, s) => {
     await ctx.http.delete(`/orders/${s.orderId}`);
   });
 ```
 
-## Combining with `contract.http()`
+## `workflow()` vs `test()`
 
-Flows and single-endpoint contracts are complementary:
+Use `workflow()` when the lifecycle itself is a product promise worth projecting. Use `test()` when the value is runtime evidence and the logic is intentionally imperative.
 
-- A `contract.http.with()` **case-per-endpoint** spec verifies that the endpoint handles all relevant cases (success, invalid input, auth errors, edge cases).
-- A `contract.flow()` verifies that cases from different endpoints **work together** — the output of one case feeds the next.
+Good `workflow()` candidates:
 
-The flow doesn't duplicate the case's body or expectations — it references the case and adds only the state-wiring lenses.
+- checkout lifecycle
+- async export lifecycle
+- webhook delivery lifecycle
+- cross-protocol provisioning lifecycle
 
-```typescript
-// Single endpoint — cases cover all behaviors
-export const createOrder = orderApi("create-order", {
-  endpoint: "POST /orders",
-  cases: {
-    success: { body: {...}, expect: { status: 201 } },
-    invalidItems: { body: {...}, expect: { status: 400 } },
-    unauthorized: { body: {...}, expect: { status: 401 } },
-  },
-});
+Good `test()` candidates:
 
-// Flow — composes cases from multiple contracts
-export const checkoutFlow = contract.flow("checkout")
-  .step(createOrder.case("success"), {
-    out: (_s, res) => ({ id: res.body.id }),
-  })
-  .step(payOrder.case("success"), {
-    in: (s) => ({ params: { id: s.id } }),
-  });
-```
+- exploratory endpoint probes
+- browser-heavy automation
+- one-off diagnostics
+- complex imperative checks that would become opaque workflow nodes anyway

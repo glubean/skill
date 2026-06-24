@@ -23,7 +23,7 @@ Read [index.md](index.md) and pick 1-4 pattern files relevant to the current tas
 
 ## 4. Set up auth and client config
 
-Auth is the single most impactful config decision — if it's wrong, every test fails. If the project doesn't have a configured client yet, read [patterns/configure.md](patterns/configure.md) and [patterns/auth.md](patterns/auth.md). Auth requires user confirmation before writing code (global rule #11).
+Auth is the single most impactful config decision — if it's wrong, every test fails. If the project doesn't have a configured client yet, read [patterns/configure.md](patterns/configure.md) and [patterns/auth.md](patterns/auth.md). Auth requires user confirmation before writing code.
 
 ## 5. Verify runnable credentials before writing a lot of tests
 

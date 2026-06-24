@@ -13,7 +13,8 @@ package.json          (required)  — @glubean/sdk + @glubean/runner in devDepen
 .env.secrets          (required)  — gitignored, holds credentials
 .gitignore            (required)  — must ignore .env.secrets, .env.*.secrets, node_modules/, .glubean/, *.result.json, local/
 GLUBEAN.md            (recommended) — project-specific conventions for AI skill
-contracts/            (recommended) — contract.http() / contract.flow() executable specs
+contracts/            (recommended) — contract.http.with() endpoint specs; may colocate workflow() specs
+workflows/            (optional)     — workflow() lifecycle specs when separated from contracts/
 tests/                (recommended) — permanent regression tests, run in CI
 explore/              (recommended) — exploratory tests, interactive iteration
 schemas/              (recommended) — shared Zod response schemas
@@ -34,6 +35,7 @@ config/               (optional)  — shared HTTP client configuration (configur
 | .env.secrets exists | File exists (can be empty) | See init rule below |
 | .gitignore has Glubean entries | Contains `.env.secrets`, `.glubean/`, `*.result.json` | See init rule below; for partially initialized repos, `--overwrite` may be appropriate |
 | contracts/ exists when using contract-first workflow | Directory exists | Create during project setup or contract-first adoption |
+| workflow files use `workflow()` | Search for `workflow(` exports in contracts/ or workflows/ | Convert old `contract.flow()` files when touching them |
 | tests/ or explore/ exists | Directory exists | See init rule below |
 | types/ exists | Directory exists | Create `types/` if the project is otherwise initialized; otherwise see init rule below |
 | No inline types in tests/ | Grep for `\.json<{` in tests/ files | Move inline types to `types/*.ts` |
@@ -78,7 +80,8 @@ The CLI handles package.json, dependencies, .env, .env.secrets, .gitignore, dire
 
 | Directory | Purpose | Style rules |
 |---|---|---|
-| `contracts/` | `contract.http()` / `contract.flow()` executable specs | Contract source of truth; `description` on each case explains intent; may be draft or expected-red before implementation catches up |
+| `contracts/` | `contract.http.with()` endpoint specs; optional colocated `workflow()` specs | Contract source of truth; `description` / `given` on each case explains intent; may be draft or expected-red before implementation catches up |
+| `workflows/` | `workflow()` lifecycle specs | Cross-endpoint business journeys composed from contract cases |
 | `tests/` | Regression, CI | Types in `types/`, builder for CRUD, full assertions |
 | `explore/` | Interactive exploration | Inline types OK, individual exports per operation, quick iteration |
 | `data/` | Test data | JSON, CSV, YAML — never hardcode payloads in test files |

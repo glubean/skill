@@ -51,20 +51,21 @@ Then pick a mode based on intent and project structure.
 **When to use:**
 - API doesn't exist yet — define behavior first, implement to satisfy
 - User wants structured spec with scanner-extractable metadata, coverage matrix, or Cloud projection
-- Project has `contracts/` with `contract.http.with()` / `contract.flow()` files
+- Project has `contracts/` with `contract.http.with()` files or workflow files exporting `workflow()`
 - User explicitly says "contract", "spec", "define API"
 
 **Workflow:**
-- `contracts/` — `contract.http.with()` instances and `contract.flow()` as direct executable specs
+- `contracts/` — `contract.http.with()` endpoint promises, plus colocated `workflow()` lifecycle specs when the project keeps workflows with contracts
+- `workflows/` — optional home for top-level `workflow()` lifecycle specs in larger projects
 - `schemas/` — reusable Zod response schemas
-- `tests/` — only for cases contract can't express (browser, polling, complex state machines)
+- `tests/` — imperative runtime evidence that contract/workflow should not project
 - **No `explore/ → contracts/` transition, no `contracts/ → tests/` promotion.** A `contract.http.with()` contract produces `Test[]` directly.
 
 **Steps:**
 1. Read [contract-first.md](contract-first.md) for the entry workflow, then [patterns/contract-first.md](patterns/contract-first.md) for the full writing guide.
 2. Write contracts in `contracts/` using a `contract.http.with(name, defaults)` scoped instance, then declare contracts as `myApi(id, { cases })`. Each case has a required `description`.
 3. Keep Zod schemas in `schemas/`. Use `expect.schema` for response validation.
-4. Use `contract.flow()` for cross-endpoint lifecycle verification.
+4. Use `workflow()` for cross-endpoint lifecycle verification.
 5. If the user asks about coverage status, or `contracts/` has 5+ files, suggest a projection report. Read [patterns/projection.md](patterns/projection.md).
 
 ## Rules

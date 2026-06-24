@@ -149,25 +149,24 @@ export const stripeWebhook = webhookApi("stripe-webhook", {
 });
 ```
 
-### Flow-level (entire flow is interactive)
+### Workflow-level (entire workflow is interactive)
 
-Flows compose existing cases via `.step(ref, bindings)`. Set `requires` on the flow's `.meta()` to mark the entire chain as needing the capability.
+Workflows compose existing cases via `.call(id, ref, bindings)`. `requires` / `defaultRun` are case-level fields, not workflow-level fields. If an entire workflow is interactive, tag it clearly and keep the capability requirement on the referenced cases; use `skip: "reason"` for workflows that should not run at all yet.
 
 ```typescript
 // Assumes authorize / callback / verifySession contracts are defined elsewhere.
-export const oauthFlow = contract.flow("oauth-flow")
-  .meta({ requires: "browser" })  // entire flow needs browser
-  .step(authorize.case("success"), {
+export const oauthFlow = workflow("oauth-flow")
+  .meta({ tags: ["requires:browser"], extensions: { "x-requires": "browser" } })
+  .call("authorize", authorize.case("success"), {
     out: (_s, res) => ({ code: res.body.code as string }),
   })
-  .step(callback.case("success"), {
+  .call("callback", callback.case("success"), {
     in: (s) => ({ body: { code: s.code } }),
     out: (_s, res) => ({ sessionToken: res.body.token as string }),
   })
-  // Template literals violate lens purity — build the header in .compute().
-  .compute((s) => ({ ...s, authHeader: `Bearer ${s.sessionToken}` }))
-  .step(verifySession.case("success"), {
-    in: (s) => ({ headers: { Authorization: s.authHeader } }),
+  .compute("auth-header", (s) => ({ ...s, authHeader: `Bearer ${s.sessionToken}` }))
+  .call("verify-session", verifySession.case("success"), {
+    in: (s) => ({ headers: { Authorization: s.authHeader as string } }),
   });
 ```
 

@@ -12,7 +12,7 @@ npm install @glubean/sdk
 
 ## The mental model
 
-Every test receives a `ctx` object. That context gives you:
+Every `test()` receives a `ctx` object. That context gives you:
 
 - `ctx.http` for requests (auto-traced)
 - `ctx.vars` and `ctx.secrets` for runtime values
@@ -36,16 +36,19 @@ export const health = test("health", async (ctx) => {
 
 ## Start with these pages
 
-1. [Test Shape](/sdk/test-api) — `test()`, builder API, `test.each`, `test.pick`
+1. [Test Shape](/sdk/test-api) — `test()`, builder API, branch/switch/poll, `test.each`, `test.pick`
 2. [Configuration](/sdk/configuration) — `configure()` for shared setup
-3. [HTTP Requests](/sdk/http-client) — `ctx.http` client
-4. [Assertions](/sdk/assertions) — `expect`, `assert`, `validate`, `warn`
-5. [Data-Driven](/sdk/data-driven) — `test.each`, `test.pick`, data loaders
-6. [Variables & Secrets](/sdk/env-and-secrets) — `ctx.vars`, `ctx.secrets`
+3. [Contract HTTP](/sdk/contract-http) — `contract.http.with()` endpoint promises
+4. [Workflow](/sdk/contract-flow) — `workflow()` lifecycle promises
+5. [HTTP Requests](/sdk/http-client) — `ctx.http` client
+6. [Assertions](/sdk/assertions) — `expect`, `assert`, `validate`, `warn`
+7. [Data-Driven](/sdk/data-driven) — `test.each`, `test.pick`, data loaders
+8. [Variables & Secrets](/sdk/env-and-secrets) — `ctx.vars`, `ctx.secrets`
 
 ## When the suite grows
 
-- Use the builder API for multi-step flows
+- Use the builder API for imperative multi-step tests
+- Use `workflow()` when the lifecycle is a product promise worth projecting
 - Use `configure()` and plugins for shared setup
 - Use `session.ts` for cross-file shared state
 - Emit logs and metrics when a green or red result alone is not enough

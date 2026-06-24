@@ -137,12 +137,13 @@ This generates `glubean.yaml` (with `local` + `ci` profiles), `package.json` scr
 glubean ci run --upload
 ```
 
-Provide the project ID via the committed `.env` (`GLUBEAN_PROJECT_ID=prj_...`)
-or a profile's `upload.projectAlias`; store the token in the CI secret store.
+Uploads are target-scoped. Provide the project + target IDs via the committed
+`.env` (`GLUBEAN_PROJECT_ID=prj_...`, `GLUBEAN_TARGET_ID=tgt_...`) or a profile's
+`upload.projectId` / `upload.targetId`; store the `glb_` token in the CI secret store.
 
 Required CI secret:
 
-- `GLUBEAN_TOKEN` (the project ID is not a secret — keep it in `.env` or `glubean.yaml`)
+- `GLUBEAN_TOKEN` (the `glb_` token; project + target IDs are not secrets — keep them in `.env` or `glubean.yaml`)
 
 Store the token in the CI provider's secret store, not in the repo. Because
 `ci run` resolves a profile, your `defaults.redaction` rules are applied before

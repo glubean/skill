@@ -5,7 +5,7 @@ Quick reference for `@glubean/sdk` and `@glubean/browser`. For full type details
 ## Imports
 
 ```typescript
-import { test, configure, definePlugin, defineSession, fromDir, fromCsv, fromJson, fromYaml, fromJsonl } from "@glubean/sdk";
+import { test, workflow, contract, loadScenario, loadRunner, feeder, configure, defineHttpCase, inboundCase, definePlugin, defineSession, fromDir, fromCsv, fromJson, fromYaml, fromJsonl } from "@glubean/sdk";
 import { browser } from "@glubean/browser";
 import type { InstrumentedPage } from "@glubean/browser";
 ```
@@ -53,6 +53,45 @@ test("my-test")
     // Always runs, even on failure — use for cleanup
   });
 ```
+
+`.build()` is optional. Exported builders auto-finalize after synchronous chaining and are auto-built by the runner.
+
+### TestBuilder control
+
+```typescript
+test("checkout")
+  .step("create cart", async (ctx) => ({ cartId: "cart_1", status: "draft" }))
+  .group("payment", (b) => b
+    .step("quote", async (ctx, state) => ({ ...state, total: 42 }))
+  )
+  .condition(
+    { message: "has total", predicate: async (_ctx, state) => state.total > 0 },
+    (b) => b.step("pay", async (ctx, state) => ({ ...state, status: "paid" })),
+    (b) => b.step("reject empty cart", async (ctx) => ctx.fail("Cart total must be positive")),
+  )
+  .switchOn((_ctx, state) => state.status)(
+    [
+      { value: "paid", then: (b) => b.step("send receipt", async (_ctx, state) => state) },
+    ],
+    (b) => b.step("skip receipt", async (_ctx, state) => state),
+  )
+  .poll("wait for fulfillment", async (ctx, state) => {
+    return ctx.http.get(`/orders/${state.cartId}`).json<{ state: string }>();
+  }, {
+    timeout: 60000,
+    every: 2000,
+    until: (_ctx, res) => res.state === "fulfilled",
+  });
+```
+
+Builder control APIs:
+
+- `.use(fn)` — reusable typed step fragments
+- `.group(id, fn)` — visual grouping for newly-added steps
+- `.condition(spec, then, else?)` — runtime predicate branch
+- `.switchOn(lens)(cases, default)` — scalar runtime switch
+- `.switchCond(cases, default)` — ordered predicate runtime switch
+- `.poll(name, attempt, opts)` — bounded runtime polling step
 
 ### test.each (one file = one case)
 
@@ -218,6 +257,155 @@ const authed = http.extend({
   headers: { Authorization: "Bearer ..." },
 });
 ```
+
+---
+
+## contract.http.with()
+
+```typescript
+const userApi = contract.http.with("user", {
+  client: api,
+  security: "bearer",
+  tags: ["users"],
+  errorEnvelope: ErrorSchema,
+});
+
+// @contract
+export const getUser = userApi("get-user", {
+  endpoint: "GET /users/:id",
+  description: "Read a user profile.",
+  cases: {
+    found: {
+      description: "Existing user returns full profile.",
+      params: { id: "u_1" },
+      expect: { status: 200, schema: UserSchema },
+    },
+  },
+});
+```
+
+Rules:
+
+- Create a scoped instance with `contract.http.with(name, defaults)`; bare `contract.http("id", spec)` throws.
+- `client` belongs in `.with()`; per-case `client` overrides are allowed for auth-boundary cases.
+- Case `description` is required in HTTP cases and should describe business behavior.
+- Use `expect.schema` / `expect.headers` for response validation.
+- Use `given` for world-state preconditions and `verifyRules` to project opaque `verify()` logic.
+- Use `needs` plus `defineHttpCase<Needs>()` when `body` / `headers` / `params` / `query` depend on per-case logical input.
+- Do not put `setup` / `teardown` on cases; use `contract.bootstrap()` overlays, `defineSession()`, `workflow()`, or `test()` depending on ownership.
+
+### defineHttpCase
+
+```typescript
+const authorized = defineHttpCase<{ token: string }>({
+  description: "Valid bearer token returns caller profile.",
+  needs: z.object({ token: z.string() }),
+  headers: ({ token }) => ({ Authorization: `Bearer ${token}` }),
+  expect: { status: 200, schema: ProfileSchema },
+});
+```
+
+Use inline cases when you want typed `workflow().call(...).out` response bodies from `expect.schema`; use `defineHttpCase<Needs>()` when preventing `needs` / action-field drift matters more.
+
+### inboundCase
+
+```typescript
+const paymentReceived = inboundCase({
+  description: "Payment provider posts a signed payment event.",
+  expect: {
+    bodySchema: PaymentEventSchema,
+    signature: { scheme: "hmac-sha256", header: "x-signature", secretRef: "WEBHOOK_SECRET" },
+    within: 60000,
+  },
+});
+```
+
+Inbound cases are counterparty promises. They are not runnable as standalone tests; await them with `workflow().poll(ref, { via, ... })`.
+
+```typescript
+workflow("payment-webhook")
+  .setup(async () => ({ receiver, orderId: "ord_123" }))
+  .poll("wait-for-payment-event", paymentWebhook.case("created"), {
+    via: (s) => s.receiver,
+    correlate: {
+      event: (event) => event.data.object.metadata.orderId,
+      state: (s) => s.orderId,
+    },
+    timeout: 60000,
+  });
+```
+
+---
+
+## workflow()
+
+```typescript
+export const userLifecycle = workflow({ id: "user-lifecycle", tags: ["users", "e2e"] })
+  .setup(async (ctx) => ({ tenantId: ctx.vars.require("TENANT_ID") }))
+  .call("create-user", createUser.case("success"), {
+    in: (s) => ({ body: { tenantId: s.tenantId } }),
+    out: (s, res) => ({ ...s, userId: res.body.id as string }),
+  })
+  .check("user-id-created", {
+    expect: (w) => [w.when((s: { userId: string }) => s.userId).exists()],
+  })
+  .teardown(async (ctx, s) => {
+    await ctx.http.delete(`/users/${s.userId}`);
+  });
+```
+
+Workflow APIs:
+
+- `.meta(...)` — workflow metadata
+- `.setup(fn, { timeout?, note? })` — initial state
+- `.teardown(fn, { timeout?, note? })` — cleanup
+- `.call(id, contract.case("key"), { in?, out?, accept?, retry? })` — call existing contract case
+- `.action(id, fn, { project?, retry? })` — arbitrary async state-producing work
+- `.check(id, { expect })` or `.check(id, fn, { project? })` — declarative or imperative assertion
+- `.compute(id, fn)` — pure synchronous state transform
+- `.use(fragment)` — reusable typed workflow fragment
+- `.group(id, fn)` — display-only grouping
+- `.branch(id, { when | whenRuntime, then, else? })` — two-way branch
+- `.switch(id, opts)` — converging N-way branch
+- `.route(id, opts)` — terminal N-way branch
+- `.poll(id, contract.case("key"), opts)` — bounded contract polling; supports inbound cases with `via`
+- `.pollAction(id, fn, opts)` — bounded polling for non-contract probes
+- `.build()` — optional; exported builders auto-build
+
+`workflow.each(table)(meta, factory)` creates deterministic workflow matrices. There is no `workflow.pick()`.
+
+---
+
+## loadScenario() + loadRunner()
+
+Load tests live in `*.load.ts` files — concurrent traffic with latency/throughput
+thresholds. `loadScenario()` defines the per-iteration workload; `loadRunner()`
+sets concurrency, duration, and thresholds. Load steps get a **LoadContext**
+(`http`, `vars`, `secrets`, `expect`, `input`, `iteration`, `producerSlot`) — NOT
+the full TestContext (no `ctx.metric` / `validate` / `trace` in load).
+
+```typescript
+import { loadScenario, loadRunner, feeder, http } from "@glubean/sdk";
+
+const shop = loadScenario<{ q: string }>("shop")
+  .step("browse", async (ctx) => {
+    const res = await http.get("load/catalog", { searchParams: { q: ctx.input.q } });
+    ctx.expect(res.status).toBe(200);
+  });
+
+export const shopLoad = loadRunner("shop-load", {
+  scenario: shop,
+  concurrency: 25,
+  duration: "20s",
+  rampUp: "3s",
+  feeders: { term: feeder.fromArray([{ q: "pen" }], { key: "q" }).roundRobin() },
+  input: ({ feed }) => ({ q: (feed.term as { q: string }).q }),
+  thresholds: { transaction: { errorRate: "<5%", p95: "<400ms" } },
+});
+```
+
+Run with `glubean load`. Full API (traffic mix, `loadRunner.each`, threshold
+scopes, the LoadArtifact result shape) is in [load-testing.md](load-testing.md).
 
 ---
 
@@ -517,19 +705,19 @@ Returns a function `(id, spec) => Test[]`.
 
 Bare `contract.http()` is removed. Use `contract.http.with()` and call the returned factory. Bare calls throw at runtime; the SDK does not auto-recover.
 
-### `contract.flow(id)` — multi-step verification
+### `workflow(idOrMeta)` — lifecycle verification
 
-Composes existing contract cases into a workflow. State flows through pure-lens `in` / `out` callbacks; non-lens transformations go in `.compute()`.
+Composes existing contract cases into a workflow. State flows through pure synchronous `in` / `out` callbacks; async work goes in `.action()`, synchronous transforms go in `.compute()`, and assertions go in `.check()`.
 
 ```typescript
-contract.flow("user-lifecycle")
+workflow("user-lifecycle")
   .meta({ description: "...", tags: ["e2e"] })
-  .step(createUser.case("success"), { out: (_s, res) => ({ userId: res.body.id }) })
-  .step(getUser.case("success"),    { in: (s) => ({ params: { id: s.userId } }) })
-  .step(deleteUser.case("success"), { in: (s) => ({ params: { id: s.userId } }) });
+  .call("create-user", createUser.case("success"), { out: (_s, res) => ({ userId: res.body.id }) })
+  .call("read-user", getUser.case("success"),      { in: (s) => ({ params: { id: s.userId } }) })
+  .call("delete-user", deleteUser.case("success"), { in: (s) => ({ params: { id: s.userId } }) });
 ```
 
-Full reference in [patterns/contract-first.md](patterns/contract-first.md) "Flow contract" section.
+Full reference in [docs/sdk/contract-flow.mdx](docs/sdk/contract-flow.mdx).
 
 ### `defineHttpCase<Needs>(spec)` / `defineGrpcCase<Needs>(spec)` / `defineGraphqlCase<Needs>(spec)` — case at its own const site
 

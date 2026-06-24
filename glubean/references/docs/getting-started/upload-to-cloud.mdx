@@ -8,37 +8,51 @@ Use this page when local tests already work and you want a shared run history in
 - `glubean run` already works locally
 - You have access to a Glubean Cloud project
 
-## 1. Create a project token
+## 1. Create a token
 
-In Glubean Cloud, open your project and go to **Settings → Tokens**.
+In Glubean Cloud, open **Settings → Tokens** and create a **scoped** token with
+the **`runs:write`** scope. Every token starts with `glb_`. Copy the value now —
+Glubean won't show it again.
 
-Create a token with the **`runs:write`** scope. Project tokens start with `gpt_`. Copy the value now — Glubean won't show it again.
+A `glb_` token is bound to you within your org (not to a single project), so the
+project and target you upload to are supplied separately (next step). For the
+difference between **scoped** and **personal** tokens, see [Tokens](/cloud/tokens).
 
-For when to use a project token vs a user API key, see [Tokens](/cloud/tokens).
+> Device login (`glubean login`) is the intended interactive flow but the
+> server endpoints aren't live yet, so create the token in the dashboard and
+> provide it directly for now.
 
 ## 2. Store the token
 
 ### Local development
 
-Put the token in `.env.secrets` (must be gitignored), and the project ID in `.env` (committed):
+Put the token in `.env.secrets` (must be gitignored), and the project + target
+IDs in `.env` (committed):
 
 ```bash
 # .env.secrets — NOT committed
-GLUBEAN_TOKEN=gpt_your_project_token
+GLUBEAN_TOKEN=glb_your_token
 ```
 
 ```dotenv
 # .env — committed; shared by every contributor
 GLUBEAN_PROJECT_ID=prj_abc123
+GLUBEAN_TARGET_ID=tgt_def456
 ```
 
-The project ID isn't sensitive and belongs in the repo (`.env`). The token is sensitive and goes in `.env.secrets`. Because it's an env var, every run mode — `glubean run --upload`, `glubean ci run --upload`, or a filtered/tagged run — uploads to the same project.
+The project and target IDs aren't sensitive and belong in the repo (`.env`).
+The token is sensitive and goes in `.env.secrets`. Because they're env vars,
+every run mode — `glubean run --upload`, `glubean ci run --upload`, or a
+filtered/tagged run — uploads to the same project/target. (If the project has a
+single default target you can omit `GLUBEAN_TARGET_ID`.)
 
 > **Working on multiple Glubean projects from one laptop?** See [Multi-workspace setup](/cloud/tokens#multi-workspace-setup).
 
 ### CI
 
-Store the project token in your provider's secret store and inject it as the `GLUBEAN_TOKEN` env var. The CLI auto-picks it up — **no `glubean login` step in CI**.
+Store the scoped (`runs:write`) token in your provider's secret store and inject
+it as the `GLUBEAN_TOKEN` env var. The CLI auto-picks it up — **no `glubean
+login` step in CI**.
 
 GitHub Actions example:
 
@@ -49,7 +63,7 @@ GitHub Actions example:
   run: npx glubean ci run --upload
 ```
 
-The project ID is in `.env`, so no second secret is needed.
+The project and target IDs are in `.env`, so no second secret is needed.
 
 ## 3. Upload a run
 
@@ -75,16 +89,18 @@ After upload, the CLI prints a Cloud URL. Open it to inspect:
 
 ## Credential lookup order
 
-The CLI uses the first matching credential source for `GLUBEAN_TOKEN`, `GLUBEAN_PROJECT_ID`, and `GLUBEAN_API_URL`:
+The CLI uses the first matching credential source for `GLUBEAN_TOKEN`,
+`GLUBEAN_PROJECT_ID`, `GLUBEAN_TARGET_ID`, and `GLUBEAN_API_URL`:
 
-1. `--token` / `--project` / `--api-url` CLI flags
-2. `GLUBEAN_TOKEN` / `GLUBEAN_PROJECT_ID` / `GLUBEAN_API_URL` env vars
+1. `--token` / `--project` / `--target` / `--api-url` CLI flags
+2. `GLUBEAN_TOKEN` / `GLUBEAN_PROJECT_ID` / `GLUBEAN_TARGET_ID` / `GLUBEAN_API_URL` env vars
 3. `.env` and `.env.secrets` files in the project root
-4. `~/.glubean/credentials.json` (written by `glubean login`)
+4. `glubean.yaml` (`upload.projectId` / `upload.targetId`) for the active profile
+5. `~/.glubean/credentials.json` (written by `glubean login`); the project's default target
 
 The chain is per-field — for example, the token can come from an env var while the project ID comes from `.env`. This is what makes the recommended CI pattern (1 secret) work. Keep token *values* in `.env.secrets` (gitignored) — a literal `GLUBEAN_TOKEN` in the committed `.env` **is** read, so never commit one there.
 
-For project ID, a profile's `upload.projectId` in `glubean.yaml` is also honored when you run that profile — and it takes precedence over `GLUBEAN_PROJECT_ID`. A profile can also set `upload.tokenEnv` (the name of the env var holding *its* token) so different profiles upload to different projects. See [Tokens](/cloud/tokens#where-to-store-it) for the exact order and the full config reference at [Configuration](/cli/config).
+A `glb_` token doesn't encode the project or target; the upload posts to `/v1/projects/{projectId}/targets/{targetId}/runs` and Cloud checks the token's org owns that project (and the project owns that target) plus the `runs:write` scope. A profile's `upload.projectId` / `upload.targetId` in `glubean.yaml` is honored when you run that profile, and `upload.tokenEnv` (the name of the env var holding *its* token) lets different profiles upload to different destinations. See [Tokens](/cloud/tokens#where-to-store-it) for the exact order and the full config reference at [Configuration](/cli/config).
 
 ## Next
 

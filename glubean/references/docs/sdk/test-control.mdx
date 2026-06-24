@@ -2,9 +2,35 @@
 
 These APIs help when real systems are asynchronous, environment-specific, or occasionally flaky.
 
+## Builder `.poll()`
+
+Use builder `.poll()` when polling is a first-class step and the satisfying result should update builder state.
+
+```typescript
+export const asyncJob = test("async-job")
+  .step("start job", async (ctx) => {
+    const job = await ctx.http.post("/jobs/export").json<{ id: string }>();
+    return { jobId: job.id };
+  })
+  .poll(
+    "wait for completion",
+    async (ctx, state) => ctx.http.get(`/jobs/${state.jobId}/status`).json<{ state: string }>(),
+    {
+      timeout: 30000,
+      every: 2000,
+      until: (_ctx, status) => status.state === "completed",
+      out: (state) => state,
+    },
+  )
+  .step("download file", async (ctx, state) => {
+    const file = await ctx.http.get(`/jobs/${state.jobId}/download`);
+    ctx.expect(file.status).toBe(200);
+  });
+```
+
 ## `ctx.pollUntil()`
 
-Use `pollUntil()` when an action is eventually consistent and a fixed sleep would be wasteful or brittle.
+Use `pollUntil()` inside quick-mode tests when an action is eventually consistent and you do not need a first-class poll step.
 
 ```typescript
 export const asyncJob = test("async-job", async (ctx) => {

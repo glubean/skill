@@ -6,7 +6,7 @@ to find a handful of real failures.
 
 ## The pull model
 
-Your agent calls a Glubean Cloud HTTP endpoint with a project token and a run ID,
+Your agent calls a Glubean Cloud HTTP endpoint with a `glb_` token and a run ID,
 and receives only the failures and their reasons. No worker registration, no
 new SDK, no orchestration glue.
 
@@ -18,13 +18,15 @@ You paste a run reference → agent fetches /failures → agent reads reasons
 
 ```http
 GET /open/v1/runs/{runId}/failures
-Authorization: Bearer gpt_xxxxxxxxxxxxxxxx
+Authorization: Bearer glb_xxxxxxxxxxxxxxxx
 ```
 
-**Auth**: either kind of token works:
+**Auth**: a `glb_` token whose org owns the run's project:
 
-- **Project token (`gpt_`, recommended for agents)** — must have `runs:read` scope, must belong to the same project the run is in.
-- **User API key (`gb_`)** — broader access; must be a member of the run's project.
+- **Scoped token (recommended for agents)** — grant only `runs:read`, nothing else. Smallest blast radius if it leaks into agent context.
+- **Personal token** — works too (inherits your full org permissions), but it can do far more than read failures, so prefer a scoped token here.
+
+Either way the token's org must own the project the run belongs to.
 
 **Response shape**:
 
@@ -57,7 +59,7 @@ Authorization: Bearer gpt_xxxxxxxxxxxxxxxx
 |---|---|
 | `200` | Success — `failures` may be empty if all tests passed |
 | `401` | No / invalid auth |
-| `403` | Project token lacks `runs:read` scope, or is from a different project |
+| `403` | Token lacks `runs:read` scope, or its org doesn't own the run's project |
 | `404` | Run not found, or run has no result yet (still queued / running) |
 
 ## Why a dedicated endpoint vs `GET /runs/{id}/events`?
@@ -70,23 +72,25 @@ doesn't have to thread event IDs back to test IDs by hand.
 
 ## Recommended agent token setup
 
-Create a scope-minimal token per agent. Settings → Tokens → New project token:
+Create a scope-minimal token per agent. Dashboard → Settings → Tokens → new
+**scoped** token:
 
-- **Scope**: `runs:read` (no write, no manage)
+- **Scope**: `runs:read` only (no write, no anything else)
 - **Name**: e.g. `agent-claude-2026-06` — one token per agent so you can revoke per agent
-- **Blast radius**: this one project's read data
+- **Blast radius**: read-only run data across your org
 
-The token IS in the agent's context, so treat it as a read-only credential for
-one project, not a "master key".
+The token IS in the agent's context, so treat it as a read-only credential, not
+a "master key". A scoped `runs:read` token can read runs but nothing else, even
+though it's org-bound.
 
 ## Example prompts
 
 ```text
 Here's a Glubean run: clr_GEb9bPvhE4nL
-Project token (read-only): gpt_xxxxxxxxxxxxxxxx
+Token (read-only, runs:read): glb_xxxxxxxxxxxxxxxx
 
 Please fetch GET https://api.glubean.com/open/v1/runs/clr_GEb9bPvhE4nL/failures
-with `Authorization: Bearer gpt_...` and tell me why these tests failed.
+with `Authorization: Bearer glb_...` and tell me why these tests failed.
 ```
 
 ```text
@@ -102,7 +106,7 @@ Failure analysis for run {runId}:
 The Glubean skill routes run-ID diagnosis to the Cloud diagnosis pattern:
 
 1. Extract the run ID from the pasted ID or Cloud URL.
-2. Use a read-only project token with `runs:read`.
+2. Use a read-only `glb_` token (scoped to `runs:read`).
 3. Fetch `/open/v1/runs/{runId}/failures` when the agent environment can call HTTP APIs with auth headers.
 4. Fall back to run/event APIs when the focused endpoint is not available through the current tool surface.
 5. Group failures by cause, cite the evidence, and propose the next action without dumping full event streams or token values.

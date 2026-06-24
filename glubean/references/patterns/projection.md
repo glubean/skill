@@ -13,14 +13,14 @@
 
 ## Prerequisites
 
-- `contracts/` exists with `.contract.ts` files using `contract.http.with()` or `contract.flow()`
+- `contracts/` exists with `.contract.ts` files using `contract.http.with()`, and optionally workflow files exporting `workflow()`
 - Optional: `tests/` (additional coverage layer for cases contract can't express)
 
 If `contracts/` does not exist or has no `contract.http.with()` files, this pattern does not apply.
 
 ## Data source
 
-**Priority 1: MCP `glubean_extract_contracts`** — richest data source. Dynamically imports contract modules and returns full metadata including Zod schemas converted to JSON Schema, `instanceName`, security declarations, deferred reasons, requires, and defaultRun. Works for both legacy `contract.http()` and current `.with()` syntax.
+**Priority 1: MCP `glubean_extract_contracts` / metadata extraction** — richest contract data source. Dynamically imports contract modules and returns full metadata including Zod schemas converted to JSON Schema, `instanceName`, security declarations, deferred reasons, requires, defaultRun, `given`, `needs`, and `runnability`.
 
 **Priority 2: MCP `glubean_project_contracts`** — runtime extraction grouped by feature. Returns contracts, cases, descriptions, deferred reasons, requires, defaultRun, and summary stats. Does not include schemas.
 
@@ -62,13 +62,13 @@ When the user asks for a full coverage report, generate a two-section document:
 ### Bottom half: Technical details (for engineers)
 
 1. **Endpoint detail** — endpoint, case name, status code, schema presence, deferred reason
-2. **Flow coverage** — flow name, step count, gaps
+2. **Workflow coverage** — workflow name, node count, grade summary, gaps
 3. **Gap analysis** — specific issues:
    - Endpoints with only one case (likely missing boundary coverage)
    - Cases missing `expect.schema` (no shape validation)
    - Deferred cases sharing the same reason (potential single-fix unblock)
    - Critical cases that are deferred (high-severity blockers)
-   - Flow steps without corresponding endpoint specs
+   - Workflow `call()` nodes without corresponding endpoint specs
 4. **Action items** — numbered, concrete, executable
 
 ### Status icons
@@ -126,7 +126,7 @@ Runtime extraction tool that dynamically imports contract modules. Returns proto
 - Zod schemas converted to JSON Schema (request body, response body, query params)
 - `instanceName` from `.with("name", ...)` declarations
 - Security declarations from instance configuration
-- All standard fields: cases, descriptions, deferred/deprecated reasons, requires, defaultRun
+- All standard fields: cases, descriptions, deferred/deprecated reasons, requires, defaultRun, given, needs, runnability, verifyRules
 - `protocolExpect` for protocol-specific expectations (e.g. HTTP status code)
 
 Works for `.with()` syntax and plugin protocol contracts (`contract.register()` with adapter v2).
@@ -150,7 +150,18 @@ Generates an OpenAPI 3.1 spec from contract definitions. Only processes `protoco
 - `request.headers` (JSON Schema with `properties` + `required`) → `parameters[in=header]` entries
 - `request.example` / `request.examples` → `requestBody.content[contentType].examples`
 - `request.contentType` → `requestBody.content[contentType]` (default `application/json`)
-- `extensions` (merged `defaults < contract < case`) → `x-*` fields on the operation
+- `extensions` (instance + contract operation fields; case extensions remain case-scoped) → `x-*` metadata
+
+### Workflow metadata
+
+Scanners also surface `workflow()` projections when workflow files are discoverable. Treat them as lifecycle coverage, not endpoint coverage. Useful fields:
+
+- `id`, `name`, `description`, `tags`, `skip`, `only`
+- `nodes[]` with `id`, `kind`, `grade`, and nested branch/switch/route structure
+- `gradeSummary` (`full`, `partial`, `opaque`)
+- `templateId`, `groupId`, and `parallel` for `workflow.each()`
+
+Do not expect `workflow.pick()` metadata; it does not exist. Workflow matrices should be deterministic with `workflow.each()`.
 
 ### `glubean_project_contracts`
 
@@ -159,5 +170,5 @@ Lightweight runtime extraction grouped by feature. Returns contracts, cases, des
 ## Notes
 
 - `contract.http.with()` produces `Test[]` directly — no promotion step. Contracts ARE the regression tests. The projection report is about spec coverage, not "stable vs draft" lifecycle.
-- If the project has both `contracts/` and `tests/`, the report focuses on `contracts/`. `tests/` content is treated as supplementary coverage for browser/polling/complex state scenarios.
+- If the project has `contracts/`, `workflows/`, and `tests/`, the report focuses on contracts for endpoint coverage and workflows for lifecycle coverage. `tests/` content is supplementary runtime evidence.
 - Endpoint lists, case inventories, deferred coverage, and similar interface-layer views should be generated from `contracts/`, not maintained as separate prose docs.

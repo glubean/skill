@@ -20,6 +20,7 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 | [ci-workflow.md](ci-workflow.md) | Wire stable tests into CI |
 | [sdk-reference.md](sdk-reference.md) | Look up SDK API details |
 | [cli-reference.md](cli-reference.md) | Look up CLI commands |
+| [load-testing.md](load-testing.md) | Author + run load tests — concurrency, throughput, p95/p99, thresholds |
 
 ## Common patterns
 
@@ -29,6 +30,7 @@ Quick lookup for AI agents. Read one mode guide first, then only the references 
 | [patterns/contract-first.md](patterns/contract-first.md) | Full contract authoring workflow |
 | [patterns/cloud-diagnosis.md](patterns/cloud-diagnosis.md) | Diagnose uploaded Cloud or CI runs from run IDs, focused failures, or run events |
 | [patterns/projection.md](patterns/projection.md) | Contract coverage report: API surface, deferred cases, gap analysis |
+| [docs/sdk/contract-flow.mdx](docs/sdk/contract-flow.mdx) | `workflow()` lifecycle API: call, action, check, compute, branch, switch, route, poll, each |
 | [patterns/test-planning.md](patterns/test-planning.md) | Coverage planning and gap reports |
 | [patterns/migration.md](patterns/migration.md) | Migrate from Postman, Apifox, OpenAPI, `.http`, cURL, or legacy test code |
 | [patterns/promotion.md](patterns/promotion.md) | Promote `explore/` work into `tests/` (contracts don't need promotion) |

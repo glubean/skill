@@ -183,7 +183,7 @@ Map each endpoint's analysis to concrete test scenarios using these coverage dim
 
 ### What to skip
 
-- Performance testing (unless the user specifically asks)
+- Load / performance testing — opt-in; when the user asks, see [load-testing.md](../load-testing.md) (not part of routine functional coverage)
 - Rate limiting (hard to test deterministically)
 - Internal implementation details (DB queries, cache behavior)
 - UI-specific behavior (unless testing browser endpoints)

@@ -20,8 +20,8 @@ Do not use this for a fresh local test-writing loop. Local authoring still uses 
 
 - `runId` or a URL that contains a run ID
 - `token` with read access
-  - Prefer a project token (`gpt_...`) with `runs:read`
-  - Use a user API key (`gb_...`) only when the user intentionally provides one
+  - A `glb_` token scoped to `runs:read` (or a personal `glb_` token that inherits read access)
+  - The token's org must own the run's project
 - `apiUrl`
   - Default: `https://api.glubean.com`
   - Override only when the user gives a different API host
@@ -63,7 +63,7 @@ Never ask for write or manage scopes for diagnosis.
 - Treat project tokens and API keys as secrets.
 - Do not echo token values back to the user.
 - Do not write tokens into files, command history, examples, or generated docs.
-- When summarizing request setup, say "read-only project token" or `gpt_...`, not the full value.
+- When summarizing request setup, say "read-only platform token" or `glb_...`, not the full value.
 - If an API error suggests the token is invalid, say the class of problem (`401`, `403`, wrong project, missing `runs:read`) without revealing the token.
 
 ## Diagnosis workflow

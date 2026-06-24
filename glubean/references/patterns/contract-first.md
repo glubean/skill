@@ -4,7 +4,7 @@
 
 **Problem:** AI agents jump from vague product intent straight to code implementation. Without an intermediate alignment step, the agent guesses too much — wrong status codes, invented field names, missing error cases, broken cross-endpoint contracts.
 
-**Alternative:** write an OpenAPI spec first — but OpenAPI cannot express workflow contracts (data flowing between endpoints), and the spec-to-implementation gap still requires manual codegen or translation.
+**Alternative:** write an OpenAPI spec first — but OpenAPI cannot express lifecycle promises (data flowing between endpoints over time), and the spec-to-implementation gap still requires manual codegen or translation.
 
 **This pattern:** write `contract.http.with()` scoped instances and then declare contracts before the API exists. Each contract defines endpoint, request shape, response schema, status codes, error cases, and auth boundaries as structured, executable cases. AI reads these contracts to implement the API. The contracts remain the source of truth and are continuously verified.
 
@@ -23,15 +23,16 @@
 
 ```
 schemas/     ← Zod response schemas
-contracts/   ← contract.http.with() instances + specs + contract.flow() verification
-tests/       ← test() for cases contract can't express (browser, polling)
+contracts/   ← contract.http.with() instances + endpoint specs
+workflows/   ← optional workflow() lifecycle specs (or colocate small ones in contracts/)
+tests/       ← test() for imperative runtime evidence that contract/workflow should not project
 explore/     ← free exploration, ad-hoc verification
 ```
 
 Why separate:
 - `contracts/` failure means "intent not aligned" or "implementation not done" — `tests/` failure means "stable behavior regressed"
 - `contract.http.with()` produces `Test[]` directly — runner executes them without promotion
-- mixing contract specs and ad-hoc tests makes it impossible to generate projection/coverage reports
+- mixing contract specs, workflow specs, and ad-hoc tests without clear ownership makes projection/coverage reports noisy
 - contracts sharing a client should use one `.with()` instance — keep the instance declaration in a shared file or at the top of the contract file
 
 Lifecycle: `contracts/` (define) → implementation → run contracts until green
@@ -59,7 +60,7 @@ The intent gate checklist:
 4. **Status codes** — what's the success code (200/201/204)? What error codes should exist (400, 401, 403, 404, 409, 422)?
 5. **Request body** (for POST/PUT/PATCH) — what fields are required? Which are optional?
 6. **Business rules** — any state-based restrictions (e.g. "cannot cancel completed run", "viewer role cannot delete")?
-7. **State flow** (for `contract.flow()` only) — what state does each step pass to the next? What's the lifecycle order?
+7. **Workflow state** (for `workflow()` only) — what state does each node pass to the next? What's the lifecycle order?
 
 **How to use the gate:**
 
@@ -92,7 +93,7 @@ Two ❓ items — stopping to ask:
 
 - **Single-endpoint contract**: one endpoint with clear behavior cases
 - **Resource contract set**: a new resource or a related group of endpoints such as CRUD + list/query
-- **Flow contract**: multi-step behavior spanning multiple endpoints (verification)
+- **Workflow**: multi-step behavior spanning multiple endpoints (lifecycle verification)
 
 ### Scoped instances — `contract.http.with()`
 
@@ -475,49 +476,45 @@ contracts/
     list-users.contract.ts
     update-user.contract.ts
     delete-user.contract.ts
-    users-lifecycle.contract.ts  ← contract.flow()
+    users-lifecycle.workflow.ts  ← workflow()
 ```
 
 Rules:
 - Plan the full resource surface first, even if you only implement part now
 - Keep one primary behavior per file
 - Contracts sharing a client should import from a shared instance file (e.g. `_instance.ts`)
-- Use `contract.flow()` for lifecycle verification (create → read → update → delete)
+- Use `workflow()` for lifecycle verification (create -> read -> update -> delete)
 
-### Flow contract (cross-endpoint verification)
+### Workflow (cross-endpoint lifecycle verification)
 
-Use `contract.flow()` to verify that endpoints work together. A flow composes **existing contract cases** — don't redeclare endpoints inside the flow. Reference cases by `contractVar.case("key")` and wire them with pure lens functions.
+Use `workflow()` to verify that endpoints work together. A workflow composes **existing contract cases** — don't redeclare endpoints inside the workflow. Reference cases by `contractVar.case("key")` and wire them with `call()` / `poll()` nodes.
 
 ```typescript
-import { contract } from "@glubean/sdk";
+import { workflow } from "@glubean/sdk";
 import { createUser, getUser, deleteUser } from "./user.contract.ts";
 
-// @flow
-export const userLifecycle = contract.flow("user-lifecycle")
+export const userLifecycle = workflow("user-lifecycle")
   .meta({ description: "Create, read back, then delete a user", tags: ["e2e"] })
-  .step(createUser.case("success"), {
-    // out reads the response and produces the next step's state.
+  .call("create-user", createUser.case("success"), {
+    // out reads the response and produces the next node's state.
     out: (_s, res) => ({ userId: res.body.id as string }),
   })
-  .step(getUser.case("success"), {
-    // in reads flow state and produces inputs for the referenced case.
+  .call("read-user", getUser.case("success"), {
+    // in reads workflow state and produces inputs for the referenced case.
     in: (s) => ({ params: { id: s.userId } }),
   })
-  .step(deleteUser.case("success"), {
+  .call("delete-user", deleteUser.case("success"), {
     in: (s) => ({ params: { id: s.userId } }),
   });
 ```
 
 Key points:
-- `.step(ref, { in, out })` invokes one case already defined by a `contract.http.with()(...)` contract. The case carries its own body / headers / expectations; the flow only wires state.
-- Flows can mix first-party protocols. A single flow may step from HTTP to
-  gRPC to GraphQL as long as each referenced case declares the logical
-  `needs` shape consumed by its `in` lens. Keep protocol-specific transport
-  details inside the case; flow state should stay business-shaped.
-- `in` / `out` MUST be **pure lenses**: field select / repack only. No I/O, no method calls, no branching. Violations throw `LensPurityError` at projection time.
-- Anything a lens can't express (string concatenation, `.map()`, template literals) goes in `.compute((s) => ...)`.
-- `.setup(async (ctx) => ...)` is the only I/O-capable callback and runs once before steps; `.teardown(async (ctx, s) => ...)` runs in the outer finally.
-- Flow is **verification** — it proves endpoints work together, not a spec definition. Each endpoint should still have its own `contract.http.with()` spec for case coverage.
+- `.call(id, ref, { in, out })` invokes one case already defined by a `contract.http.with()(...)` contract. The case carries its own body / headers / expectations; the workflow only wires lifecycle state.
+- Workflows can mix first-party protocols. A single workflow may call HTTP, gRPC, and GraphQL cases as long as each referenced case declares the logical `needs` shape consumed by its `in` lens.
+- `in` / `out` must be pure synchronous lenses. No async, no I/O. Put arbitrary async work in `.action()`, and pure synchronous reshaping in `.compute()`.
+- Use `.check()` for assertions over workflow state; prefer declarative `check({ expect: (w) => [...] })` when you want full projection.
+- Use `.poll()` for bounded polling of a contract case, including inbound cases via a receiver `via`. Use `.pollAction()` only when the probe is not yet modeled as a contract case.
+- Workflow is **lifecycle verification** — it proves endpoint promises work together. Each endpoint should still have its own `contract.http.with()` spec for case coverage.
 
 ### Error contract
 
@@ -653,7 +650,7 @@ When writing contracts, follow this order:
 - Do not use `extensions` to smuggle user business state — it's for tool-interop metadata only (owner, tier, rate-limit hints). Business state belongs in `description` or the schemas themselves.
 - Do not write `extensions: { owner: "team-a" }` — TypeScript will reject it. Keys must start with `x-`: `{ "x-owner": "team-a" }`.
 - Do not set `contentType` on a case unless you actually need non-JSON serialization. It adds cognitive load for readers.
-- Do not change `contract.flow()` syntax — flow contracts are not affected by the `.with()` API change
+- Do not write new `contract.flow()` syntax. Use top-level `workflow()` for lifecycle specs.
 - Do not inline cases with `needs` and function-valued action fields. TypeScript can't correlate the schema with the function parameter type across sibling object keys. Use `defineHttpCase<Needs>` so the input shape is locked — see [attachment-model.md](attachment-model.md).
 - Do not put setup logic inside a contract case. The case is pure semantics. Lifecycle (login, seed data, cleanup) goes in a `contract.bootstrap()` overlay in a sibling `*.bootstrap.ts` file. See [attachment-model.md](attachment-model.md).
 - Do not declare `needs` and then write `headers: { Authorization: "Bearer {{TOKEN}}" }` (static template). With `needs`, headers must be a function: `headers: ({ token }) => ({ Authorization: `Bearer ${token}` })`. Static template strings are interpolated against env/secrets at the configure() boundary, not against per-case input.

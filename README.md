@@ -76,9 +76,9 @@ Pattern library, full SDK/CLI reference, product docs, and mode-specific workflo
 
 - **Auth** — bearer, OAuth2, API key, with explicit user confirmation before any auth code
 - **Migration** — from Postman, Apifox, OpenAPI, .http, cURL, legacy tests in any language
-- **Contract-first** — executable contracts, status state machine, projection reports
+- **Contract-first** — `contract.http.with()` endpoint promises, `workflow()` lifecycle promises, projection reports
 - **Data-driven** — `test.each`, `test.pick`, YAML/JSON/CSV loaders
-- **Builder flows** — multi-step with state passing, setup, teardown, retry with backoff
+- **Builder + workflow** — imperative `test()` steps for runtime evidence; projectable `workflow()` for lifecycle specs
 - **Webhook** — tunnel proxy (smee.io), delivery verification, signature checking
 - **Cloud diagnosis** — run-ID failure triage through focused Cloud evidence
 - **CI** — GitHub Actions, GitLab, Bitbucket, with environment and secret mapping

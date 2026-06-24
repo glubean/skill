@@ -74,8 +74,14 @@ Then route by intent plus environment:
   - "What's my contract coverage?"
   - "Generate a projection report"
   - → Treat this as design-first, not simple mode; read `contract-first.md` before simple-mode defaults
-  - → Use `contract.http()` / `contract.flow()` in `contracts/`
+  - → Use `contract.http.with()` for endpoint promises and `workflow()` for lifecycle promises
   - → Only if user explicitly asks for contracts, or project already has `contracts/`
+- Project — load testing (opt-in; performance under concurrency)
+  - "Load test /checkout at 100 concurrent users"
+  - "What's the p95 / throughput under load?"
+  - "Add a performance gate to CI"
+  - → Read [references/load-testing.md](references/load-testing.md); author a `*.load.ts` with `loadScenario()` + `loadRunner()` + thresholds, run with `glubean load`
+  - → Opt-in only — it generates real concurrent traffic; never auto-write load tests during routine functional coverage
 
 ## Global rules
 
@@ -85,7 +91,7 @@ Apply these unless project-specific instructions override them:
 2. Use `configure()` to create shared HTTP clients, then use the exported client (e.g. `api`) in tests — not `ctx.http`. `ctx.http` is only for scratch demos.
 3. Use `{{KEY}}` for env and secret interpolation, bare strings for literals.
 4. Put tags on every test.
-5. Use builder mode when a test needs teardown or multi-step state passing.
+5. Use builder mode when a `test()` needs teardown, multi-step state passing, runtime branching, or runtime polling.
 6. Use kebab-case test IDs, unique across the project.
 7. Treat every human-readable test string as diagnostic surface area. Case titles, test names, step names, schema labels, assertion messages, warnings, and logs should explain the invariant or business rule being checked. Avoid generic labels like "works", "valid", "check response", or "should pass".
 8. When using `ctx.assert`, do not omit the message. Make the message specific enough to diagnose the failure, and pass `{ actual, expected }` when the assertion compares runtime values. Prefer `ctx.expect(...)` matchers when they already produce structured actual/expected output.
@@ -98,6 +104,8 @@ Apply these unless project-specific instructions override them:
 15. If core project structure is missing, do not hand-create the scaffold. Prompt the user to run `npx glubean@latest init`.
 16. When the user confirms a project-level decision (auth strategy, context location, naming convention, business rule), suggest adding it to `GLUBEAN.md` so future sessions pick it up.
 17. Use `GLUBEAN.md` for project-level business rules, role/state semantics, and naming decisions. Do not hand-maintain endpoint matrices, status tables, request/response shapes, or case inventories there; those belong in `contracts/` and should be surfaced via projection or Cloud.
+18. Do not author new `contract.flow()` files. Use top-level `workflow()` instead. `contract.http.with()` defines endpoint behavior; `workflow()` composes existing contract cases with `call()` / `poll()` and typed state; `test()` remains the imperative runtime escape hatch for cases that are not worth projecting.
+19. Do not put `setup` / `teardown` inside contract cases. Contract cases are semantic promises (`description`, `given`, `needs`, `expect`, `verifyRules`, `runnability`). Runtime setup/cleanup belongs in `contract.bootstrap()` overlays, `defineSession()`, `workflow().setup/teardown()`, or `test()` builder setup/teardown depending on the problem.
 
 For detailed navigation, start with [references/index.md](references/index.md).
 

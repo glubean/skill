@@ -6,7 +6,7 @@
 
 **This pattern:** promote stable exploratory files into `tests/` deliberately: tighten assertions, externalize shared types, replace interactive auth, and make the file CI-ready.
 
-**Note:** `contract.http()` files in `contracts/` do NOT need promotion. They produce `Test[]` directly — `glubean run contracts` executes them as-is. Promotion applies mainly to `explore/` → `tests/`.
+**Note:** `contract.http.with()` files in `contracts/` do NOT need promotion. They produce `Test[]` directly — `glubean run contracts` executes them as-is. Promotion applies mainly to `explore/` -> `tests/`.
 
 ## When to promote
 
@@ -42,7 +42,7 @@ Keep the file in `explore/` when:
 4. Move reusable response types into `types/*.ts`.
 5. Move reusable Zod schemas into `schemas/*.ts`.
 6. Replace interactive-only auth such as `oauthCode()` with a CI-safe strategy. See [auth.md](auth.md).
-7. If the file represents a stable CRUD lifecycle, consider converting to `contract.http()` with cases or `contract.flow()` instead of promoting to `tests/`.
+7. If the file represents a stable CRUD lifecycle, consider converting endpoint behavior to `contract.http.with()` cases and lifecycle behavior to `workflow()` instead of promoting everything to `tests/`.
 8. Remove `explore`-only tags and add stable regression tags.
 9. Run the promoted file until it is green without manual intervention.
 10. If the user wants automation, wire CI after the promoted tests are stable. See [../ci-workflow.md](../ci-workflow.md).
@@ -84,9 +84,9 @@ If the exploratory test uses `oauthCode()`, do not promote it as-is. Replace it 
 
 If the same response shape appears in more than one file, extract it into `types/` before or during promotion.
 
-## Consider contract.http() instead
+## Consider contract.http.with() instead
 
-If the explore/ file is testing a well-defined API endpoint with clear cases, consider converting to `contract.http()` in `contracts/` instead of promoting to `tests/`. Contracts provide:
+If the explore/ file is testing a well-defined API endpoint with clear cases, consider converting to `contract.http.with()` in `contracts/` instead of promoting to `tests/`. Contracts provide:
 
 - Structured case model with required descriptions
 - Automatic schema validation
@@ -127,4 +127,4 @@ export const getUser = userApi("get-user", {
 
 When a file is ready, tell the user something like:
 
-> This looks stable enough to move into `tests/`. I'll tighten the assertions, move shared types out of the file where needed, and make sure the auth setup is CI-safe. Alternatively, if this is a well-defined API endpoint, I can convert it to `contract.http()` in `contracts/` for richer spec coverage.
+> This looks stable enough to move into `tests/`. I'll tighten the assertions, move shared types out of the file where needed, and make sure the auth setup is CI-safe. Alternatively, if this is a well-defined API endpoint, I can convert it to `contract.http.with()` in `contracts/` for richer spec coverage.

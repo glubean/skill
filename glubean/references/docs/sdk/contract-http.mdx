@@ -103,15 +103,17 @@ Per-case `client` is still allowed and overrides the instance's client. `client`
 |-------|------|----------|-------------|
 | `description` | `string` | **Yes** | Why this case exists — business behavior, not HTTP details |
 | `expect` | object | Yes | See [expect](#expect) below |
-| `body` | object / fn / FormData / URLSearchParams | No | Request body. Can be a function of state: `(state) => ({...})` |
+| `body` | object / fn / FormData / URLSearchParams | No | Request body. Can be a function of logical input: `(input) => ({...})` |
 | `contentType` | `string` | No | Override request body serialization (default: `"application/json"`) |
-| `headers` | object / fn | No | Request headers. Can be a function of state |
+| `headers` | object / fn | No | Request headers. Can be a function of logical input |
 | `params` | `Record<string, ParamValue>` | No | URL path parameters |
 | `query` | `Record<string, ParamValue>` | No | Query string parameters |
 | `client` | HTTP client | No | Override instance's client (useful for auth testing) |
-| `setup` | fn | No | Run before request: `async (ctx) => state` |
-| `teardown` | fn | No | Run after request (always, even on failure): `async (ctx, state) => void` |
 | `verify` | fn | No | Custom assertions after response: `async (ctx, response) => void` |
+| `needs` | `SchemaLike` | No | Logical input schema for function-valued action fields |
+| `given` | `string` | No | World-state precondition this case assumes |
+| `verifyRules` | array | No | Projectable description of opaque `verify()` logic |
+| `runnability` | object | No | Runner gates such as `{ requireAttachment: true }` or `{ requireSession: true }` |
 | `deferred` | `string` | No | Mark case as not yet runnable, with reason |
 | `deprecated` | `string` | No | Mark case as retained but no longer executed |
 | `severity` | `"critical" \| "warning" \| "info"` | No | Alert routing hint (default: `"warning"`) |
@@ -119,6 +121,8 @@ Per-case `client` is still allowed and overrides the instance's client. `client`
 | `defaultRun` | `"always" \| "opt-in"` | No | Whether case runs automatically (default: `"always"`) |
 | `tags` | `string[]` | No | Case-specific tags (merged with contract-level tags) |
 | `extensions` | `Extensions` ([see below](#openapi-extensions)) | No | OpenAPI `x-*` extensions on the case, merged over contract + instance |
+
+Contract cases are semantic. They do not own setup/teardown. Use `given` to describe preconditions, `needs` to declare logical input, and satisfy those inputs with `contract.bootstrap()` overlays, `defineSession()`, `workflow().call(..., { in })`, or explicit runner input.
 
 ## `expect`
 
@@ -221,8 +225,77 @@ cases: {
       ctx.expect(user.email).toBe("new@example.com");
       ctx.expect(user.id).toBeDefined();
     },
+    verifyRules: [
+      { description: "Created user keeps the submitted email address" },
+      { description: "Created user has a stable server-generated ID" },
+    ],
   },
 }
+```
+
+`verify()` is executable code, so projection tools cannot fully infer its business meaning. Add `verifyRules` whenever the assertion is important for reviews, Cloud, or future agents.
+
+## Logical input with `defineHttpCase`
+
+Use `defineHttpCase<Needs>()` when a case declares `needs` and has function-valued action fields. It type-locks `needs` to `body`, `headers`, `params`, and `query`.
+
+```typescript
+import { defineHttpCase } from "@glubean/sdk";
+
+const authorized = defineHttpCase<{ token: string }>({
+  description: "Valid bearer token returns caller profile",
+  needs: z.object({ token: z.string() }),
+  headers: ({ token }) => ({ Authorization: `Bearer ${token}` }),
+  expect: { status: 200, schema: ProfileSchema },
+});
+
+// @contract
+export const getMe = userApi("get-me", {
+  endpoint: "GET /me",
+  cases: { authorized },
+});
+```
+
+Tradeoff: inline cases preserve more precise `workflow().call(...).out` body typing from `expect.schema`; `defineHttpCase` prioritizes input-shape drift prevention.
+
+## `given` and runnability
+
+Use `given` for semantic preconditions and `runnability` for execution gates:
+
+```typescript
+const duplicateEmail = defineHttpCase<{ email: string }>({
+  description: "Already registered email is rejected",
+  given: "a user with this email already exists",
+  needs: z.object({ email: z.string().email() }),
+  body: ({ email }) => ({ email, password: "secure123" }),
+  expect: { status: 409, schema: ErrorSchema },
+  runnability: { requireAttachment: true },
+});
+```
+
+`runnability.requireAttachment` is a hard bare-run gate. The case must receive input from a bootstrap overlay, explicit runner input, or a workflow `in` lens. Use `--force-standalone` only for author-debug, never CI.
+
+`runnability.requireSession` requires project session state, usually produced by `defineSession()`.
+
+## Inbound cases
+
+Use `inboundCase()` for counterparty promises such as webhooks. Inbound cases are projected but not runnable as standalone tests; await them from `workflow().poll()`.
+
+```typescript
+import { inboundCase } from "@glubean/sdk";
+
+const paymentIntentCreated = inboundCase({
+  description: "Payment provider posts a signed payment_intent.created event",
+  expect: {
+    bodySchema: PaymentIntentCreatedSchema,
+    signature: {
+      scheme: "stripe-v1",
+      header: "stripe-signature",
+      secretRef: "STRIPE_WEBHOOK_SECRET",
+    },
+    within: 60000,
+  },
+});
 ```
 
 ## Deferred cases

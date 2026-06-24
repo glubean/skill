@@ -1,6 +1,8 @@
 # Test Shape
 
-Use `test()` for simple tests and the builder API for multi-step flows.
+Use `test()` for imperative runtime evidence: direct endpoint checks, exploratory probes, browser-heavy automation, and debugging paths that do not need contract/workflow projection.
+
+For endpoint promises, prefer `contract.http.with()`. For cross-endpoint lifecycle promises, prefer `workflow()`.
 
 ## Simple test
 
@@ -20,7 +22,7 @@ export const login = test("login", async (ctx) => {
 
 ## Multi-step flow
 
-Use the builder API when steps depend on shared state or when cleanup matters:
+Use the builder API when steps depend on shared state, cleanup matters, or the check needs imperative runtime control:
 
 ```typescript
 type CheckoutState = {
@@ -47,6 +49,8 @@ export const checkout = test<CheckoutState>("checkout-flow")
 ```
 
 The `.build()` call is optional. The builder auto-finalizes via microtask after all synchronous chaining completes.
+
+Builder state is typed. A step that returns a value replaces the state for subsequent steps; a step that returns `void` preserves the current state.
 
 ## Metadata
 
@@ -81,6 +85,74 @@ const withAuth = (b: TestBuilder<unknown>) => b
 export const testA = test("test-a").use(withAuth).step("act", async (ctx, { token }) => { /* ... */ });
 export const testB = test("test-b").group("auth", withAuth).step("verify", async (ctx, { token }) => { /* ... */ });
 ```
+
+## Runtime branching
+
+Builder mode supports runtime branches. These are execution control, not projection semantics. If the branch is part of the business lifecycle and should be projected, use `workflow().branch()` instead.
+
+```typescript
+export const checkout = test("checkout")
+  .step("create cart", async (ctx) => ({ cartId: "cart_123", hasPromo: true }))
+  .condition(
+    {
+      message: "promo branch",
+      predicate: async (_ctx, state) => state.hasPromo,
+    },
+    (b) => b.step("apply promo", async (ctx, state) => {
+      await ctx.http.post(`/carts/${state.cartId}/promo`, { json: { code: "SUMMER25" } });
+      return state;
+    }),
+    (b) => b.step("skip promo", async (_ctx, state) => state),
+  )
+  .step("checkout", async (ctx, state) => {
+    const res = await ctx.http.post(`/carts/${state.cartId}/checkout`);
+    ctx.expect(res.status).toBe(200);
+  });
+```
+
+Use `switchOn()` for scalar value dispatch and `switchCond()` for ordered predicates:
+
+```typescript
+export const payment = test("payment")
+  .step("quote", async () => ({ method: "card" as const }))
+  .switchOn((_ctx, state) => state.method)(
+    [
+      { value: "card", then: (b) => b.step("pay by card", async (_ctx, state) => state) },
+      { value: "wallet", then: (b) => b.step("pay by wallet", async (_ctx, state) => state) },
+    ],
+    (b) => b.step("unsupported payment method", async (ctx) => ctx.fail("Unsupported payment method")),
+  );
+```
+
+## Runtime polling
+
+Use builder `.poll()` when a step must retry an arbitrary async probe and the result should update builder state.
+
+```typescript
+export const exportJob = test("export-job")
+  .step("start export", async (ctx) => {
+    const job = await ctx.http.post("/exports").json<{ id: string }>();
+    return { jobId: job.id };
+  })
+  .poll(
+    "wait for export",
+    async (ctx, state) => ctx.http.get(`/exports/${state.jobId}`).json<{ state: string; url?: string }>(),
+    {
+      every: 2_000,
+      timeout: 60_000,
+      until: (_ctx, res) => res.state === "ready",
+      out: (state, res) => ({ ...state, downloadUrl: res.url }),
+    },
+  )
+  .step("download export", async (ctx, state) => {
+    ctx.assert(!!state.downloadUrl, "Export job exposes a download URL", {
+      actual: state.downloadUrl,
+      expected: "non-empty URL",
+    });
+  });
+```
+
+Use `ctx.pollUntil()` only inside quick tests or when you do not need poll attempts to become a first-class builder step.
 
 ## Focus and skip
 

@@ -7,9 +7,10 @@
 | Command | Purpose |
 |---------|---------|
 | `glubean run` | Run tests locally (a profile, a target, or both) |
+| `glubean load` | Run load tests locally (a .load.ts plan) + optional upload |
 | `glubean ci run` | Run the `ci` profile (= `glubean run --profile ci`) |
 | `glubean scan` | Generate metadata.json from test files |
-| `glubean login` | Authenticate with Glubean Cloud |
+| `glubean login` | Authenticate via device authorization (RFC 8628) — issues a `glb_` token |
 | `glubean init` | Initialize a new test project (interactive wizard) |
 | `glubean redact` | Preview redaction on a result JSON file |
 | `glubean config mcp` | Install MCP server via `npx add-mcp` (auto-detects installed AI tools) |
@@ -67,11 +68,17 @@ For CI mode (fail-fast + junit reporter), define a `ci` profile in
 
 ### Cloud Upload
 
+Uploads are **target-scoped** — every run belongs to a target under a project.
+
 ```bash
-glubean run --upload                     # Run + upload results to Cloud
-glubean run --upload --project proj_abc  # Specify project (or GLUBEAN_PROJECT_ID env)
-glubean run --upload --token gpt_xxx     # Specify token (or GLUBEAN_TOKEN env)
+glubean run --upload                                                  # Run + upload to Cloud
+glubean run --upload --target tgt_abc                                 # Specify target (or GLUBEAN_TARGET_ID env)
+glubean run --upload --project prj_abc --target tgt_abc --token glb_xxx  # Full explicit
 ```
+
+Uploads POST to `/v1/projects/{projectId}/targets/{targetId}/runs`. The CLI sends a
+`clientRunId` (a UUID generated once per run, reused across retries) so re-uploads
+**replace** rather than duplicate — ingest is idempotent.
 
 ### Profile & config
 
@@ -82,6 +89,25 @@ glubean run --env-file .env.staging      # Use alternate .env file
 glubean run --config ./other/glubean.yaml  # Load an alternate glubean.yaml
 glubean run --trace-limit 50             # Keep up to 50 trace files per test (default: 20)
 ```
+
+---
+
+## glubean load
+
+Run load-test plans — `.load.ts` files that define a `loadRunner(...)`. Mirrors the
+flags of `glubean run`.
+
+```bash
+glubean load                             # Run the load suite/profile from glubean.yaml
+glubean load tests/load/shop.load.ts     # Run a single load plan
+glubean load --upload                    # Run + upload the load run (kind=load)
+glubean load --upload --target tgt_abc   # Upload to a specific target
+```
+
+A load run produces a **LoadArtifact**: latency percentiles, throughput, error rate,
+per-endpoint/step breakdown, and threshold results.
+
+See [load-testing.md](load-testing.md) for authoring load plans.
 
 ---
 
@@ -113,10 +139,22 @@ glubean scan --out metadata.json         # Custom output path
 
 ## glubean login
 
-Authenticate with Glubean Cloud. Stores credentials locally.
+Authenticate to Glubean Cloud. The intended flow is **device authorization**
+(RFC 8628): the CLI requests a device code, opens the browser to a verification
+URL, polls until you approve, then stores a `glb_` token in
+`~/.glubean/credentials.json` (optionally bound to a default project).
+
+> **Today, use `--token`.** The device-authorization server endpoints are not
+> live yet, so create a `glb_` token in the dashboard and persist it with
+> `glubean login --token glb_…` (or just set `GLUBEAN_TOKEN` in `.env.secrets`).
 
 ```bash
-glubean login                            # Interactive login
+glubean login --token glb_xxx            # Persist a token directly (current path)
+glubean login --project prj_abc          # Bind a default project
+glubean login                            # Device-authorization flow (browser) — pending server support
+glubean login --no-browser               # Print the URL instead of opening it
+glubean login --api-url <url>            # Override the API endpoint
+glubean login --auth-url <url>           # Override the auth endpoint
 ```
 
 ---
@@ -196,8 +234,9 @@ glubean validate-metadata -d ./tests     # Specify project root
 
 | Variable | Purpose | Used by |
 |----------|---------|---------|
-| `GLUBEAN_TOKEN` | Auth token (`gpt_` prefix) | `run --upload`, `ci run --upload` |
-| `GLUBEAN_PROJECT_ID` | Project short ID (e.g. `prj_…`) | `run --upload`, `ci run --upload` |
+| `GLUBEAN_TOKEN` | Auth token (`glb_` prefix) | `run --upload`, `load --upload`, `ci run --upload` |
+| `GLUBEAN_PROJECT_ID` | Project short ID (e.g. `prj_…`) | `run --upload`, `load --upload`, `ci run --upload` |
+| `GLUBEAN_TARGET_ID` | Target short ID (e.g. `tgt_…`) | `run --upload`, `load --upload` |
 | `GLUBEAN_API_URL` | API server URL (default: `https://api.glubean.com`) | cloud uploads |
 
 ---
@@ -210,6 +249,9 @@ glubean validate-metadata -d ./tests     # Specify project root
 # 2. Run and verify
 glubean run --verbose
 
-# 3. Upload results
+# 3. Authenticate once (get a glb_ token)
+glubean login
+
+# 4. Upload results
 glubean run --upload
 ```
