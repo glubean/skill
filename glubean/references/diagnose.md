@@ -31,6 +31,7 @@ config/               (optional)  — shared HTTP client configuration (configur
 |---|---|---|
 | package.json exists | File exists at project root | See init rule below |
 | @glubean/sdk in devDependencies | Read package.json | See init rule below |
+| @glubean/runner in devDependencies | Read package.json | Must be a DIRECT dependency (not only transitive via the `glubean` CLI). If missing, VSCode's test runner falls back to a bundled copy → two `@glubean/sdk` instances → `configure()` throws "values can only be accessed during test execution". Fix: `npm i -D @glubean/runner` (same version as sdk). See [patterns/configure.md](patterns/configure.md) "Runner must be installed" |
 | .env exists with BASE_URL | File exists, contains `BASE_URL=` | See init rule below, then set the real URL |
 | .env.secrets exists | File exists (can be empty) | See init rule below |
 | .gitignore has Glubean entries | Contains `.env.secrets`, `.glubean/`, `*.result.json` | See init rule below; for partially initialized repos, `--overwrite` may be appropriate |
